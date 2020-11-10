@@ -31,6 +31,7 @@ static inline unsigned long clz(unsigned long word)
 /* Returns the position of the least significant 1, MSB=31, LSB=0*/
 static inline unsigned long ffsl(unsigned long word)
 {
+	// FIXME: the ffsl on x86 isn't robust.
 	if (!word)
 		return 0;
 	asm volatile ("rbit %0, %0" : "+r" (word));
@@ -40,4 +41,13 @@ static inline unsigned long ffsl(unsigned long word)
 static inline unsigned long ffzl(unsigned long word)
 {
 	return ffsl(~word);
+}
+
+static inline unsigned long msbl(unsigned long word)
+{
+#if BITS_PER_LONG == 64
+	return 63 - clz(word);
+#else
+	return 31 - clz(word);
+#endif
 }
