@@ -66,21 +66,23 @@ class JAILHOUSE_MEM(ExtendedEnum, int):
 
 
 class MemRegion:
-    _REGION_FORMAT = 'QQQQ'
+    _REGION_FORMAT = 'QQQQQ'
     SIZE = struct.calcsize(_REGION_FORMAT)
 
     def __init__(self, region_struct):
         (self.phys_start,
          self.virt_start,
          self.size,
-         self.flags) = \
+         self.flags,
+		 self.colors) = \
             struct.unpack_from(MemRegion._REGION_FORMAT, region_struct)
 
     def __str__(self):
         return ("  phys_start: 0x%016x\n" % self.phys_start) + \
                ("  virt_start: 0x%016x\n" % self.virt_start) + \
                ("  size:       0x%016x\n" % self.size) + \
-               ("  flags:      " + flag_str(JAILHOUSE_MEM, self.flags))
+               ("  flags:      " + flag_str(JAILHOUSE_MEM, self.flags)) + \
+               ("  colors:     0x%016x\n" % self.size)
 
     def is_ram(self):
         return ((self.flags & (JAILHOUSE_MEM.READ |
@@ -98,6 +100,7 @@ class MemRegion:
     def is_comm_region(self):
         return (self.flags & JAILHOUSE_MEM.COMM_REGION) != 0
 
+	# TODO: add colored versions?
     def phys_address_in_region(self, address):
         return address >= self.phys_start and \
             address < (self.phys_start + self.size)
