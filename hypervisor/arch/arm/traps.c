@@ -16,6 +16,7 @@
 
 #include <jailhouse/control.h>
 #include <jailhouse/printk.h>
+#include <jailhouse/panic.h>
 #include <asm/control.h>
 #include <asm/gic.h>
 #include <asm/psci.h>

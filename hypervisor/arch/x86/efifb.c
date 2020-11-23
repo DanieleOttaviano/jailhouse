@@ -13,6 +13,7 @@
 #include <jailhouse/control.h>
 #include <jailhouse/processor.h>
 #include <jailhouse/string.h>
+#include <jailhouse/panic.h>
 #include <asm/efifb.h>
 
 #define EFIFB_MAX_WIDTH		1920

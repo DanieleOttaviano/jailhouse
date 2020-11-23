@@ -22,9 +22,6 @@
 
 #define INVALID_CPU_ID			~(0U)
 
-extern volatile unsigned long panic_in_progress;
-extern unsigned long panic_cpu;
-
 /**
  * @defgroup Control Control Subsystem
  *
@@ -130,9 +127,6 @@ void config_commit(struct cell *cell_added_removed);
 long hypercall(unsigned long code, unsigned long arg1, unsigned long arg2);
 
 void shutdown(void);
-
-void __attribute__((noreturn)) panic_stop(void);
-void panic_park(void);
 
 /**
  * Resume a suspended remote CPU.
@@ -272,25 +266,6 @@ void arch_config_commit(struct cell *cell_added_removed);
  * Architecture-specific preparations before shutting down the hypervisor.
  */
 void arch_prepare_shutdown(void);
-
-/**
- * Performs the architecture-specifc steps to stop the current CPU on panic.
- *
- * @note This function never returns.
- *
- * @see panic_stop
- */
-void __attribute__((noreturn)) arch_panic_stop(void);
-
-/**
- * Performs the architecture-specific steps to park the current CPU on panic.
- *
- * @note This function only marks the CPU as parked and then returns to the
- * caller.
- *
- * @see panic_park
- */
-void arch_panic_park(void);
 
 /** @} */
 

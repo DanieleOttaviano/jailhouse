@@ -13,6 +13,7 @@
 #include <jailhouse/control.h>
 #include <jailhouse/mmio.h>
 #include <jailhouse/printk.h>
+#include <jailhouse/panic.h>
 #include <jailhouse/string.h>
 #include <jailhouse/unit.h>
 #include <asm/apic.h>

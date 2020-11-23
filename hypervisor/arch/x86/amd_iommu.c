@@ -21,6 +21,7 @@
 #include <jailhouse/mmio.h>
 #include <jailhouse/pci.h>
 #include <jailhouse/printk.h>
+#include <jailhouse/panic.h>
 #include <jailhouse/string.h>
 #include <jailhouse/unit.h>
 #include <asm/amd_iommu.h>

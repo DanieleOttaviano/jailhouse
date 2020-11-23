@@ -16,6 +16,7 @@
 #include <jailhouse/uart.h>
 #include <jailhouse/control.h>
 #include <jailhouse/processor.h>
+#include <jailhouse/panic.h>
 
 struct uart_chip *uart = NULL;
 

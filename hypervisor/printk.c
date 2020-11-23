@@ -12,6 +12,7 @@
 
 #include <jailhouse/control.h>
 #include <jailhouse/printk.h>
+#include <jailhouse/panic.h>
 #include <jailhouse/processor.h>
 #include <jailhouse/stdarg.h>
 #include <jailhouse/string.h>

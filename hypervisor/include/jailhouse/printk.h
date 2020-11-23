@@ -9,6 +9,8 @@
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  */
+#ifndef _JAILHOUSE_PRINTK_H
+#define _JAILHOUSE_PRINTK_H
 
 #include <jailhouse/types.h>
 
@@ -30,3 +32,5 @@ extern void (*arch_dbg_write)(const char *msg);
 
 extern bool virtual_console;
 extern volatile struct jailhouse_virt_console console;
+
+#endif
