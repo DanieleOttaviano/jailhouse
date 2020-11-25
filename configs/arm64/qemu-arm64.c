@@ -45,6 +45,10 @@ struct {
 			.pci_mmconfig_end_bus = 0,
 			.pci_is_virtual = 1,
 			.pci_domain = 1,
+			.color = {
+				.way_size = 0x20000,
+				.root_map_offset = 0x0C000000000,
+			},
 			.arm = {
 				.gic_version = 3,
 				.gicd_base = 0x08000000,
