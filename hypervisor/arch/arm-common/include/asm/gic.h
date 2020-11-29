@@ -43,6 +43,16 @@
 
 #define REG_RANGE(base, n, size)	(base)...((base) + (n - 1) * (size))
 
+/* Single bit / 8-bit related ops on IRQ registers
+ *
+ * For bits, the address of an irq m is:
+ * ADDR = BASE + (4 * n) where n = m / 32
+ * The position of the irq bit in the register is:
+ * POS = m MOD 32
+ */
+#define IRQ_BIT_REG_OFF(irqno)		(((irqno) >> 5) << 2)
+#define IRQ_BIT_POS(irqno)		((irqno) & 0x1f)
+
 #ifndef __ASSEMBLY__
 extern const struct irqchip gicv2_irqchip, gicv3_irqchip;
 

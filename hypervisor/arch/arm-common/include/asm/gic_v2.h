@@ -13,6 +13,8 @@
 #ifndef _JAILHOUSE_ASM_GIC_V2_H
 #define _JAILHOUSE_ASM_GIC_V2_H
 
+#include <asm/gic.h>
+
 #define GICC_SIZE		0x2000
 #define GICH_SIZE		0x2000
 
@@ -66,4 +68,53 @@
 #define GICH_LR_CPUID_SHIFT	10
 #define GICH_LR_PHYS_ID_SHIFT	10
 #define GICH_LR_VIRT_ID_MASK	0x3ff
+
+extern void *gicc_base;
+extern void *gich_base;
+
+/* set irq-related bit for bit-managed registers */
+static inline void gicv2_set_bit(unsigned int base, unsigned int irq)
+{
+	mmio_write32(gicd_base + base + IRQ_BIT_REG_OFF(irq),
+		     1 << IRQ_BIT_POS(irq));
+}
+
+static inline void gicv2_enable_irq(unsigned int irq)
+{
+	gicv2_set_bit(GICD_ISENABLER, irq);
+}
+
+static inline void gicv2_disable_irq(unsigned int irq)
+{
+	gicv2_set_bit(GICD_ICENABLER, irq);
+}
+
+/* Prio helpers */
+static inline unsigned int gicv2_get_cpu_prio_mask(void)
+{
+	return mmio_read32(gicc_base + GICC_PMR);
+}
+
+static inline unsigned int gicv2_get_prio(unsigned int irq)
+{
+	return mmio_read8(gicd_base + GICD_IPRIORITYR + irq);
+}
+
+static inline void gicv2_set_prio(unsigned int irq, u8 prio)
+{
+	mmio_write8(gicd_base + GICD_IPRIORITYR + irq, prio);
+}
+
+/* Target CPUs helpers */
+static inline unsigned int gicv2_get_targets(unsigned int irq)
+{
+	return mmio_read8(gicd_base + GICD_ITARGETSR + irq);
+}
+
+static inline void gicv2_set_targets(unsigned int irq, unsigned int targets)
+{
+	/* NOTE: each byte has a bitmap of the CPUs to targets */
+	mmio_write8(gicd_base + GICD_ITARGETSR + irq, targets);
+}
+
 #endif /* _JAILHOUSE_ASM_GIC_V2_H */

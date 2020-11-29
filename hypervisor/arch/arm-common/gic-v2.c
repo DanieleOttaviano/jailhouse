@@ -12,7 +12,6 @@
 
 #include <jailhouse/control.h>
 #include <jailhouse/printk.h>
-#include <asm/gic.h>
 #include <asm/gic_v2.h>
 #include <asm/irqchip.h>
 #include <asm/smccc.h>
@@ -21,8 +20,8 @@
 static u8 gicv2_target_cpu_map[8];
 static unsigned int gic_num_lr;
 
-static void *gicc_base;
-static void *gich_base;
+void *gicc_base;
+void *gich_base;
 
 static u32 gicv2_read_lr(unsigned int n)
 {
