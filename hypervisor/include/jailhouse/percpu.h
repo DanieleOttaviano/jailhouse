@@ -21,6 +21,7 @@
 
 #include <jailhouse/paging.h>
 #include <jailhouse/cell.h>
+#include <jailhouse/memguard-data.h>
 #include <asm/percpu.h>
 
 /**
@@ -59,6 +60,8 @@ struct public_per_cpu {
 	/** Set to true for a pending TLB flush for the paging layer that does
 	 *  host physical <-> guest physical memory mappings. */
 	bool flush_vcpu_caches;
+
+	struct memguard memguard;
 
 	ARCH_PUBLIC_PERCPU_FIELDS;
 } __attribute__((aligned(PAGE_SIZE)));

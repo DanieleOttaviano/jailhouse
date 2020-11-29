@@ -19,6 +19,7 @@
 #include <jailhouse/string.h>
 #include <jailhouse/unit.h>
 #include <jailhouse/utils.h>
+#include <jailhouse/memguard.h>
 #include <asm/control.h>
 #include <asm/spinlock.h>
 #include <asm/coloring.h>
@@ -1007,6 +1008,8 @@ long hypercall(unsigned long code, unsigned long arg1, unsigned long arg2)
 			return trace_error(-EPERM);
 		printk("%c", (char)arg1);
 		return 0;
+	case JAILHOUSE_HC_MEMGUARD_SET:
+		return memguard_set(&cpu_data->public.memguard, arg1);
 	default:
 		return -ENOSYS;
 	}

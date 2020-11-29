@@ -20,6 +20,8 @@ always-y := lib.a
 lib-y := $(common-objs-y)
 lib-y += entry.o setup.o control.o traps.o mmio.o lib.o
 lib-y += mmu_hyp.o caches.o iommu.o
+# memguard stub
+lib-y += memguard.o
 
 # in here we switch of the MMU and stuff, cant profile such code
 # NOTE
