@@ -51,6 +51,7 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg);
 int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg);
 int jailhouse_cmd_cell_start(const char __user *arg);
 int jailhouse_cmd_cell_destroy(const char __user *arg);
+int jailhouse_cmd_cell_memguard(struct jailhouse_memguard __user *arg);
 
 int jailhouse_cmd_cell_destroy_non_root(void);
 

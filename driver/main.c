@@ -754,6 +754,52 @@ unlock_out:
 	return err;
 }
 
+static int memguard_call_one_cpu(void *par)
+{
+	struct memguard_params *params = (struct memguard_params *)(par);
+	return jailhouse_call_arg1(JAILHOUSE_HC_MEMGUARD_SET, __pa(params));
+}
+
+int jailhouse_cmd_memguard(struct jailhouse_memguard __user *arg)
+{
+	struct jailhouse_memguard *mg;
+	int err;
+
+	mg = kmalloc(sizeof(struct jailhouse_memguard),
+			GFP_USER | __GFP_NOWARN);
+	if (!mg)
+		return -ENOMEM;
+
+	if (copy_from_user(mg, arg, sizeof(struct jailhouse_memguard))) {
+		err = -EFAULT;
+		goto out_free;
+	}
+
+	if (mutex_lock_interruptible(&jailhouse_lock) != 0) {
+		err = -EINTR;
+		goto out_free;
+	}
+
+	if (!jailhouse_enabled) {
+		err = -EINVAL;
+		goto out_unlock;
+	}
+
+	err = smp_call_on_cpu(mg->cpu, memguard_call_one_cpu, &mg->params,
+			true);
+	if (err) {
+		pr_err("Jailhouse: unable to set memguard parameters "
+				"for cpu %u\n", mg->cpu);
+	}
+
+out_unlock:
+	mutex_unlock(&jailhouse_lock);
+out_free:
+	kfree(mg);
+
+	return err;
+}
+
 static long jailhouse_ioctl(struct file *file, unsigned int ioctl,
 			    unsigned long arg)
 {
@@ -780,6 +826,10 @@ static long jailhouse_ioctl(struct file *file, unsigned int ioctl,
 		break;
 	case JAILHOUSE_CELL_DESTROY:
 		err = jailhouse_cmd_cell_destroy((const char __user *)arg);
+		break;
+	case JAILHOUSE_MEMGUARD:
+		err = jailhouse_cmd_memguard(
+			(struct jailhouse_memguard __user *)arg);
 		break;
 	default:
 		err = -EINVAL;

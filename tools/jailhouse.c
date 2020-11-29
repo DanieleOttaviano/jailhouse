@@ -68,6 +68,7 @@ static void __attribute__((noreturn)) help(char *prog, int exit_status)
 	       "   enable SYSCONFIG\n"
 	       "   disable\n"
 	       "   console [-f | --follow]\n"
+	       "   memguard { CPU ID } period_us budget_mem\n"
 	       "   cell create CELLCONFIG\n"
 	       "   cell list\n"
 	       "   cell load { ID | [--name] NAME } "
@@ -514,6 +515,38 @@ static int cell_management(int argc, char *argv[])
 	return err;
 }
 
+static int memguard_cmd(int argc, char *argv[], unsigned int command)
+{
+	struct jailhouse_memguard *mg;
+	int err, fd;
+
+	if (argc != 5)
+		help(argv[0], 1);
+
+	mg = malloc(sizeof(struct jailhouse_memguard));
+	if (!mg) {
+		fprintf(stderr, "insufficient memory\n");
+		exit(1);
+	}
+
+	mg->cpu = (unsigned int)strtoul(argv[2], NULL, 0);
+	mg->params.budget_time = strtoul(argv[3], NULL, 0);
+	mg->params.budget_memory = strtoul(argv[4], NULL, 0);
+	/* Ignore mg->params.flags */
+	mg->params.flags = 0;
+
+	fd = open_dev();
+
+	err = ioctl(fd, command, mg);
+	if (err)
+		perror("JAILHOUSE_MEMGUARD SET");
+
+	close(fd);
+
+	return err;
+}
+
+
 static int console(int argc, char *argv[])
 {
 	bool non_block = true;
@@ -569,6 +602,8 @@ int main(int argc, char *argv[])
 		if (err)
 			perror("JAILHOUSE_DISABLE");
 		close(fd);
+	} else if (strcmp(argv[1], "memguard") == 0) {
+	    err = memguard_cmd(argc, argv, JAILHOUSE_MEMGUARD);
 	} else if (strcmp(argv[1], "cell") == 0) {
 		err = cell_management(argc, argv);
 	} else if (strcmp(argv[1], "console") == 0) {
