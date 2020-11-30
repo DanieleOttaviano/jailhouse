@@ -15,6 +15,7 @@
 #include <asm/gic_v2.h>
 #include <asm/irqchip.h>
 #include <asm/smccc.h>
+#include <asm/memguard.h>
 
 /* The GICv2 interface numbering does not necessarily match the logical map */
 static u8 gicv2_target_cpu_map[8];
@@ -62,7 +63,8 @@ static int gicv2_init(void)
 	if (!gich_base)
 		return -ENOMEM;
 
-	return 0;
+	/* Initialize memguard: adjust gic prio and init HP timers */
+	return memguard_init();
 }
 
 static void gicv2_clear_pending_irqs(void)
@@ -184,6 +186,9 @@ static int gicv2_cpu_init(struct per_cpu *cpu_data)
 		}
 	}
 
+	/* Per-CPU init, setup compares, unmask timer */
+	memguard_cpu_init();
+
 	return 0;
 }
 
@@ -210,6 +215,8 @@ static int gicv2_cpu_shutdown(struct public_per_cpu *cpu_public)
 	mmio_write32(gicc_base + GICC_CTLR, gicc_ctlr);
 	mmio_write32(gicc_base + GICC_PMR,
 		     (gich_vmcr >> GICH_VMCR_PMR_SHIFT) << GICV_PMR_SHIFT);
+
+	memguard_cpu_shutdown();
 
 	return 0;
 }
