@@ -52,7 +52,43 @@ struct {
 				.gicv_base = 0x03886000,
 				.gic_version = 2,
 				.maintenance_irq = 25,
-			}
+			},
+			.memguard = {
+				/* Found out by using Linux perf tool and
+				 * watching /proc/interrupts
+				 * Parker manual says:
+				 *   The total size of 384 corresponds to:
+				 *   32  first IDs are SGI and PPI
+				 *   288 next IDs are global SPI, one to one
+				 *       mapped to the 288 LIC interrupts
+				 *   64  next IDs are local SPI, generated
+				 *       inside CCPLEX and for CCPLEX use only
+				 */
+				.num_irqs = 384,
+				.hv_timer = 26,
+				.irq_prio_min = 0xf0,
+				.irq_prio_max = 0x00,
+				.irq_prio_step = 0x10,
+				.irq_prio_threshold = 0x10,
+				/* One PMU irq per CPU */
+				/* Conversion from cpu_id to PMU IRQ number
+				 *
+				 * Number 296 is defined in device tree which
+				 * corresponds to:
+				 * (32 SGI and PPI +) 288 global SPI + 4
+				 * local SPI
+				 * This number is base for A57 cluster, 320
+				 * is for Denvers
+				 */
+				.num_pmu_irq = 6,
+				.pmu_cpu_irq = {
+					32 + 296,
+					32 + 297,
+					32 + 298,
+					32 + 299,
+					32 + 320, 32 + 321,
+				},
+			},
 		},
 		.root_cell = {
 			.name = "Jetson-TX2",
