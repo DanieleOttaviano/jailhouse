@@ -68,7 +68,7 @@ static void __attribute__((noreturn)) help(char *prog, int exit_status)
 	       "   enable SYSCONFIG\n"
 	       "   disable\n"
 	       "   console [-f | --follow]\n"
-	       "   memguard { CPU ID } period_us budget_mem\n"
+	       "   memguard { CPU ID } period_us budget_mem event_type\n"
 	       "   cell create CELLCONFIG\n"
 	       "   cell list\n"
 	       "   cell load { ID | [--name] NAME } "
@@ -520,7 +520,7 @@ static int memguard_cmd(int argc, char *argv[], unsigned int command)
 	struct jailhouse_memguard *mg;
 	int err, fd;
 
-	if (argc != 5)
+	if (argc != 6)
 		help(argv[0], 1);
 
 	mg = malloc(sizeof(struct jailhouse_memguard));
@@ -532,6 +532,7 @@ static int memguard_cmd(int argc, char *argv[], unsigned int command)
 	mg->cpu = (unsigned int)strtoul(argv[2], NULL, 0);
 	mg->params.budget_time = strtoul(argv[3], NULL, 0);
 	mg->params.budget_memory = strtoul(argv[4], NULL, 0);
+	mg->params.event_type = strtoul(argv[5], NULL, 0);
 	/* Ignore mg->params.flags */
 	mg->params.flags = 0;
 

@@ -25,6 +25,8 @@ struct memguard_params {
 	unsigned long long budget_time;
 	/** Memory budget (number of cache misses / equivalent PMU info) */
 	unsigned int budget_memory;
+	/** ARMv8 PMUv3 event type to be used for memory budget */
+	unsigned int event_type;
 	/** Flags: ignored and currently always set to periodic enforcing */
 	unsigned int flags;
 };
