@@ -785,8 +785,22 @@ int jailhouse_cmd_memguard(struct jailhouse_memguard __user *arg)
 		goto out_unlock;
 	}
 
-	err = smp_call_on_cpu(mg->cpu, memguard_call_one_cpu, &mg->params,
-			true);
+	err = 0;
+	if (mg->cpu == -1) {
+		/* process all online CPUs:
+		 * implicitly, all CPUs visible by this cell.
+		 */
+		unsigned int i;
+		for_each_online_cpu(i) {
+			pr_info("[MG] Setup CPU %u\n", i);
+			mg->cpu = i;
+			err = smp_call_on_cpu(mg->cpu, memguard_call_one_cpu,
+					      &mg->params, true);
+		}
+	} else {
+		err = smp_call_on_cpu(mg->cpu, memguard_call_one_cpu,
+				      &mg->params, true);
+	}
 	if (err) {
 		pr_err("Jailhouse: unable to set memguard parameters "
 				"for cpu %u\n", mg->cpu);
