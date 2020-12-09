@@ -85,8 +85,13 @@ int arch_cpu_init(struct per_cpu *cpu_data)
 	arm_write_sysreg(HCR_EL2, hcr);
 
 	/* Conditionally switch to hardened vectors */
-	if (this_cpu_data()->smccc_feat_workaround_1 >= ARM_SMCCC_SUCCESS)
-		arm_write_sysreg(vbar_el2, &hyp_vectors_hardened);
+	if (this_cpu_data()->smccc_feat_workaround_1 >= ARM_SMCCC_SUCCESS) {
+		if (system_config->platform_info.no_spectre_mitigation) {
+			printk("WARN: CVE-2017-5715 mitigation available but not used\n");
+		} else {
+			arm_write_sysreg(vbar_el2, &hyp_vectors_hardened);
+		}
+	}
 
 	return 0;
 }
