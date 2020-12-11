@@ -133,6 +133,21 @@ static inline bool irq_is_pmu(u32 irqno)
 	return false;
 }
 
+/** Re-enable the PMU interrupts on this CPU on restart.
+ *  NOTE: Unused helper function: currently neither JH nor linux
+ *  touch the SPIs, and they're not de-activated across CPU resets.
+ */
+static inline void pmu_cpu_reset(void)
+{
+	const struct jailhouse_memguard_config *mconf;
+	u32 irq;
+
+	mconf = &system_config->platform_info.memguard;
+	irq = mconf->pmu_cpu_irq[this_cpu_id()];
+	gicv2_enable_irq(irq);
+}
+
+
 /* ----------------------- FUNCTION DECLARATION ---------------------------- */
 /** Init and shutdown */
 extern void pmu_cpu_init(void);

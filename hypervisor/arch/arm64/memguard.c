@@ -25,6 +25,31 @@
 #include <asm/memguard.h>
 #include <asm/gic_v2.h>
 #include <asm/timer.h>
+#include <asm/pmu_events.h>
+#include <asm/pmu.h>
+
+#define MG_BLOCK	0x1
+#define MG_BLOCKED	0x2
+#define MG_UNBLOCK	0x4
+#define MG_RESET	0x8
+
+//#define MG_VERBOSE_DEBUG
+
+/*
+ * Protocol to interact with the pmu/timer:
+ * - here only do enable/disable
+ * - masking / unmasking and IRQ setup done by pmu, timer subsystems
+ *   as part of the init/deinit phases.
+ */
+
+/* Memguard PMU Counter. We currently use only one counter, this is equivalent
+ * to the pmu_first_cnt in pmu.c.
+ * TODO: (needed?) extend to use more PMU counters at once.
+ */
+static u32 memguard_pmu_cnt = 0;
+
+/* GICv2: 1024 = 1020 max + 3 special */
+static u8 old_p[1024] = {0};
 
 #ifdef CONFIG_DEBUG
 static inline void memguard_print_priorities(void)
@@ -54,8 +79,40 @@ static inline void memguard_dump_timer_regs(void)
 }
 #endif
 
-/* GICv2: 1024 = 1020 max + 3 special */
-static u8 old_p[1024] = {0};
+static void memguard_isr_debug_print(const char* name)
+{
+#if 0
+	static u32 print_cnt[4] = {0, 0, 0, 0};
+	static u32 count = 0;
+
+	u64 now = timer_get_ticks();
+	u32 pmu_cnt = pmu_get_val(memguard_pmu_cnt);
+
+	if (count++ % 1000000) {
+		printk("[%u, %u] _isr_%s p: %u t: %llu\n",
+				this_cpu_id(),
+				++print_cnt[this_cpu_id()],
+				name,
+				pmu_cnt,
+				now);
+	}
+#else
+	(void)name;
+#endif
+}
+
+/**
+ * Single counter, memory budget case: transform budget
+ * to generate overflow upon expiration.
+ */
+static inline void memguard_set_pmu_budget(u32 budget)
+{
+	/* UINT32_MAX */
+	u32 val = 0xffffffff;
+	val -= budget;
+
+	pmu_set_val(memguard_pmu_cnt, val);
+}
 
 /**
  * Give max priority to the memguard timer interrupt, max + step to the PMU
@@ -131,23 +188,21 @@ static void memguard_cpu_init_prio(void)
 static void memguard_cpu_restore_prio(void)
 {
 	const struct jailhouse_memguard_config *mconf;
-	static volatile bool once = true;
+	static bool once = true;
 	unsigned int i;
 
 	for (i = 0; i < 32; i++) {
 		gicv2_set_prio(i, old_p[i]);
 	}
 
-	// FIXME: CPUs are synchronized on shutdown_lock in hypervisor_disable
-	// before returning from HVC. Here we're on the cleanup before
-	// returning to EL1. No synchronization. This should be atomic.
-	if (once) {
-		once = false;
-		mconf = &system_config->platform_info.memguard;
+	if (atomic_cas(&once, true, false) != true) {
+		return;
+	}
 
-		for (i = 32; i < mconf->num_irqs; i++) {
-			gicv2_set_prio(i, old_p[i]);
-		}
+	assert(once == false);
+	mconf = &system_config->platform_info.memguard;
+	for (i = 32; i < mconf->num_irqs; i++) {
+		gicv2_set_prio(i, old_p[i]);
 	}
 }
 
@@ -156,35 +211,108 @@ static void memguard_cpu_restore_prio(void)
  */
 bool memguard_isr_timer(void)
 {
-	volatile struct memguard *memguard = &this_cpu_public()->memguard;
-	//u32 cntval = memguard_pmu_count();
-	u32 cntval = 0;
-#ifdef CONFIG_DEBUG
-	u64 timval = timer_get_ticks();
+	struct memguard *memguard = &this_cpu_public()->memguard;
 
-	static u32 print_cnt = 0;
-	if (print_cnt < 50) {
-		printk("[%u, %u] _isr_tim p: %u t: %llu\n",
-				this_cpu_id(),
-				++print_cnt,
-				cntval,
-				timval);
-		//memguard_dump_timer_regs();
+	assert(arm_is_irq_off());
+	memguard_isr_debug_print("time");
+
+	memguard->last_time += memguard->budget_time;
+	/* Recharge budget */
+	memguard_set_pmu_budget(memguard->budget_memory);
+	/* Set next regulation period expiration */
+	timer_set_cmpval(memguard->last_time);
+
+	/* If we hit after a reset, remove the sticky reset flag */
+#ifdef MG_VERBOSE_DEBUG
+	if (memguard->block & MG_RESET) {
+		printk("%uR\n", this_cpu_id());
 	}
 #endif
-	memguard->last_time += memguard->budget_time;
-	memguard->pmu_evt_cnt += memguard->budget_memory + 1 + cntval;
-	timer_set_cmpval(memguard->last_time);
-	//memguard_pmu_set_budget(memguard->budget_memory);
-	ACCESS_ONCE(memguard->must_block) = 0;
+	memguard->block &= ~MG_RESET;
+	/* Disable blocking */
+	memguard->block |= MG_UNBLOCK;
 
 	return true;
 }
 
+/**
+ * Memguard PMU interrupt: trigger asynchronous blocking for this CPU
+ */
+bool memguard_isr_pmu(void)
+{
+	struct memguard *memguard = &this_cpu_public()->memguard;
+
+	/* NOTE: both IRQ and FIQ are off here */
+	assert(arm_is_irq_off());
+	memguard_isr_debug_print("pmu");
+
+	/* clear overflow, let the counter run */
+	pmu_clear_overflow(memguard_pmu_cnt);
+	/* Lazily signal that the CPU should block.
+	 * Will be shortly enacted in the same IRQ-off block.
+	 */
+	memguard->block |= MG_BLOCK;
+
+	return true;
+}
+
+void memguard_cpu_block(void)
+{
+	/* block is volatile and never set cross-CPU */
+	struct memguard *memguard = &this_cpu_public()->memguard;
+	unsigned long spsr, elr;
+#ifdef MG_VERBOSE_DEBUG
+	bool once = true;
+#endif
+
+	/* Not blocked, or already blocked */
+	if (!(memguard->block & MG_BLOCK)) {
+		return;
+	}
+
+	/* Must block till next regulation period or memguard reset */
+	memguard->block |= MG_BLOCKED;
+	memguard->block &= ~(MG_BLOCK | MG_UNBLOCK);
+
+
+	/* NOTE: IRQs may not be immediately enabled, but irq_on and
+	 * the wfe should take place "in-order", so we will eventually
+	 * see the interrupt before disabling it again.
+	 * If block has changed in the meanwhile, we could have
+	 * as well kept irq off the whole time.
+	 */
+	while (!(memguard->block & (MG_UNBLOCK | MG_RESET))) {
+#ifdef MG_VERBOSE_DEBUG
+		if (once) {
+			printk("%uB\n", this_cpu_id());
+			once = false;
+		}
+#endif
+		// XXX: bad emulation of an EL2 irq handler ...
+		// not applied all over the places...
+		arm_read_sysreg(ELR_EL2, elr);
+		arm_read_sysreg(SPSR_EL2, spsr);
+		asm volatile(
+			"msr daifclr, #0x2\n\t"
+			"isb\n\t"
+			"yield\n\t"
+			"msr daifset, #0x2\n\t"
+			: : : "memory");
+		arm_write_sysreg(ELR_EL2, elr);
+		arm_write_sysreg(SPSR_EL2, spsr);
+	}
+
+	memguard->block &= ~(MG_BLOCKED | MG_UNBLOCK);
+#ifdef MG_VERBOSE_DEBUG
+	once = true;
+#endif
+}
+
 int memguard_init(void)
 {
-	int err;
 	u32 irq = system_config->platform_info.memguard.hv_timer;
+	u32 num_cnt;
+	int err;
 
 	/* register both irq line and interrupt handler */
 	err = timer_register(irq, memguard_isr_timer);
@@ -192,23 +320,45 @@ int memguard_init(void)
 		return err;
 
 	memguard_init_prio();
+
+	/* Currently register one single counter */
+	num_cnt = 1;
+	memguard_pmu_cnt = pmu_register(num_cnt, memguard_isr_pmu);
+
+	mg_print("Using PMU counter: %u\n", memguard_pmu_cnt);
+
 	return err;
 }
 
 void memguard_cpu_init(void)
 {
+	memset(&this_cpu_public()->memguard, 0, sizeof(struct memguard));
+
 	memguard_cpu_init_prio();
 	timer_cpu_init();
-	// INIT PMU
+	pmu_cpu_init();
 }
 
 void memguard_cpu_shutdown(void)
 {
-	mg_print("(CPU %u) Shutdown\n", this_cpu_id());
-
 	timer_cpu_shutdown();
+	pmu_cpu_shutdown();
 	memguard_cpu_restore_prio();
-	// shutdown pmu
+}
+
+/**
+ * Re-activate memguard interrupts since jailhouse disables them
+ * when "resetting" a CPU upon cell operations (add/remove/restart)
+ */
+void memguard_cpu_reset(void)
+{
+	struct memguard *memguard = &this_cpu_public()->memguard;
+	memguard->block |= MG_RESET;
+
+	/* Jailhouse and Linux only play with SGI and PPIs. SPIs are
+	 * untouched, and we don't need to expliclty restart the PMU
+	 */
+	timer_cpu_reset();
 }
 
 /** Setup budget time + memory for this CPU. */
@@ -218,6 +368,9 @@ int memguard_set(struct memguard *memguard, unsigned long params_address)
 	unsigned int params_pages;
 	void *params_mapping;
 	struct memguard_params *params;
+	unsigned int event_type;
+
+	assert(arm_is_irq_off());
 
 	params_pages = PAGES(params_page_offs + sizeof(struct memguard_params));
 	params_mapping = paging_get_guest_pages(NULL, params_address,
@@ -230,24 +383,34 @@ int memguard_set(struct memguard *memguard, unsigned long params_address)
 
 	memguard->start_time = timer_get_ticks();
 	memguard->last_time = memguard->start_time;
-	memguard->pmu_evt_cnt = 0;
 
 	memguard->budget_time = timer_us_to_ticks(params->budget_time);
 	memguard->budget_memory = params->budget_memory;
-	/* Ignore flags */
-	memguard->flags = 0;
-	/* FIXME: there's actually a race between updating a new budget
-	 * and a previous budget for this CPU which expires. For the
-	 * timer it doesn't matter because we unblock upon expiration,
-	 * for the memory, it is more complex.
+	event_type = params->event_type;
+	if (event_type == 0) {
+		/* Use default event type */
+		event_type = PMUV3_PERFCTR_L2D_CACHE_REFILL;
+	}
+
+	/* NOTE: this function is called on each affected CPU.
+	 * Serialization via IRQ off. Reset the overflow indicator anyway.
 	 */
-	memguard->must_block = false;
+	memguard->block = MG_RESET;
+	pmu_disable(memguard_pmu_cnt);
+	pmu_clear_overflow(memguard_pmu_cnt);
+
+	/* Init timer and PMU budgets. Here also set the pmu type */
+	pmu_set_type(memguard_pmu_cnt, event_type);
 	timer_set_cmpval(memguard->last_time + memguard->budget_time);
+	memguard_set_pmu_budget(memguard->budget_memory);
+
+	/* Enable timer and PMU */
+	pmu_enable(memguard_pmu_cnt);
 	timer_enable();
 
-	mg_print("(CPU %d) mg_set %llu %u %x\n", this_cpu_id(),
+	mg_print("(CPU %d) mg_set %llu %u (0x%x) [freq: %ld]\n", this_cpu_id(),
 		 memguard->budget_time, memguard->budget_memory,
-		 memguard->flags);
+		 event_type, timer_get_frequency());
 
 	return 0;
 }

@@ -20,6 +20,7 @@
 #include <asm/psci.h>
 #include <asm/smc.h>
 #include <asm/smccc.h>
+#include <asm/memguard.h>
 #include <asm/timer.h>
 #include <asm/pmu.h>
 

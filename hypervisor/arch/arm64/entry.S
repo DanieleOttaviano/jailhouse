@@ -400,7 +400,7 @@ hyp_vectors:
 	ventry	.
 
 	handle_vmexit arch_el2_abt
-	ventry	.
+	handle_vmexit irqchip_handle_irq
 	ventry	.
 	ventry	.
 

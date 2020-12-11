@@ -95,6 +95,8 @@ static void gicv2_cpu_reset(struct per_cpu *cpu_data)
 	mmio_write32(gicd_base + GICD_ICACTIVER, 0xffff0000);
 
 	mmio_write32(gich_base + GICH_VMCR, 0);
+
+	memguard_cpu_reset();
 }
 
 static int gicv2_cpu_init(struct per_cpu *cpu_data)

@@ -16,13 +16,16 @@
 #define _ARM64_TIMER_H
 
 #include <jailhouse/types.h>
+#include <jailhouse/assert.h>
 #include <asm/processor.h>
 #include <asm/sysregs.h>
+#include <asm/gic_v2.h>
 
 #define CNTHP_CTL_EL2_ENABLE	(1<<0)
 #define CNTHP_CTL_EL2_IMASK	(1<<1)
 
 extern bool timer_isr_handler(void);
+extern unsigned int hv_timer_irq;
 
 static inline unsigned long timer_get_frequency(void)
 {
@@ -86,6 +89,15 @@ static inline void timer_disable(void)
 	arm_read_sysreg(CNTHP_CTL_EL2, reg);
 	reg &= ~CNTHP_CTL_EL2_ENABLE;
 	arm_write_sysreg(CNTHP_CTL_EL2, reg);
+}
+
+/** Re-enable hv_timer upon reset. Don't reset its value. */
+static inline void timer_cpu_reset(void)
+{
+	/* Upon reset (create / destroy cells) JH disables all PPI
+	 * except the maintenance IRQ, we re-enable the hv_timer
+	 */
+	gicv2_enable_irq(hv_timer_irq);
 }
 
 /* -------------------------- FUNCTION DECLARATION ------------------------- */

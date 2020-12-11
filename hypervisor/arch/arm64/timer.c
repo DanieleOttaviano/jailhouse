@@ -29,7 +29,7 @@
  * 	ensure timer interrupt is PPI (16 - 31)
  * 	enable delivery of timer interrupt to CPU at init
  *
- * Timer management:
+ * Timer (CNTHP_CTL_EL2) management:
  * 	only install one timer interrupt handler
  * 	programming and unmasking on all CPUs
  */
@@ -37,7 +37,7 @@
 /* Private timer ISR handler */
 static bool (*_timer_isr_handler)(void) = NULL;
 /* Timer interrupt */
-static unsigned int hv_timer_irq = 0;
+unsigned int hv_timer_irq = 0;
 
 static unsigned long emul_division(u64 val, u64 div)
 {
@@ -94,6 +94,7 @@ void timer_cpu_shutdown(void)
 	gicv2_disable_irq(hv_timer_irq);
 }
 
+/** Initialize the CNTHP_CTL_EL2 timer */
 void timer_cpu_init(void)
 {
 	/* Approx 200 years from 0: UINT64_MAX */

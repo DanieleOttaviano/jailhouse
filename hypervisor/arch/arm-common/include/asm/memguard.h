@@ -18,6 +18,7 @@
 #ifndef _JAILHOUSE_MEMGUARD
 
 #if defined(__aarch64__)
+
 /*
  * TODO: memguard generic implementation as a unit, without strong integration
  * in the gicv2. init and shutdown functions could then be moved in the
@@ -29,9 +30,17 @@ extern int memguard_init(void);
 extern void memguard_cpu_init(void);
 /** Mask and disable timer, deregister handler, disable hv_timer IRQ */
 extern void memguard_cpu_shutdown(void);
+extern void memguard_cpu_reset(void);
 
+/** ISR for timer and PMU irq events */
 extern bool memguard_isr_timer(void);
+extern bool memguard_isr_pmu(void);
+
+/** Block CPU if needed */
+extern void memguard_cpu_block(void);
+
 #else
+
 /* ARMv7 stubs */
 static inline int memguard_init(void)
 {
@@ -48,9 +57,14 @@ static inline void memguard_cpu_shutdown(void)
 	return;
 }
 
-static inline bool memguard_isr_timer(void)
+static inline void memguard_cpu_reset(void)
 {
-	return true;
+	return;
+}
+
+static inline void memguard_cpu_block(void)
+{
+	return;
 }
 #endif
 

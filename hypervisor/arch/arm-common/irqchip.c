@@ -23,6 +23,8 @@
 #include <asm/gic.h>
 #include <asm/irqchip.h>
 #include <asm/smccc.h>
+#include <asm/sysregs.h>
+#include <asm/memguard.h>
 
 #define for_each_irqchip(chip, config, counter)				\
 	for ((chip) = jailhouse_cell_irqchips(config), (counter) = 0;	\
@@ -205,6 +207,9 @@ void irqchip_handle_irq(void)
 		 * interrupt that needs handling in the guest (e.g. timer)
 		 */
 		irqchip.eoi_irq(irq_id, handled);
+
+		/* check possible memguard blocking */
+		memguard_cpu_block();
 	}
 }
 
@@ -414,6 +419,11 @@ void irqchip_cpu_shutdown(struct public_per_cpu *cpu_public)
 static int irqchip_cell_init(struct cell *cell)
 {
 	unsigned int mnt_irq = system_config->platform_info.arm.maintenance_irq;
+	/* NOTE: either static init to 0 or with appropriate value.
+	 * 0 is also the value of SGI_INJECT, so we don't remove more
+	 * irqs than those we need to.
+	 */
+	unsigned int hv_timer = system_config->platform_info.memguard.hv_timer;
 	const struct jailhouse_irqchip *chip;
 	unsigned int n, pos;
 	int err;
@@ -435,7 +445,7 @@ static int irqchip_cell_init(struct cell *cell)
 	 * the hypervisor.
 	 */
 	cell->arch.irq_bitmap[0] = ~((1 << SGI_INJECT) | (1 << SGI_EVENT) |
-				     (1 << mnt_irq));
+				     (1 << mnt_irq) | (1 << hv_timer));
 
 	err = irqchip.cell_init(cell);
 	if (err)

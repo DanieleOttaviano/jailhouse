@@ -22,13 +22,14 @@
 
 /** Per-CPU memguard parameter structure */
 struct memguard {
+	/** Period-related parameters and time budget */
 	u64 start_time;
 	u64 last_time;
-	u64 pmu_evt_cnt;
 	u64 budget_time;
+	/** Memory budget */
 	u32 budget_memory;
-	u32 flags;
-	bool must_block;
+	/** Blocking state machine */
+	volatile u32 block;
 };
 
 #endif
