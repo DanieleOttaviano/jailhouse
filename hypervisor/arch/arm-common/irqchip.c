@@ -19,6 +19,7 @@
 #include <jailhouse/printk.h>
 #include <jailhouse/string.h>
 #include <jailhouse/unit.h>
+#include <jailhouse/assert.h>
 #include <asm/control.h>
 #include <asm/gic.h>
 #include <asm/irqchip.h>
@@ -370,6 +371,8 @@ u64 irqchip_get_cluster_target(unsigned int cpu_id)
 
 void irqchip_cpu_reset(struct per_cpu *cpu_data)
 {
+	assert(cpu_data == this_cpu_data());
+
 	cpu_data->public.pending_irqs.head = 0;
 	cpu_data->public.pending_irqs.tail = 0;
 

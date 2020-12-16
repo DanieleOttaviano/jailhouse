@@ -28,11 +28,6 @@
 #include <asm/pmu_events.h>
 #include <asm/pmu.h>
 
-#define MG_BLOCK	0x1
-#define MG_BLOCKED	0x2
-#define MG_UNBLOCK	0x4
-#define MG_RESET	0x8
-
 //#define MG_VERBOSE_DEBUG
 
 /*
@@ -227,6 +222,10 @@ bool memguard_isr_timer(void)
 	if (memguard->block & MG_RESET) {
 		printk("%uR\n", this_cpu_id());
 	}
+
+	if (memguard->block & MG_BLOCKED) {
+		printk("%uU\n", this_cpu_id());
+	}
 #endif
 	memguard->block &= ~MG_RESET;
 	/* Disable blocking */
@@ -302,10 +301,15 @@ void memguard_cpu_block(void)
 		arm_write_sysreg(SPSR_EL2, spsr);
 	}
 
-	memguard->block &= ~(MG_BLOCKED | MG_UNBLOCK);
 #ifdef MG_VERBOSE_DEBUG
+	if (!once) {
+		if (memguard->block & MG_RESET) {
+			printk("%ur\n", this_cpu_id());
+		}
+	}
 	once = true;
 #endif
+	memguard->block &= ~(MG_BLOCKED | MG_UNBLOCK);
 }
 
 int memguard_init(void)
@@ -395,7 +399,7 @@ int memguard_set(struct memguard *memguard, unsigned long params_address)
 	/* NOTE: this function is called on each affected CPU.
 	 * Serialization via IRQ off. Reset the overflow indicator anyway.
 	 */
-	memguard->block = MG_RESET;
+	memguard->block = 0;
 	pmu_disable(memguard_pmu_cnt);
 	pmu_clear_overflow(memguard_pmu_cnt);
 

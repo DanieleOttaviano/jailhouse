@@ -103,6 +103,7 @@ static void suspend_cpu(unsigned int cpu_id)
 	spin_lock(&target_data->control_lock);
 
 	target_data->suspend_cpu = true;
+	target_data->suspend_cpu_retry = false;
 	target_suspended = target_data->cpu_suspended;
 
 	/*
@@ -120,8 +121,19 @@ static void suspend_cpu(unsigned int cpu_id)
 		 */
 		arch_send_event(target_data);
 
-		while (!target_data->cpu_suspended)
+		while (!target_data->cpu_suspended) {
+			/* CPU suspended is never set if retry is set instead */
+			if (target_data->suspend_cpu_retry) {
+				spin_lock(&target_data->control_lock);
+				target_data->suspend_cpu_retry = false;
+				spin_unlock(&target_data->control_lock);
+
+				/* send again */
+				arch_send_event(target_data);
+			}
+			/* May help QEMU */
 			cpu_relax();
+		}
 	}
 }
 

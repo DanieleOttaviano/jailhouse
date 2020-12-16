@@ -55,6 +55,8 @@ struct public_per_cpu {
 
 	/** Set to true for instructing the CPU to suspend. */
 	volatile bool suspend_cpu;
+	/** Set to true if the CPU was hit in the wrong moment for suspension */
+	volatile bool suspend_cpu_retry;
 	/** True if CPU is suspended. */
 	volatile bool cpu_suspended;
 	/** Set to true for a pending TLB flush for the paging layer that does

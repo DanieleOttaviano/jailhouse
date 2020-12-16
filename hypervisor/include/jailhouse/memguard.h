@@ -21,6 +21,11 @@
 #include <jailhouse/memguard-data.h>
 #include <jailhouse/printk.h>
 
+#define MG_BLOCK	0x1
+#define MG_BLOCKED	0x2
+#define MG_UNBLOCK	0x4
+#define MG_RESET	0x8
+
 #ifdef CONFIG_DEBUG
 #define mg_print(fmt, ...)			\
 	printk("[MG] " fmt, ##__VA_ARGS__)

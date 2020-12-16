@@ -15,6 +15,7 @@
 #include <jailhouse/control.h>
 #include <jailhouse/printk.h>
 #include <jailhouse/panic.h>
+#include <jailhouse/memguard.h>
 #include <asm/control.h>
 #include <asm/iommu.h>
 #include <asm/psci.h>
@@ -71,6 +72,16 @@ static void check_events(struct public_per_cpu *cpu_public)
 	bool reset = false;
 
 	spin_lock(&cpu_public->control_lock);
+
+	if ((cpu_public->suspend_cpu) &&
+	    (cpu_public->memguard.block & MG_BLOCKED)) {
+		/* Memguard: CPU hit in non correct EL state, retry again */
+		cpu_public->memguard.block |= MG_RESET;
+		cpu_public->suspend_cpu_retry = true;
+
+		spin_unlock(&cpu_public->control_lock);
+		return;
+	}
 
 	while (cpu_public->suspend_cpu) {
 		cpu_public->cpu_suspended = true;
