@@ -293,8 +293,7 @@ void memguard_cpu_block(void)
 		arm_read_sysreg(SPSR_EL2, spsr);
 		asm volatile(
 			"msr daifclr, #0x2\n\t"
-			"isb\n\t"
-			"yield\n\t"
+			"wfe\n\t"
 			"msr daifset, #0x2\n\t"
 			: : : "memory");
 		arm_write_sysreg(ELR_EL2, elr);
