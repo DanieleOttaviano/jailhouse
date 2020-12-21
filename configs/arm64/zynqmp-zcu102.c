@@ -13,17 +13,19 @@
  *
  * Reservation via device tree: 0x800000000..0x83fffffff
  */
-
 #include <jailhouse/types.h>
 #include <jailhouse/cell-config.h>
+#include <asm/qos-400.h>
+#include <zynqmp-qos-config.h>
 
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[13];
+	struct jailhouse_memory mem_regions[24];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
+	struct jailhouse_qos_device qos_devices[35];
 } __attribute__((packed)) config = {
 	.header = {
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
@@ -44,6 +46,7 @@ struct {
 		.platform_info = {
 			.pci_mmconfig_base = 0xfc000000,
 			.pci_mmconfig_end_bus = 0,
+
 			.pci_is_virtual = 1,
 			.pci_domain = -1,
 			.color = {
@@ -84,6 +87,11 @@ struct {
 					175, 176, 177, 178,
 				},
 			},
+			.qos = {
+				.nic_base = 0xfd700000,
+				/* 1MiB Aperture */
+				.nic_size = 0x100000,
+			},
 		},
 		.root_cell = {
 			.name = "ZynqMP-ZCU102",
@@ -93,6 +101,7 @@ struct {
 			.num_irqchips = ARRAY_SIZE(config.irqchips),
 			.num_pci_devices = ARRAY_SIZE(config.pci_devices),
 			.num_stream_ids = ARRAY_SIZE(config.stream_ids),
+			.num_qos_devices = ARRAY_SIZE(config.qos_devices),
 
 			.vpci_irq_base = 136-32,
 		},
@@ -189,6 +198,114 @@ struct {
 		{
 			.mmu500.id = 0x870,
 			.mmu500.mask_out = 0xf,
+		},
+	},
+
+	.qos_devices = {
+		{
+			.name = "rpu0",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_RPU0_BASE,
+		},
+
+		{
+			.name = "rpu1",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_RPU1_BASE,
+		},
+
+		{
+			.name = "adma",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_ADMA_BASE,
+		},
+
+		{
+			.name = "afifm0",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM0_BASE,
+		},
+		{
+			.name = "afifm1",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM1_BASE,
+		},
+
+		{
+			.name = "afifm2",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM2_BASE,
+		},
+
+		{
+			.name = "smmutbu5",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INITFPDSMMUTBU5_BASE,
+		},
+
+		{
+			.name = "dp",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_DP_BASE,
+		},
+
+		{
+			.name = "afifm3",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM3_BASE,
+		},
+
+		{
+			.name = "afifm4",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM4_BASE,
+		},
+
+		{
+			.name = "afifm5",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM5_BASE,
+		},
+
+		{
+			.name = "gpu",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_GPU_BASE,
+		},
+
+		{
+			.name = "pcie",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_PCIE_BASE,
+		},
+
+		{
+			.name = "gdma",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_GDMA_BASE,
+		},
+
+		{
+			.name = "sata",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_SATA_BASE,
+		},
+
+		{
+			.name = "coresight",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_CORESIGHT_BASE,
+		},
+
+		{
+			.name = "issib2",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = ISS_IB2_BASE,
+		},
+		{
+			.name = "issib6",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = ISS_IB6_BASE,
 		},
 	},
 };
