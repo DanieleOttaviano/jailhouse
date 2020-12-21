@@ -23,6 +23,10 @@
 #include <asm/control.h>
 #include <asm/spinlock.h>
 #include <asm/coloring.h>
+#ifdef __aarch64__
+/* QoS Support only provided on arm64 */
+#include <asm/qos.h>
+#endif
 
 enum msg_type {MSG_REQUEST, MSG_INFORMATION};
 enum failure_mode {ABORT_ON_ERROR, WARN_ON_ERROR};
@@ -1022,6 +1026,11 @@ long hypercall(unsigned long code, unsigned long arg1, unsigned long arg2)
 		return 0;
 	case JAILHOUSE_HC_MEMGUARD_SET:
 		return memguard_set(&cpu_data->public.memguard, arg1);
+#ifdef __aarch64__
+	/* QoS only available on arm64 */
+	case JAILHOUSE_HC_QOS:
+		return qos_call(arg1, arg2);
+#endif
 	default:
 		return -ENOSYS;
 	}

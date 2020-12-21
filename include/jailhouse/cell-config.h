@@ -41,6 +41,7 @@
 
 #include <jailhouse/console.h>
 #include <jailhouse/pci_defs.h>
+#include <jailhouse/qos-common.h>
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
@@ -107,6 +108,7 @@ struct jailhouse_cell_desc {
 	__u32 num_pci_devices;
 	__u32 num_pci_caps;
 	__u32 num_stream_ids;
+	__u32 num_qos_devices;
 
 	__u32 vpci_irq_base;
 
@@ -370,6 +372,18 @@ struct jailhouse_memguard_config {
 	__u32 pmu_cpu_irq[JAILHOUSE_MAX_PMU2CPU_IRQ];
 } __attribute__((packed));
 
+struct jailhouse_qos {
+	__u64 nic_base;
+	__u64 nic_size;
+} __attribute__((packed));
+
+struct jailhouse_qos_device {
+	char name [QOS_DEV_NAMELEN];
+	__u8 flags;
+	__u32 base;
+} __attribute__((packed));
+
+
 /**
  * General descriptor of the system.
  */
@@ -393,6 +407,7 @@ struct jailhouse_system {
 		struct jailhouse_iommu iommu_units[JAILHOUSE_MAX_IOMMU_UNITS];
 		struct jailhouse_coloring color;
 		struct jailhouse_memguard_config memguard;
+		struct jailhouse_qos qos;
 		union {
 			struct {
 				__u16 pm_timer_address;
@@ -428,7 +443,8 @@ jailhouse_cell_config_size(struct jailhouse_cell_desc *cell)
 		cell->num_pio_regions * sizeof(struct jailhouse_pio) +
 		cell->num_pci_devices * sizeof(struct jailhouse_pci_device) +
 		cell->num_pci_caps * sizeof(struct jailhouse_pci_capability) +
-		cell->num_stream_ids * sizeof(__u32);
+		cell->num_stream_ids * sizeof(__u32) +
+		cell->num_qos_devices * sizeof(struct jailhouse_qos_device);
 }
 
 static inline __u32
@@ -498,6 +514,14 @@ jailhouse_cell_stream_ids(const struct jailhouse_cell_desc *cell)
 	return (const union jailhouse_stream_id *)
 		((void *)jailhouse_cell_pci_caps(cell) +
 		cell->num_pci_caps * sizeof(struct jailhouse_pci_capability));
+}
+
+static inline const struct jailhouse_qos_device *
+jailhouse_cell_qos_devices(const struct jailhouse_cell_desc *cell)
+{
+	return (const struct jailhouse_qos_device *)
+		((void *)jailhouse_cell_stream_ids(cell) +
+		 cell->num_stream_ids * sizeof(union jailhouse_stream_id));
 }
 
 #endif /* !_JAILHOUSE_CELL_CONFIG_H */
