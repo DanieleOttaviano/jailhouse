@@ -51,6 +51,7 @@
 #define JAILHOUSE_HC_CPU_GET_INFO		7
 #define JAILHOUSE_HC_DEBUG_CONSOLE_PUTC		8
 #define JAILHOUSE_HC_MEMGUARD_SET		9
+#define JAILHOUSE_HC_QOS			10
 
 /* Hypervisor information type */
 #define JAILHOUSE_INFO_MEM_POOL_SIZE		0
