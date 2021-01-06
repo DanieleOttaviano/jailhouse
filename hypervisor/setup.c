@@ -175,18 +175,18 @@ static void init_late(void)
 		return;
 	}
 
-	for_each_unit(unit) {
-		printk("Initializing unit: %s\n", unit->name);
-		error = unit->init();
-		if (error)
-			return;
-	}
-
 	for_each_mem_region(mem, root_cell.config, n) {
 		if (JAILHOUSE_MEMORY_IS_SUBPAGE(mem))
 			error = mmio_subpage_register(&root_cell, mem);
 		else
 			error = arch_map_memory_region(&root_cell, mem);
+		if (error)
+			return;
+	}
+
+	for_each_unit(unit) {
+		printk("Initializing unit: %s\n", unit->name);
+		error = unit->init();
 		if (error)
 			return;
 	}
