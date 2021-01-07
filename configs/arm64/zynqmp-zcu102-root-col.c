@@ -1,26 +1,29 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for Xilinx ZynqMP ZCU102 eval board
+ * Configuration for Xilinx ZynqMP ZCU102 eval board Colored Root cell.
  *
- * Copyright (c) Siemens AG, 2016
+ * Copyright (C) Boston University, MA, USA, 2020
+ * Copyright (C) University of Illinois at Urbana-Champaign, IL, USA, 2020
+ * Copyright (C) Technical University of Munich, 2020 - 2021
  *
  * Authors:
- *  Jan Kiszka <jan.kiszka@siemens.com>
+ *  Renato Mancuso <rmancuso@bu.edu>
+ *  Rohan Tabish <rtabish@illinois.com;rohantabish@gmail.com>
+ *  Andrea Bastoni <andrea.bastoni@tum.de>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  *
- * Reservation via device tree: 0x800000000..0x83fffffff
+ * Reserve memory with mem=512M
  */
-
 #include <jailhouse/types.h>
 #include <jailhouse/cell-config.h>
 
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[13];
+	struct jailhouse_memory mem_regions[24];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
@@ -28,7 +31,6 @@ struct {
 	.header = {
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
-		.architecture = JAILHOUSE_ARM64,
 		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,
 		.hypervisor_memory = {
 			.phys_start = 0x7f000000,
@@ -44,6 +46,7 @@ struct {
 		.platform_info = {
 			.pci_mmconfig_base = 0xfc000000,
 			.pci_mmconfig_end_bus = 0,
+
 			.pci_is_virtual = 1,
 			.pci_domain = -1,
 			.color = {
@@ -66,6 +69,7 @@ struct {
 				.maintenance_irq = 25,
 			},
 		},
+
 		.root_cell = {
 			.name = "ZynqMP-ZCU102",
 
@@ -88,26 +92,27 @@ struct {
 		JAILHOUSE_SHMEM_NET_REGIONS(0x060000000, 0),
 		/* IVSHMEM shared memory region for 0001:00:01.0 */
 		JAILHOUSE_SHMEM_NET_REGIONS(0x060100000, 0),
-		/* MMIO low (permissive) */ {
+		/* DSB */ {
+			.phys_start = 0x7d000000,
+			.virt_start = 0x7d000000,
+			.size =	      0x01000000,
+			.flags = JAILHOUSE_MEM_READ,
+		},
+		/* MMIO (permissive) */ {
 			.phys_start = 0xfd000000,
 			.virt_start = 0xfd000000,
-			.size =	      0x00800000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_IO,
-		},
-		/* MMIO high (permissive) */ {
-			.phys_start = 0xfd820000,
-			.virt_start = 0xfd820000,
-			.size =	      0x027e0000,
+			.size =	      0x03000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
 		},
 		/* RAM */ {
 			.phys_start = 0x0,
 			.virt_start = 0x0,
-			.size = 0x7f000000,
+			// Limit size to 512 M
+			.size = 0x20000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_EXECUTE,
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_COLORED,
+			.colors=0x0fff,
 		},
 		/* RAM */ {
 			.phys_start = 0x800000000,
