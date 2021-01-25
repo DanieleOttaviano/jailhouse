@@ -33,6 +33,9 @@ void uart_write(const char *msg)
 {
 	char c;
 
+	if (uart->hyp_mode_enter)
+		uart->hyp_mode_enter(uart);
+
 	while (1) {
 		c = *msg++;
 		if (!c)
@@ -43,4 +46,7 @@ void uart_write(const char *msg)
 
 		uart_write_char(c);
 	}
+
+	if (uart->hyp_mode_leave)
+		uart->hyp_mode_leave(uart);
 }
