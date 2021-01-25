@@ -45,6 +45,10 @@
 #include <asm/apic.h>
 #endif
 
+#ifdef CONFIG_HOTPLUG_CPU_PSCI_EMULATION
+#include <asm/cpu_ops.h>
+#endif
+
 #include "cell.h"
 #include "jailhouse.h"
 #include "main.h"
@@ -618,6 +622,10 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	jailhouse_cell_register_root();
 	jailhouse_pci_virtual_root_devices_add(&config_header);
 
+#ifdef CONFIG_HOTPLUG_CPU_PSCI_EMULATION
+	jh_spin_psci_cpu_enable_ops();
+#endif
+
 	jailhouse_enabled = true;
 
 	mutex_unlock(&jailhouse_lock);
@@ -743,6 +751,9 @@ static int jailhouse_cmd_disable(void)
 	update_last_console();
 
 	jailhouse_cell_delete_root();
+#ifdef CONFIG_HOTPLUG_CPU_PSCI_EMULATION
+	jh_spin_psci_cpu_disable_ops();
+#endif
 	jailhouse_enabled = false;
 	module_put(THIS_MODULE);
 
