@@ -234,6 +234,16 @@ int color_copy_root(struct cell *root, bool init)
 			continue;
 		}
 
+		if ((mr->flags & JAILHOUSE_MEM_COLORED_NO_COPY) != 0) {
+			/* Skip copy for colored regions where no copy
+			 * is explicitely requested. This is useful if
+			 * the IPA range that corresponds to the
+			 * region is marked as reserved in the
+			 * root-cell's DTB and hence contains no
+			 * useful data. */
+			continue;
+		}
+
 		op.pg_structs = &this_cpu_data()->pg_structs;
 		op.phys = mr->phys_start;
 		op.virt = mr->virt_start;
