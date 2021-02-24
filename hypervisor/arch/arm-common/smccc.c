@@ -29,6 +29,13 @@ int smccc_discover(void)
 	cpu_data->smccc_feat_workaround_1 = ARM_SMCCC_NOT_SUPPORTED;
 	cpu_data->smccc_feat_workaround_2 = ARM_SMCCC_NOT_SUPPORTED;
 
+#if defined(CONFIG_MACH_NXP_S32)
+	/* FIXME: add proper support for SMC and PSCI into u-boot and
+	 * allow this code to run properly.
+	 */
+	return 0;
+#endif
+
 	ret = smc(PSCI_0_2_FN_VERSION);
 
 	/* We need >=PSCIv1.0 for SMCCC. Against the spec, U-Boot may also
