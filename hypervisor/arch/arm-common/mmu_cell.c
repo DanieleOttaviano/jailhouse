@@ -16,6 +16,7 @@
 #include <asm/sysregs.h>
 #include <asm/control.h>
 #include <asm/iommu.h>
+#include <asm/coloring.h>
 
 int arch_map_memory_region(struct cell *cell,
 			   const struct jailhouse_memory *mem)
@@ -46,7 +47,12 @@ int arch_map_memory_region(struct cell *cell,
 	if (err)
 		return err;
 
-	err = paging_create(&cell->arch.mm, phys_start, mem->size,
+	if (mem->flags & JAILHOUSE_MEM_COLORED)
+		err = color_paging_create(&cell->arch.mm, phys_start,
+				mem->size, mem->virt_start, access_flags,
+				paging_flags, mem->colors, mem->flags);
+	else
+		err = paging_create(&cell->arch.mm, phys_start, mem->size,
 			    mem->virt_start, access_flags, paging_flags);
 	if (err)
 		iommu_unmap_memory_region(cell, mem);
@@ -63,6 +69,11 @@ int arch_unmap_memory_region(struct cell *cell,
 	if (err)
 		return err;
 
+	if (mem->flags & JAILHOUSE_MEM_COLORED)
+		return color_paging_destroy(&cell->arch.mm,
+				mem->phys_start, mem->size, mem->virt_start,
+				PAGING_COHERENT, mem->colors, mem->flags);
+
 	return paging_destroy(&cell->arch.mm, mem->virt_start, mem->size,
 			      PAGING_COHERENT);
 }
@@ -73,9 +84,33 @@ unsigned long arch_paging_gphys2phys(unsigned long gphys, unsigned long flags)
 	return paging_virt2phys(&this_cell()->arch.mm, gphys, flags);
 }
 
+void arm_dcache_flush_memory_region(
+		unsigned long region_addr,
+		unsigned long region_size,
+		enum dcache_flush flush)
+{
+	unsigned long size;
+
+	while (region_size > 0) {
+		size = MIN(region_size,
+				NUM_TEMPORARY_PAGES * PAGE_SIZE);
+
+		/* cannot fail, mapping area is preallocated */
+		paging_create(&this_cpu_data()->pg_structs, region_addr,
+				size, TEMPORARY_MAPPING_BASE,
+				PAGE_DEFAULT_FLAGS,
+				PAGING_NON_COHERENT | PAGING_NO_HUGE);
+
+		arm_dcaches_flush((void *)TEMPORARY_MAPPING_BASE, size,
+				flush);
+
+		region_addr += size;
+		region_size -= size;
+	}
+}
+
 void arm_cell_dcaches_flush(struct cell *cell, enum dcache_flush flush)
 {
-	unsigned long region_addr, region_size, size;
 	struct jailhouse_memory const *mem;
 	unsigned int n;
 
@@ -83,24 +118,17 @@ void arm_cell_dcaches_flush(struct cell *cell, enum dcache_flush flush)
 		if (mem->flags & (JAILHOUSE_MEM_IO | JAILHOUSE_MEM_COMM_REGION))
 			continue;
 
-		region_addr = mem->phys_start;
-		region_size = mem->size;
-
-		while (region_size > 0) {
-			size = MIN(region_size,
-				   NUM_TEMPORARY_PAGES * PAGE_SIZE);
-
-			/* cannot fail, mapping area is preallocated */
-			paging_create(&this_cpu_data()->pg_structs, region_addr,
-				      size, TEMPORARY_MAPPING_BASE,
-				      PAGE_DEFAULT_FLAGS,
-				      PAGING_NON_COHERENT | PAGING_NO_HUGE);
-
-			arm_dcaches_flush((void *)TEMPORARY_MAPPING_BASE, size,
-					  flush);
-
-			region_addr += size;
-			region_size -= size;
+		if (mem->flags & JAILHOUSE_MEM_COLORED) {
+			arm_color_dcache_flush_memory_region(
+					mem->phys_start,
+					mem->size,
+					mem->virt_start,
+					mem->colors,
+					flush);
+		} else {
+			arm_dcache_flush_memory_region(mem->phys_start,
+						       mem->size,
+						       flush);
 		}
 	}
 

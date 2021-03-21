@@ -300,7 +300,7 @@ static bool address_in_region(unsigned long addr,
 	       addr < (region->phys_start + region->size);
 }
 
-static int unmap_from_root_cell(const struct jailhouse_memory *mem)
+static int unmap_from_root_cell(const struct jailhouse_memory *mem, bool create)
 {
 	/*
 	 * arch_unmap_memory_region and mmio_subpage_unregister use the
@@ -314,6 +314,12 @@ static int unmap_from_root_cell(const struct jailhouse_memory *mem)
 	if (JAILHOUSE_MEMORY_IS_SUBPAGE(&tmp)) {
 		mmio_subpage_unregister(&root_cell, &tmp);
 		return 0;
+	}
+
+	if (!create && (mem->flags & JAILHOUSE_MEM_COLORED)) {
+		/* start cell: remove temporary mapping */
+		tmp.flags |= JAILHOUSE_MEM_TMP_ROOT_REMAP;
+		tmp.virt_start = mem->virt_start;
 	}
 
 	return arch_unmap_memory_region(&root_cell, &tmp);
@@ -346,6 +352,17 @@ static int remap_to_root_cell(const struct jailhouse_memory *mem,
 		overlap.virt_start = root_mem->virt_start +
 			overlap.phys_start - root_mem->phys_start;
 		overlap.flags = root_mem->flags;
+
+		if (mem->flags & JAILHOUSE_MEM_COLORED) {
+			/* Use the colors from the to-be-remapped region */
+			overlap.flags |= JAILHOUSE_MEM_COLORED;
+			overlap.colors = mem->colors;
+			if (mode == ABORT_ON_ERROR) {
+				/* load cell: setup temporary mapping */
+				overlap.flags |= JAILHOUSE_MEM_TMP_ROOT_REMAP;
+				overlap.virt_start = mem->virt_start;
+			}
+		}
 
 		if (JAILHOUSE_MEMORY_IS_SUBPAGE(&overlap))
 			err = mmio_subpage_register(&root_cell, &overlap);
@@ -526,7 +543,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		 */
 		if (!(mem->flags & (JAILHOUSE_MEM_COMM_REGION |
 				    JAILHOUSE_MEM_ROOTSHARED))) {
-			err = unmap_from_root_cell(mem);
+			err = unmap_from_root_cell(mem, true);
 			if (err)
 				goto err_destroy_cell;
 		}
@@ -633,7 +650,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 		/* unmap all loadable memory regions from the root cell */
 		for_each_mem_region(mem, cell->config, n)
 			if (mem->flags & JAILHOUSE_MEM_LOADABLE) {
-				err = unmap_from_root_cell(mem);
+				err = unmap_from_root_cell(mem, false);
 				if (err)
 					goto out_resume;
 			}

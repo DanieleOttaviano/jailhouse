@@ -21,6 +21,7 @@
 #include <asm/setup.h>
 #include <asm/smc.h>
 #include <asm/smccc.h>
+#include <asm/coloring.h>
 
 extern u8 __trampoline_start[];
 
@@ -40,6 +41,8 @@ int arch_init_early(void)
 			    PAGING_NON_COHERENT | PAGING_NO_HUGE);
 	if (err)
 		return err;
+
+	arm_color_init();
 
 	return arm_init_early();
 }

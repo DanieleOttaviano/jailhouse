@@ -9,6 +9,8 @@
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  */
+#ifndef _JAILHOUSE_CONTROL_H
+#define _JAILHOUSE_CONTROL_H
 
 #include <jailhouse/bitops.h>
 #include <jailhouse/percpu.h>
@@ -291,3 +293,5 @@ void __attribute__((noreturn)) arch_panic_stop(void);
 void arch_panic_park(void);
 
 /** @} */
+
+#endif
