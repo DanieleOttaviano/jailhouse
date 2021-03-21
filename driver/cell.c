@@ -337,7 +337,15 @@ static int load_image(struct cell *cell,
 	if (regions == 0)
 		return -EINVAL;
 
-	phys_start = (mem->phys_start + image_offset) & PAGE_MASK;
+	if (mem->flags & JAILHOUSE_MEM_COLORED) {
+		/* Tweak the base address to request remapping of
+		 * a reserved, high memory region.
+		 */
+		phys_start = (mem->virt_start + image_offset +
+			      root_cell->color_root_map_offset) & PAGE_MASK;
+	} else {
+		phys_start = (mem->phys_start + image_offset) & PAGE_MASK;
+	}
 	page_offs = offset_in_page(image_offset);
 	image_mem = jailhouse_ioremap(phys_start, 0,
 				      PAGE_ALIGN(image.size + page_offs));

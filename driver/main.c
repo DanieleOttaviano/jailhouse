@@ -583,6 +583,10 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	if (err)
 		goto error_unmap;
 
+	/* coloring temporary load-mapping address */
+	root_cell->color_root_map_offset =
+		config->platform_info.color.root_map_offset;
+
 	error_code = 0;
 
 	preempt_disable();
