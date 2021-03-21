@@ -125,6 +125,9 @@ struct jailhouse_cell_desc {
 #define JAILHOUSE_MEM_LOADABLE		0x0040
 #define JAILHOUSE_MEM_ROOTSHARED	0x0080
 #define JAILHOUSE_MEM_NO_HUGEPAGES	0x0100
+#define JAILHOUSE_MEM_COLORED		0x0200
+/* Set internally for remap_to/unmap_from root ops */
+#define JAILHOUSE_MEM_TMP_ROOT_REMAP	0x0400
 #define JAILHOUSE_MEM_IO_UNALIGNED	0x8000
 #define JAILHOUSE_MEM_IO_WIDTH_SHIFT	16 /* uses bits 16..19 */
 #define JAILHOUSE_MEM_IO_8		(1 << JAILHOUSE_MEM_IO_WIDTH_SHIFT)
@@ -137,6 +140,15 @@ struct jailhouse_memory {
 	__u64 virt_start;
 	__u64 size;
 	__u64 flags;
+	/* only meaningful with JAILHOUSE_MEM_COLORED */
+	__u64 colors;
+} __attribute__((packed));
+
+struct jailhouse_coloring {
+	/* Size of a way to use for coloring */
+	__u64 way_size;
+	/* Temp offset in the root cell to simplify loading of colored cells */
+	__u64 root_map_offset;
 } __attribute__((packed));
 
 #define JAILHOUSE_SHMEM_NET_REGIONS(start, dev_id)			\
@@ -345,6 +357,7 @@ struct jailhouse_system {
 		__u8 pci_is_virtual;
 		__u16 pci_domain;
 		struct jailhouse_iommu iommu_units[JAILHOUSE_MAX_IOMMU_UNITS];
+		struct jailhouse_coloring color;
 		union {
 			struct {
 				__u16 pm_timer_address;
