@@ -15,6 +15,16 @@
 #include <jailhouse/utils.h>
 #include <jailhouse/control.h>
 
+static inline void arch_color_dyncolor_flush(void)
+{
+	return;
+}
+
+static inline int color_copy_root(struct cell *root, bool init)
+{
+	return -EINVAL;
+}
+
 static inline void arm_color_dcache_flush_memory_region(
 	unsigned long phys,
 	unsigned long size,

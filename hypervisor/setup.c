@@ -21,6 +21,7 @@
 #include <jailhouse/unit.h>
 #include <generated/version.h>
 #include <asm/spinlock.h>
+#include <asm/coloring.h>
 
 extern u8 __text_start[];
 
@@ -175,6 +176,11 @@ static void init_late(void)
 		return;
 	}
 
+	/* color-copy the root cell into a colored physical space */
+	error = color_copy_root(&root_cell, true);
+	if (error)
+		return;
+
 	for_each_mem_region(mem, root_cell.config, n) {
 		if (JAILHOUSE_MEMORY_IS_SUBPAGE(mem))
 			error = mmio_subpage_register(&root_cell, mem);
@@ -260,6 +266,11 @@ int entry(unsigned int cpu_id, struct per_cpu *cpu_data)
 		arch_cpu_restore(cpu_id, error);
 		return error;
 	}
+
+	/* If memory was copied to colored ranges, flush stale
+	 * translations.
+	 */
+	arch_color_dyncolor_flush();
 
 	if (master)
 		printk("Activating hypervisor\n");

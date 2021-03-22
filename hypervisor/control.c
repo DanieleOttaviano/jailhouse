@@ -21,6 +21,7 @@
 #include <jailhouse/utils.h>
 #include <asm/control.h>
 #include <asm/spinlock.h>
+#include <asm/coloring.h>
 
 enum msg_type {MSG_REQUEST, MSG_INFORMATION};
 enum failure_mode {ABORT_ON_ERROR, WARN_ON_ERROR};
@@ -807,6 +808,8 @@ static int cell_get_state(struct per_cpu *cpu_data, unsigned long id)
  */
 void shutdown(void)
 {
+	const struct jailhouse_memory *root_mem;
+	unsigned int n;
 	struct unit *unit;
 
 	pci_prepare_handover();
@@ -814,6 +817,22 @@ void shutdown(void)
 
 	for_each_unit_reverse(unit)
 		unit->shutdown();
+
+	/* release the colored mappings of the root cell by
+	 * re-creating a linear mapping that will be used by Linux.
+	 * NOTE: must be done _after_ shutting down the SMMU.
+	 */
+	for_each_mem_region(root_mem, root_cell.config, n) {
+		if (root_mem->flags & JAILHOUSE_MEM_COLORED) {
+			arch_unmap_memory_region(&root_cell, root_mem);
+		}
+	}
+
+	/* copy back the root cell into a non-colored phys range */
+	/* NOTE: if the initial init copy failed and we're shutting down
+	 * because of that, we're doomed anyway.
+	 */
+	color_copy_root(&root_cell, false);
 }
 
 static int hypervisor_disable(struct per_cpu *cpu_data)
@@ -894,6 +913,11 @@ static int hypervisor_disable(struct per_cpu *cpu_data)
 		do_common_shutdown = false;
 	}
 	printk(" Releasing CPU %d\n", this_cpu);
+
+	/* If memory was copied back to non-colored ranges, flush stale
+	 * translations.
+	 */
+	arch_color_dyncolor_flush();
 
 	spin_unlock(&shutdown_lock);
 

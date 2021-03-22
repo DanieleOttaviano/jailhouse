@@ -58,6 +58,22 @@ static int dispatch_op(
 		return 0;
 	}
 
+	/* Similar to LOAD/START: create a linear VA mapping for the HV, which
+	 * is colored in PA. The mapping is temporary and is removed after
+	 * the root_cell has been copied into the colored PA.
+	 */
+	if (op->op & COL_OP_ROOT_MAP) {
+		bvirt += coloring_root_map_offset;
+		return paging_create(op->pg_structs, bphys, bsize, bvirt,
+				     op->access_flags, op->paging_flags);
+	}
+
+	if (op->op & COL_OP_ROOT_UNMAP) {
+		bvirt += coloring_root_map_offset;
+		return paging_destroy(op->pg_structs, bvirt, bsize,
+				      op->paging_flags);
+	}
+
 	return -EINVAL;
 }
 
@@ -103,6 +119,153 @@ int color_do_op(struct color_op *op)
 
 	col_print("end P: 0x%08lx V: 0x%08lx (bsize = 0x%08lx)\n",
 			bphys, bvirt - bsize, bsize);
+
+	return err;
+}
+
+static void do_copy_root(const struct jailhouse_memory *mr)
+{
+	unsigned long phys_addr;
+	unsigned long virt_addr;
+	unsigned long tot_size;
+	unsigned long size;
+	unsigned long dst;
+	unsigned long src;
+
+	tot_size = mr->size;
+
+	/* Find the first page that does not belong to the non-colored
+	 * mapping */
+	phys_addr = mr->phys_start + tot_size;
+
+	while (tot_size > 0) {
+		size = MIN(tot_size, NUM_TEMPORARY_PAGES * PAGE_SIZE);
+		phys_addr -= size;
+
+		/* If we have reached the beginning (end of copy),
+		 * make sure we do not exceed the boundary of the
+		 * region */
+		if (phys_addr < mr->phys_start) {
+			size -= (mr->phys_start - phys_addr);
+			phys_addr = mr->phys_start;
+		}
+
+		/* cannot fail, mapping area is preallocated */
+		paging_create(&this_cpu_data()->pg_structs, phys_addr,
+				size, TEMPORARY_MAPPING_BASE,
+				PAGE_DEFAULT_FLAGS,
+				PAGING_NON_COHERENT | PAGING_NO_HUGE);
+
+		/* Destination: end of colored mapping created via ROOT_MAP */
+		/* NOTE: the colored mapping created via ROOT_MAP has
+		 * an offset that depends on the virtual_address of
+		 * the target mapping. Make sure that the copy is
+		 * correct even if phys_addr and virt_addr differ */
+		virt_addr = mr->virt_start + (phys_addr - mr->phys_start);
+		dst = coloring_root_map_offset + virt_addr + size;
+		/* Source: end of non-colored mapping defined above */
+		src = TEMPORARY_MAPPING_BASE + size;
+		tot_size -= size;
+
+		/* Actual data copy operation */
+		while (size > 0) {
+			size -= PAGE_SIZE;
+			dst -= PAGE_SIZE;
+			src -= PAGE_SIZE;
+			memcpy((void*)dst, (void*)src, PAGE_SIZE);
+		}
+	}
+}
+
+static void do_uncopy_root(const struct jailhouse_memory *mr)
+{
+	unsigned long phys_addr;
+	unsigned long tot_size;
+	unsigned long size;
+	unsigned long dst;
+	unsigned long src;
+
+	tot_size = mr->size;
+
+	/* Find the first page that does not belong to the non-colored
+	 * mapping */
+	phys_addr = mr->phys_start;
+
+	while (tot_size > 0) {
+		size = MIN(tot_size, NUM_TEMPORARY_PAGES * PAGE_SIZE);
+
+		/* cannot fail, mapping area is preallocated */
+		paging_create(&this_cpu_data()->pg_structs, phys_addr,
+				size, TEMPORARY_MAPPING_BASE,
+				PAGE_DEFAULT_FLAGS,
+				PAGING_NON_COHERENT | PAGING_NO_HUGE);
+
+		/* Destination: non-colored mapping */
+		dst = TEMPORARY_MAPPING_BASE;
+		/* Source: colored mapping created via ROOT_MAP */
+		src = coloring_root_map_offset + phys_addr;
+
+		tot_size -= size;
+		phys_addr += size;
+
+		while (size > 0) {
+			memcpy((void*)dst, (void*)src, PAGE_SIZE);
+			dst += PAGE_SIZE;
+			src += PAGE_SIZE;
+			size -= PAGE_SIZE;
+		}
+	}
+}
+
+int color_copy_root(struct cell *root, bool init)
+{
+	const struct jailhouse_memory *mr;
+	struct color_op op;
+	unsigned int n;
+	int err;
+
+	if (coloring_way_size == 0) {
+		return 0;
+	}
+
+	for_each_mem_region(mr, root->config, n) {
+		if ((mr->flags & JAILHOUSE_MEM_COLORED) == 0) {
+			/* Only copy color regions */
+			continue;
+		}
+
+		op.pg_structs = &this_cpu_data()->pg_structs;
+		op.phys = mr->phys_start;
+		op.virt = mr->virt_start;
+		op.size = mr->size;
+		op.access_flags = PAGE_DEFAULT_FLAGS;
+		op.color_mask = mr->colors;
+		op.flush_type = 0;
+
+		/* temporary color map */
+		op.op = COL_OP_ROOT_MAP;
+		op.paging_flags = PAGING_NON_COHERENT | PAGING_NO_HUGE;
+		err = color_do_op(&op);
+		if (err) {
+			return err;
+		}
+
+		if (init) {
+			/* copy root memory into colored ranges */
+			do_copy_root(mr);
+		} else {
+			/* copy root into non-colored regions */
+			do_uncopy_root(mr);
+		}
+
+		/* remove mapping */
+		op.op = COL_OP_ROOT_UNMAP;
+		op.paging_flags = PAGING_NON_COHERENT;
+		err = color_do_op(&op);
+		if (err) {
+			return err;
+		}
+	}
 
 	return err;
 }

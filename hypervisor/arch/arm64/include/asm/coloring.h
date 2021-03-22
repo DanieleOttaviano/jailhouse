@@ -33,6 +33,8 @@
 #define COL_OP_START	0x4
 #define COL_OP_LOAD	0x8
 #define COL_OP_FLUSH	0x10
+#define COL_OP_ROOT_MAP		0x20
+#define COL_OP_ROOT_UNMAP	0x40
 
 /**
  * Only parameter needed to determine the coloring.
@@ -64,6 +66,22 @@ struct color_op {
  * the color-compatible phys2virt mappings.
  */
 extern int color_do_op(struct color_op *op);
+
+/**
+ * Copy the RAM memory of the root cell into a colored/non-colored range
+ * depending on the value of \a init.
+ *
+ * At init time (\a init == true), the root RAM memory is copied into a
+ * colored range. During shutdown (\a init == false) the memory is copied
+ * back into a non-colored (contiguous) PA range.
+ *
+ * This is done by first establishing a VA-contiguous PA-colored mapping
+ * via the COL_OP_ROOT_MAP operation.
+ * The copy is performed backward at init time, and forward at destroy time.
+ * The temporary mapping is destroyed via the COL_OP_ROOT_UNMAP operation.
+ */
+extern int color_copy_root(struct cell *root, bool init);
+
 
 static inline void arm_color_dcache_flush_memory_region(
 	unsigned long phys,
