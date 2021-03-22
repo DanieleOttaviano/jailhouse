@@ -100,6 +100,33 @@ static inline void arm_color_init(void)
 	       coloring_way_size, coloring_root_map_offset);
 }
 
+#define ARM_TLB_INVAL_ALL_EL(x) \
+	asm volatile(	\
+			"tlbi alle" #x "\n"\
+			"dsb ish\n" \
+			"isb\n" \
+			: : : "memory")
+
+static inline void arm_inval_icache(void)
+{
+	asm volatile("ic iallu" ::: "memory");
+	dsb(ish);
+	isb();
+}
+
+/**
+ * Invalidate + flush icache and tlb (for both el1 and el2)
+ * after copy/uncopy the root cell into a colored/non-colored range.
+ *
+ * This prevents stale translations to fault after the copy.
+ */
+static inline void arch_color_dyncolor_flush(void)
+{
+	arm_inval_icache();
+	ARM_TLB_INVAL_ALL_EL(1);
+	ARM_TLB_INVAL_ALL_EL(2);
+}
+
 static inline int
 color_paging_create(const struct paging_structures *pg_structs,
 		    unsigned long phys, unsigned long size, unsigned long virt,
