@@ -136,11 +136,11 @@ struct {
 		/* RAM */ {
 			.phys_start = 0x0,
 			.virt_start = 0x0,
-			// Limit size to 512 M
-			.size = 0x20000000,
+			// Limit size to 256 M
+			.size = 0x10000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_COLORED,
-			.colors=0x0fff,
+			.colors=0x000f,
 		},
 		/* RAM */ {
 			.phys_start = 0x800000000,
