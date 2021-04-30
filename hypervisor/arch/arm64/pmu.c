@@ -54,6 +54,8 @@ void pmu_cpu_init(void)
 	gicv2_enable_irq(irq);
 	pmu_int_enable(pmu_first_cnt);
 
+	/* Enable PMCCNTR_EL0 */
+	pmu_enable(31);
 	/* Allow PMU Events */
 	pmu_enable_all();
 }
