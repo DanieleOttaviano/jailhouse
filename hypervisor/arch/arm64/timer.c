@@ -17,11 +17,14 @@
 #include <jailhouse/mmio.h>
 #include <jailhouse/printk.h>
 #include <jailhouse/assert.h>
+#include <jailhouse/control.h>
+#include <jailhouse/cell.h>
 #include <asm/timer.h>
 #include <asm/sysregs.h>
 #include <asm/processor.h>
 #include <asm/gic.h>
 #include <asm/gic_v2.h>
+#include <asm/gic_v3.h>
 
 /*
  * GICv2:
@@ -74,7 +77,10 @@ void timer_cpu_shutdown(void)
 	}
 
 	/* Disable distributor IRQ */
-	gicv2_disable_irq(hv_timer_irq);
+	if (system_config->platform_info.arm.gic_version == 3)
+		gicv3_disable_irq(hv_timer_irq);
+	else
+		gicv2_disable_irq(hv_timer_irq);
 }
 
 /** Initialize the CNTHP_CTL_EL2 timer */
@@ -85,7 +91,10 @@ void timer_cpu_init(void)
 	timer_unmask();
 
 	/* Enable IRQ in the distributor */
-	gicv2_enable_irq(hv_timer_irq);
+	if (system_config->platform_info.arm.gic_version == 3)
+		gicv3_enable_irq(hv_timer_irq);
+	else
+		gicv2_enable_irq(hv_timer_irq);
 
 	/* NOTE: init completed, timer_enable() will
 	 * trigger an interrupt if counter > timer
