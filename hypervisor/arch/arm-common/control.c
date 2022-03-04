@@ -20,6 +20,8 @@
 #include <asm/psci.h>
 #include <asm/smc.h>
 #include <asm/smccc.h>
+#include <asm/timer.h>
+#include <asm/pmu.h>
 
 static void enter_cpu_off(struct public_per_cpu *cpu_public)
 {
@@ -147,6 +149,14 @@ bool arch_handle_phys_irq(u32 irqn, unsigned int count_event)
 		irqchip_inject_pending();
 
 		return true;
+	}
+
+	if (irqn == system_config->platform_info.memguard.hv_timer) {
+		return timer_isr_handler();
+	}
+
+	if (irq_is_pmu(irqn)) {
+		return pmu_isr_handler();
 	}
 
 	cpu_public->stats[JAILHOUSE_CPU_STAT_VMEXITS_VIRQ] += count_event;
