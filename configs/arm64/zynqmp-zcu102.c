@@ -65,6 +65,25 @@ struct {
 				.gicv_base = 0xf906f000,
 				.maintenance_irq = 25,
 			},
+			.memguard = {
+				/* For this SoC we have:
+				   - 32 SGIs and PPIs
+				   - 8 SPIs
+				   - 148 system interrupts
+				   ------ Total = 188
+				   */
+				.num_irqs = 188,
+				.hv_timer = 26,
+				.irq_prio_min = 0xf0,
+				.irq_prio_max = 0x00,
+				.irq_prio_step = 0x10,
+				.irq_prio_threshold = 0x10,
+				.num_pmu_irq = 4,
+				/* One PMU irq per CPU */
+				.pmu_cpu_irq = {
+					175, 176, 177, 178,
+				},
+			},
 		},
 		.root_cell = {
 			.name = "ZynqMP-ZCU102",
