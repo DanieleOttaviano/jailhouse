@@ -340,6 +340,37 @@ struct jailhouse_pio {
 	!!((flags) & JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE)
 
 /**
+ * Memguard total number of PMU Interrupts (one for each CPU).
+ */
+#define JAILHOUSE_MAX_PMU2CPU_IRQ	8
+
+/**
+ * Memguard platform support.
+ * Currently only for ARMv8 and GICv2.
+ */
+struct jailhouse_memguard_config {
+	/** Total number of interrupt lines for the SoC.
+	 *  SGI + PPI + SPI + system/platform interrupts.
+	 */
+	__u32 num_irqs;
+	/** Hypervisor timer to be used as memguard timer.
+	 *  CNTHP-associated timer event.
+	 */
+	__u32 hv_timer;
+	/** GICv2 priority range and step for the SoC. */
+	__u8 irq_prio_min;
+	__u8 irq_prio_max;
+	/** Prio increment step considering secure/non-secure modes */
+	__u8 irq_prio_step;
+	/** Min separation threshold */
+	__u8 irq_prio_threshold;
+	/** Size of PMU 2 CPU and FIQ 2 CPU mapping */
+	__u32 num_pmu_irq;
+	/** PMU 2 CPU interrupt mapping */
+	__u32 pmu_cpu_irq[JAILHOUSE_MAX_PMU2CPU_IRQ];
+} __attribute__((packed));
+
+/**
  * General descriptor of the system.
  */
 struct jailhouse_system {
@@ -361,6 +392,7 @@ struct jailhouse_system {
 		__u32 no_spectre_mitigation;
 		struct jailhouse_iommu iommu_units[JAILHOUSE_MAX_IOMMU_UNITS];
 		struct jailhouse_coloring color;
+		struct jailhouse_memguard_config memguard;
 		union {
 			struct {
 				__u16 pm_timer_address;
