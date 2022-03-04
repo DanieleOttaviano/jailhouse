@@ -19,6 +19,7 @@
 #include <jailhouse/cell-config.h>
 #include <jailhouse/utils.h>
 #include <jailhouse/control.h>
+#include <jailhouse/assert.h>
 
 #ifdef CONFIG_DEBUG
 #define col_print(fmt, ...)			\
@@ -92,8 +93,7 @@ static inline void arm_color_dcache_flush_memory_region(
 {
 	struct color_op op;
 
-	if (coloring_way_size == 0)
-		BUG();
+	assert(coloring_way_size != 0);
 
 	op.phys = phys;
 	op.size = size;
