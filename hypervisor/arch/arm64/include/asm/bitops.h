@@ -10,6 +10,8 @@
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  */
+#ifndef _JAILHOUSE_ASM_BITOPS_H
+#define _JAILHOUSE_ASM_BITOPS_H
 
 /* also include from arm-common */
 #include_next <asm/bitops.h>
@@ -43,3 +45,5 @@ static inline int atomic_test_and_set_bit(int nr, volatile unsigned long *addr)
 	} while (ret);
 	return !!(test);
 }
+
+#endif

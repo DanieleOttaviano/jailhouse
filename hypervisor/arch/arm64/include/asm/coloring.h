@@ -20,6 +20,8 @@
 #include <jailhouse/utils.h>
 #include <jailhouse/control.h>
 #include <jailhouse/assert.h>
+/* Low-level inval functions and cache layout detection */
+#include <asm/cache_layout.h>
 
 #ifdef CONFIG_DEBUG
 #define col_print(fmt, ...)			\
@@ -111,25 +113,16 @@ static inline void arm_color_dcache_flush_memory_region(
 static inline void arm_color_init(void)
 {
 	coloring_way_size = system_config->platform_info.color.way_size;
+#ifdef CONFIG_DEBUG
+	if (coloring_way_size == 0) {
+		coloring_way_size = arm_cache_layout_detect();
+	}
+#endif
 	coloring_root_map_offset =
 		system_config->platform_info.color.root_map_offset;
 
 	printk("Init Coloring: Way size: 0x%llx, TMP load addr: 0x%llx\n",
 	       coloring_way_size, coloring_root_map_offset);
-}
-
-#define ARM_TLB_INVAL_ALL_EL(x) \
-	asm volatile(	\
-			"tlbi alle" #x "\n"\
-			"dsb ish\n" \
-			"isb\n" \
-			: : : "memory")
-
-static inline void arm_inval_icache(void)
-{
-	asm volatile("ic iallu" ::: "memory");
-	dsb(ish);
-	isb();
 }
 
 /**
