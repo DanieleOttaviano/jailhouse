@@ -137,6 +137,7 @@ static void do_copy_root(const struct jailhouse_memory *mr)
 	/* Find the first page that does not belong to the non-colored
 	 * mapping */
 	phys_addr = mr->phys_start + tot_size;
+	assert((phys_addr & PAGE_OFFS_MASK) == 0);
 
 	while (tot_size > 0) {
 		size = MIN(tot_size, NUM_TEMPORARY_PAGES * PAGE_SIZE);
@@ -147,6 +148,7 @@ static void do_copy_root(const struct jailhouse_memory *mr)
 		 * region */
 		if (phys_addr < mr->phys_start) {
 			size -= (mr->phys_start - phys_addr);
+			assert((size & PAGE_OFFS_MASK) == 0);
 			phys_addr = mr->phys_start;
 		}
 
@@ -190,6 +192,8 @@ static void do_uncopy_root(const struct jailhouse_memory *mr)
 	/* Find the first page that does not belong to the non-colored
 	 * mapping */
 	phys_addr = mr->phys_start;
+	assert((phys_addr & PAGE_OFFS_MASK) == 0);
+	assert((tot_size & PAGE_OFFS_MASK) == 0);
 
 	while (tot_size > 0) {
 		size = MIN(tot_size, NUM_TEMPORARY_PAGES * PAGE_SIZE);
@@ -224,6 +228,7 @@ int color_copy_root(struct cell *root, bool init)
 	unsigned int n;
 	int err;
 
+	assert(root == &root_cell);
 	if (coloring_way_size == 0) {
 		return 0;
 	}
