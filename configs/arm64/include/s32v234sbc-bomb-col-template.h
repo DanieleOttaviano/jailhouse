@@ -1,41 +1,38 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Copyright (c) Siemens AG, 2016
+ * Configuration file template for inmate-bombs. Don't include directly.
+ *
+ * Copyright (C) Boston University, MA, USA, 2020
+ * Copyright (C) Technical University of Munich, 2020 - 2021
  *
  * Authors:
- *  Jan Kiszka <jan.kiszka@siemens.com>
+ *  Renato Mancuso <rmancuso@bu.edu>
+ *  Andrea Bastoni <andrea.bastoni@tum.de>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  */
-
-#include <jailhouse/types.h>
-#include <jailhouse/cell-config.h>
-
-#define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
-
 struct {
 	struct jailhouse_cell_desc cell;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[4];
+	struct jailhouse_memory mem_regions[5];
 } __attribute__((packed)) config = {
 	.cell = {
 		.signature = JAILHOUSE_CELL_DESC_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
-		.name = "uart-demo",
+		.name = "col-mem-bomb-" xstr(BOMB_ID),
 		.flags = JAILHOUSE_CELL_PASSIVE_COMMREG |
 			JAILHOUSE_CELL_VIRTUAL_CONSOLE_ACTIVE,
 
 		.cpu_set_size = sizeof(config.cpus),
 		.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 		.num_irqchips = 0,
-		.num_pio_regions = 0,
 		.num_pci_devices = 0,
 	},
 
 	.cpus = {
-		0x8,
+		BOMB_CPU,
 	},
 
 	.mem_regions = {
@@ -46,18 +43,41 @@ struct {
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO | JAILHOUSE_MEM_ROOTSHARED,
 		},
-		/* RAM 256 MB DDR1 */ {
-			.phys_start = 0xc0000000,
+
+		/* RAM */
+		{
+			.phys_start = MAIN_PHYS_START,
 			.virt_start = 0,
-			.size = 0x10000000,
+			.size = MAIN_SIZE,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE,
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE |
+				JAILHOUSE_MEM_COLORED,
+			.colors=BOMB_COLORS,
 		},
+
+		/* RAM Buffer */
+		{
+			.phys_start = MEM_PHYS_START,
+			.virt_start = MEM_VIRT_START,
+			.size = MEM_SIZE,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				 JAILHOUSE_MEM_COLORED,
+			.colors=BOMB_COLORS,
+		},
+
+		/* Control interface */ {
+			.phys_start = COMM_PHYS_ADDR,
+			.virt_start = COMM_VIRT_ADDR,
+			.size = COMM_SINGLE_SIZE,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+		                 JAILHOUSE_MEM_IO | JAILHOUSE_MEM_ROOTSHARED,
+		},
+
 		/* communication region */ {
 			.virt_start = 0x80000000,
 			.size = 0x00001000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_COMM_REGION,
 		},
-	}
+	},
 };

@@ -1,14 +1,17 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for NXP S32V234 SBC
+ * Configuration for NXP S32V234 SBC with QoS configuration
  *
  * Copyright (C) 2016 Evidence Srl
+ * Copyright (C) Boston University, MA, USA, 2020
+ * Copyright (C) Technical University of Munich, 2020 - 2021
  *
  * Authors:
  *  Claudio Scordino <claudio@evidence.eu.com>
  *  Bruno Morelli <b.morelli@evidence.eu.com>
  *  Renato Mancuso <rmancuso@bu.edu>
+ *  Andrea Bastoni <andrea.bastoni@tum.de>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
@@ -41,7 +44,7 @@
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[7];
+	struct jailhouse_memory mem_regions[10];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[1];
 	struct jailhouse_qos_device qos_devices[12];
@@ -135,21 +138,41 @@ struct {
 				JAILHOUSE_MEM_IO,
 		},
 
-		/* System RAM */ {
+		/* DDR0 256 */ {
 			.phys_start = 0x80000000,
 			.virt_start = 0x80000000,
+			.size =       0x10000000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE,
+		},
+		/* DDR0 256 */ {
+			.phys_start = 0x90000000,
+			.virt_start = 0x90000000,
+			.size =       0x10000000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE,
+		},
+		/* DDR0 256 */ {
+			.phys_start = 0xa0000000,
+			.virt_start = 0xa0000000,
+			.size =       0x10000000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE,
+		},
+		/* DDR0 256 */ {
+			.phys_start = 0xb0000000,
+			.virt_start = 0xb0000000,
+			.size =       0x10000000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE,
+		},
+		/* Inmates High DDR1 */ {
+			.phys_start = 0xc0000000,
+			.virt_start = 0xc0000000,
 			.size =       0x40000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
-		/* System RAM */ {
-			.phys_start = 0xc0000000,
-			.virt_start = 0xc0000000,
-			.size =       0x3c000000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_EXECUTE,
-		},
-
 	},
 	.irqchips = {
 		/* GIC */ {
