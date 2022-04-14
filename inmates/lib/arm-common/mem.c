@@ -38,6 +38,7 @@
 
 #include <inmate.h>
 #include <asm/sysregs.h>
+#include <jailhouse/mem-bomb.h>
 
 static u64 __attribute__((aligned(4096)))
 	page_directory[JAILHOUSE_INMATE_MEM_PAGE_DIR_LEN];

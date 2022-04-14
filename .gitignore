@@ -26,6 +26,8 @@ tools/demos/ivshmem-demo
 tools/jailhouse
 tools/jailhouse-gcov-extract
 tools/jailhouse-config-collect
+tools/membomb
+tools/utilstress
 Documentation/generated
 hypervisor/include/generated
 hypervisor/arch/*/include/generated
