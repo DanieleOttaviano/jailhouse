@@ -39,23 +39,6 @@ static bool (*_timer_isr_handler)(void) = NULL;
 /* Timer interrupt */
 unsigned int hv_timer_irq = 0;
 
-static unsigned long emul_division(u64 val, u64 div)
-{
-	unsigned long cnt = 0;
-
-	while (val > div) {
-		val -= div;
-		cnt++;
-	}
-	return cnt;
-}
-
-u64 timer_ticks_to_ns(u64 ticks)
-{
-	return emul_division(ticks * 1000,
-			     timer_get_frequency() / 1000 / 1000);
-}
-
 u64 timer_us_to_ticks(u64 us)
 {
 	/* NOTE: consider if some empiricaly rounding is needed.

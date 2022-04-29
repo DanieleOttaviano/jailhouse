@@ -110,7 +110,6 @@ static inline void timer_cpu_reset(void)
 
 /* -------------------------- FUNCTION DECLARATION ------------------------- */
 
-extern u64 timer_ticks_to_ns(u64 ticks);
 extern u64 timer_us_to_ticks(u64 us);
 
 /** Register timer irq and handler */
