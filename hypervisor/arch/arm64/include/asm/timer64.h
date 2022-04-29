@@ -23,6 +23,7 @@
 
 #define CNTHP_CTL_EL2_ENABLE	(1<<0)
 #define CNTHP_CTL_EL2_IMASK	(1<<1)
+#define CNTHP_CTL_EL2_ISTATUS	(1<<2)
 
 extern bool timer_isr_handler(void);
 extern unsigned int hv_timer_irq;
@@ -67,6 +68,13 @@ static inline void timer_mask(void)
 	arm_read_sysreg(CNTHP_CTL_EL2, reg);
 	reg |= CNTHP_CTL_EL2_IMASK;
 	arm_write_sysreg(CNTHP_CTL_EL2, reg);
+}
+
+static inline bool timer_fired(void)
+{
+	u32 reg;
+	arm_read_sysreg(CNTHP_CTL_EL2, reg);
+	return ((reg & CNTHP_CTL_EL2_ISTATUS) != 0);
 }
 
 static inline void timer_enable(void)

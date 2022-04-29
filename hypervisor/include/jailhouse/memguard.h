@@ -22,9 +22,7 @@
 #include <jailhouse/printk.h>
 
 #define MG_BLOCK	0x1
-#define MG_BLOCKED	0x2
-#define MG_UNBLOCK	0x4
-#define MG_RESET	0x8
+#define MG_RESET	0x2
 
 #ifdef CONFIG_DEBUG
 #define mg_print(fmt, ...)			\

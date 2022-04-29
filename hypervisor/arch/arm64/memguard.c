@@ -223,13 +223,13 @@ bool memguard_isr_timer(void)
 		printk("%uR\n", this_cpu_id());
 	}
 
-	if (memguard->block & MG_BLOCKED) {
+	if (memguard->block & MG_BLOCK) {
 		printk("%uU\n", this_cpu_id());
 	}
 #endif
 	memguard->block &= ~MG_RESET;
 	/* Disable blocking */
-	memguard->block |= MG_UNBLOCK;
+	memguard->block &= ~MG_BLOCK;
 
 	return true;
 }
@@ -259,56 +259,27 @@ void memguard_cpu_block(void)
 {
 	/* block is volatile and never set cross-CPU */
 	struct memguard *memguard = &this_cpu_public()->memguard;
-	unsigned long spsr, elr;
-#ifdef MG_VERBOSE_DEBUG
-	bool once = true;
-#endif
 
-	/* Not blocked, or already blocked */
+	/* Not a regulation IRQ */
 	if (!(memguard->block & MG_BLOCK)) {
 		return;
 	}
 
-	/* Must block till next regulation period or memguard reset */
-	memguard->block |= MG_BLOCKED;
-	memguard->block &= ~(MG_BLOCK | MG_UNBLOCK);
-
-
-	/* NOTE: IRQs may not be immediately enabled, but irq_on and
-	 * the wfe should take place "in-order", so we will eventually
-	 * see the interrupt before disabling it again.
-	 * If block has changed in the meanwhile, we could have
-	 * as well kept irq off the whole time.
-	 */
-	while (!(memguard->block & (MG_UNBLOCK | MG_RESET))) {
-#ifdef MG_VERBOSE_DEBUG
-		if (once) {
-			printk("%uB\n", this_cpu_id());
-			once = false;
-		}
-#endif
-		// XXX: bad emulation of an EL2 irq handler ...
-		// not applied all over the places...
-		arm_read_sysreg(ELR_EL2, elr);
-		arm_read_sysreg(SPSR_EL2, spsr);
-		asm volatile(
-			"msr daifclr, #0x2\n\t"
-			"wfe\n\t"
-			"msr daifset, #0x2\n\t"
-			: : : "memory");
-		arm_write_sysreg(ELR_EL2, elr);
-		arm_write_sysreg(SPSR_EL2, spsr);
+	/* Exit early on concurrent reset */
+	if (memguard->block & MG_RESET) {
+		memguard->block &= ~MG_BLOCK;
+		return;
 	}
 
 #ifdef MG_VERBOSE_DEBUG
-	if (!once) {
-		if (memguard->block & MG_RESET) {
-			printk("%ur\n", this_cpu_id());
-		}
-	}
-	once = true;
+	printk("%uB\n", this_cpu_id());
 #endif
-	memguard->block &= ~(MG_BLOCKED | MG_UNBLOCK);
+	/* poll till the next interrupt, then recheck what happened */
+	while (!timer_fired()) {
+		isb();
+	}
+
+	return;
 }
 
 int memguard_init(void)

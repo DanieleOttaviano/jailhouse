@@ -74,7 +74,7 @@ static void check_events(struct public_per_cpu *cpu_public)
 	spin_lock(&cpu_public->control_lock);
 
 	if ((cpu_public->suspend_cpu) &&
-	    (cpu_public->memguard.block & MG_BLOCKED)) {
+	    (cpu_public->memguard.block & MG_BLOCK)) {
 		/* Memguard: CPU hit in non correct EL state, retry again */
 		cpu_public->memguard.block |= MG_RESET;
 		cpu_public->suspend_cpu_retry = true;
