@@ -43,9 +43,6 @@
  */
 static u32 memguard_pmu_cnt = 0;
 
-/* GICv2: 1024 = 1020 max + 3 special */
-static u8 old_p[1024] = {0};
-
 #ifdef CONFIG_DEBUG
 static inline void memguard_print_priorities(void)
 {
@@ -107,98 +104,6 @@ static inline void memguard_set_pmu_budget(u32 budget)
 	val -= budget;
 
 	pmu_set_val(memguard_pmu_cnt, val);
-}
-
-/**
- * Give max priority to the memguard timer interrupt, max + step to the PMU
- * interrupts, and decrease all other priorities which are lower than the
- * threshold. Never give idle (always masked) priority.
- */
-static inline void adjust_prio(unsigned int low, unsigned int high)
-{
-	u32 prio;
-	const struct jailhouse_memguard_config *mconf;
-	mconf = &system_config->platform_info.memguard;
-
-	assert(mconf->irq_prio_min - mconf->irq_prio_step > 0);
-	for (unsigned int i = low; i < high; i++) {
-		prio = gicv2_get_prio(i);
-
-		while ((prio < mconf->irq_prio_threshold) &&
-			(prio < (u32)(mconf->irq_prio_min -
-				      mconf->irq_prio_step))) {
-			prio += mconf->irq_prio_step;
-		}
-
-		gicv2_set_prio(i, prio);
-	}
-}
-
-/**
- * Save old priorities and initialize SPI priorities. SPI IPRIORITYn are
- * not banked.
- */
-static void memguard_init_prio(void)
-{
-	unsigned int i;
-	u32 prio;
-	const struct jailhouse_memguard_config *mconf;
-	mconf = &system_config->platform_info.memguard;
-
-	assert(mconf->irq_prio_min - mconf->irq_prio_step > 0);
-	for (i = 0; i < mconf->num_irqs; i++) {
-		prio = gicv2_get_prio(i);
-		old_p[i] = prio;
-	}
-
-	/* Update priorities for SPI interrupts */
-	adjust_prio(32, mconf->num_irqs);
-
-	/* One PMU interrupt per CPU */
-	assert(mconf->num_pmu_irq <= JAILHOUSE_MAX_PMU2CPU_IRQ);
-	for (i = 0; i < mconf->num_pmu_irq; i++) {
-		assert(is_spi(mconf->pmu_cpu_irq[i]));
-		gicv2_set_prio(mconf->pmu_cpu_irq[i],
-			       mconf->irq_prio_max + mconf->irq_prio_step);
-	}
-}
-
-static void memguard_cpu_init_prio(void)
-{
-	const struct jailhouse_memguard_config *mconf;
-	mconf = &system_config->platform_info.memguard;
-
-	/* Update priorities for SGI and PPI interrupts */
-	adjust_prio(0, 32);
-
-	/* Update prio for hv timer */
-	assert(is_ppi(mconf->hv_timer));
-
-	gicv2_set_prio(mconf->hv_timer, mconf->irq_prio_max);
-}
-
-/* IRQChip and CPU Shutdown is called on each CPU. Jailhouse's irqchip
- * doesn't support a shutdown and a cpu_shutdown.
- */
-static void memguard_cpu_restore_prio(void)
-{
-	const struct jailhouse_memguard_config *mconf;
-	static bool once = true;
-	unsigned int i;
-
-	for (i = 0; i < 32; i++) {
-		gicv2_set_prio(i, old_p[i]);
-	}
-
-	if (atomic_cas(&once, true, false) != true) {
-		return;
-	}
-
-	assert(once == false);
-	mconf = &system_config->platform_info.memguard;
-	for (i = 32; i < mconf->num_irqs; i++) {
-		gicv2_set_prio(i, old_p[i]);
-	}
 }
 
 /**
@@ -293,8 +198,6 @@ int memguard_init(void)
 	if (err < 0)
 		return err;
 
-	memguard_init_prio();
-
 	/* Currently register one single counter */
 	num_cnt = 1;
 	memguard_pmu_cnt = pmu_register(num_cnt, memguard_isr_pmu);
@@ -308,7 +211,6 @@ void memguard_cpu_init(void)
 {
 	memset(&this_cpu_public()->memguard, 0, sizeof(struct memguard));
 
-	memguard_cpu_init_prio();
 	timer_cpu_init();
 	pmu_cpu_init();
 }
@@ -317,7 +219,6 @@ void memguard_cpu_shutdown(void)
 {
 	timer_cpu_shutdown();
 	pmu_cpu_shutdown();
-	memguard_cpu_restore_prio();
 }
 
 /**
