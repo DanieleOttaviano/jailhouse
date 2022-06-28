@@ -1,6 +1,56 @@
 JAILHOUSE
 =========
 
+About this Repository
+---------------------
+This repository is an unofficial fork of the Jailhouse partitioning hypervisor.
+It contains a series of experimental extensions to improve memory-related
+isolation of workloads running in logically separated Jailhouse virtual
+machines.
+
+The extensions contained in this repository implements cache partitioning
+via cache-coloring technique and memory bandwidth regulation using a
+performance-counter-based approach.
+The extensions target high-end SoCs based on Arm v8 Cortex-A cores, and have
+been tested on Xilinx Ultrascale+ ZCU 102, NVIDIA Jetson AGX Xavier, and NXP
+S32V.
+
+The repository is maintained by [Minerva Systems](https://www.minervasys.tech)
+and developed in collaboration with researchers from the following research
+centers and universities:
+ - Technical University of Munich (Chair of CPS in Production Engineering)
+   https://www.mec.ed.tum.de/cps/
+ - Università di Modena e Reggio Emilia (Hipert Lab)
+   https://hipert.unimore.it/
+ - Boston University (Cyber-Physical Systems Lab)
+   https://cs-people.bu.edu/rmancuso/
+
+The extensions have been evaluated in multiple academic publications such as:
+
+> Tomasz Kloda, Marco Solieri, Renato Mancuso, Nicola Capodieci, Paolo Valente,
+> Marko Bertogna,
+> "Deterministic Memory Hierarchy and Virtualization for Modern Multi-Core
+> Embedded Systems," 2019 IEEE Real-Time and Embedded Technology and
+> Applications Symposium (RTAS), 2019
+
+> Parul Sohal, Rohan Tabish, Ulrich Drepper, Renato Mancuso, "E-WarP:
+> a System-wide Framework for Memory Bandwidth Profiling and
+> Management", in Proceedings of the 41st IEEE Real-Time Systems
+> Symposium (RTSS 2020), Houston, TX, USA, Dec. 2020
+
+> Gero Schwäricke, Rohan Tabish, Rodolfo Pellizzoni, Renato Mancuso,
+> Andrea Bastoni, Alexander Zuepke, Marco Caccamo,
+> "A Real-Time Virtio-Based Framework for Predictable Inter-VM Communication,"
+> 2021 IEEE Real-Time Systems Symposium (RTSS), 2021
+
+There is an ongoing effort to integrate some of the features of this
+repository in the mainline [Jailhouse project](https://github.com/siemens/jailhouse),
+but please note at at the moment, the Jailhouse project does not provide
+support for this code. Please, subscribe to the Jailhouse mailing list for
+updates on the mainlining effort and for any discussion about this fork
+and its development.
+
+
 Introduction
 ------------
 
