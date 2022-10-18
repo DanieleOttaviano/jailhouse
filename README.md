@@ -43,6 +43,10 @@ The extensions have been evaluated in multiple academic publications such as:
 > "A Real-Time Virtio-Based Framework for Predictable Inter-VM Communication,"
 > 2021 IEEE Real-Time Systems Symposium (RTSS), 2021
 
+> Shahin Roozkhosh, Denis Hoornaert, Renato Mancuso,
+> "CAESAR: Coherence-Aided Elective and Seamless Alternative Routing via on-chip FPGA,"
+> 2022 IEEE Real-Time Systems Symposium (RTSS), 2022
+
 There is an ongoing effort to integrate some of the features of this
 repository in the mainline [Jailhouse project](https://github.com/siemens/jailhouse),
 but please note at at the moment, the Jailhouse project does not provide
