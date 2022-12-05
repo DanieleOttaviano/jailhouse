@@ -37,3 +37,22 @@ General configuration parameters
      * when running mmio-access tests.
      */
     #define CONFIG_TEST_DEVICE 1
+
+    /*
+     * Enable verbose debugging and assertions
+     * Needed for verbose debugging messages in configurations
+     * with coloring support.
+     */
+    #define CONFIG_DEBUG 1
+
+
+Board Specific Configurations
+-----------------------------
+
+NOTE: some options might also require modification at EL3/Firmware level.
+
+    /* Enable EL3 / SMCCC / QoS Support for ZCU102 */
+    #define CONFIG_MACH_ZYNQMP_ZCU102      1
+
+    /* Enable QoS Support for S32V/G */
+    #define CONFIG_MACH_NXP_S32 1
