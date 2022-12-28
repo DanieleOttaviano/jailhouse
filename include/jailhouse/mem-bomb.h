@@ -6,10 +6,13 @@
  *
  * Copyright (C) Boston University, MA, USA, 2020
  * Copyright (C) Technical University of Munich, 2020 - 2021
+ * Copyright (C) Minerva Systems, 2022
  *
  * Authors:
  *  Renato Mancuso <rmancuso@bu.edu>
  *  Andrea Bastoni <andrea.bastoni@tum.de>
+ *  Mirko Cangiano <mirko.cangiano@minervasys.tech>
+ *  Fabio Spanò <fabio.spano@minervasys.tech>
  */
 #include "config.h"
 
@@ -20,9 +23,15 @@
 #define NUM_CPU			4
 #define BOMB_CPU		1 << (BOMB_ID + 1)
 
+
+/*NOTE: Choose on which architecture you are running membomb to use the correct memory addresses*/
+//#define CONFIG_ZCU102
+//#define CONFIG_MACH_NXP_S32
+#define CONFIG_ZCU104
+
 /**
  * NOTE: Hacky but effective way of configure different parameters
- * for different DRAM layouts on ZCU102 and S32V.
+ * for different DRAM layouts on ZCU104, ZCU102 and S32V.
  *
  * The PHYS values controls the placement in physical memory, the VIRT
  * address doesn't change (MEM_VIRT_START). The regions identify the buffers
@@ -40,13 +49,17 @@
 //#define MAIN_PHYS_BASE		0x90000000
 #define MAIN_PHYS_BASE		0xc0000000
 //#define COMM_PHYS_BASE		0xc0000000 // move comm in the high DDR
-#else
+#endif
+#ifdef CONFIG_ZCU104
+#define COMM_PHYS_BASE		0x50020000
+#define MAIN_PHYS_BASE		0x57c00000
+#endif
+#ifdef CONFIG_ZCU102
 /* ZCU102 */
 #define MAIN_PHYS_BASE		0x800200000	// high dram
 //#define MAIN_PHYS_BASE		0x020000000	// low dram
 #define COMM_PHYS_BASE		0x87c000000
 #endif
-
 /* Main program */
 #define MAIN_SIZE		0x200000
 /* Memory Area for the experiments */
