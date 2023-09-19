@@ -101,6 +101,7 @@ struct jailhouse_cell_desc {
 	__u32 flags;
 
 	__u32 cpu_set_size;
+	__u32 rpu_set_size;
 	__u32 num_memory_regions;
 	__u32 num_cache_regions;
 	__u32 num_irqchips;
@@ -131,6 +132,9 @@ struct jailhouse_cell_desc {
 #define JAILHOUSE_MEM_COLORED_NO_COPY	0x0400
 /* Set internally for remap_to/unmap_from root ops */
 #define JAILHOUSE_MEM_TMP_ROOT_REMAP	0x0800
+#define JAILHOUSE_MEM_RPU		12 /* uses bits 12..13*/
+#define JAILHOUSE_MEM_TCM_A		(1 << JAILHOUSE_MEM_RPU)
+#define JAILHOUSE_MEM_TCM_B		(2 << JAILHOUSE_MEM_RPU)
 #define JAILHOUSE_MEM_IO_UNALIGNED	0x8000
 #define JAILHOUSE_MEM_IO_WIDTH_SHIFT	16 /* uses bits 16..19 */
 #define JAILHOUSE_MEM_IO_8		(1 << JAILHOUSE_MEM_IO_WIDTH_SHIFT)
@@ -437,6 +441,7 @@ jailhouse_cell_config_size(struct jailhouse_cell_desc *cell)
 {
 	return sizeof(struct jailhouse_cell_desc) +
 		cell->cpu_set_size +
+		cell->rpu_set_size +
 		cell->num_memory_regions * sizeof(struct jailhouse_memory) +
 		cell->num_cache_regions * sizeof(struct jailhouse_cache) +
 		cell->num_irqchips * sizeof(struct jailhouse_irqchip) +
@@ -461,11 +466,18 @@ jailhouse_cell_cpu_set(const struct jailhouse_cell_desc *cell)
 		sizeof(struct jailhouse_cell_desc));
 }
 
+static inline const unsigned long *
+jailhouse_cell_rpu_set(const struct jailhouse_cell_desc *cell)
+{
+	return (const unsigned long *) 
+		((void *)jailhouse_cell_cpu_set(cell) + cell->cpu_set_size);
+}
+
 static inline const struct jailhouse_memory *
 jailhouse_cell_mem_regions(const struct jailhouse_cell_desc *cell)
 {
 	return (const struct jailhouse_memory *)
-		((void *)jailhouse_cell_cpu_set(cell) + cell->cpu_set_size);
+		((void *)jailhouse_cell_rpu_set(cell) + cell->rpu_set_size);
 }
 
 static inline const struct jailhouse_cache *

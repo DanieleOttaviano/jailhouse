@@ -40,6 +40,7 @@ struct jailhouse_cell_info {
 	struct jailhouse_cell_id id;
 	char *state;
 	char *cpus_assigned_list;
+	char *rpus_assigned_list;
 	char *cpus_failed_list;
 };
 
@@ -322,6 +323,10 @@ static struct jailhouse_cell_info *get_cell_info(const unsigned int id)
 	cinfo->cpus_assigned_list =
 		read_sysfs_cell_string(id, "cpus_assigned_list");
 
+	/* get assigned rpu list */
+	cinfo->rpus_assigned_list =
+		read_sysfs_cell_string(id, "rpus_assigned_list");
+
 	/* get failed cpu list */
 	cinfo->cpus_failed_list = read_sysfs_cell_string(id, "cpus_failed_list");
 
@@ -332,6 +337,7 @@ static void cell_info_free(struct jailhouse_cell_info *cinfo)
 {
 	free(cinfo->state);
 	free(cinfo->cpus_assigned_list);
+	free(cinfo->rpus_assigned_list);
 	free(cinfo->cpus_failed_list);
 	free(cinfo);
 }
@@ -363,14 +369,14 @@ static int cell_list(int argc, char *argv[])
 	}
 
 	if (num_entries > 0)
-		printf("%-8s%-24s%-18s%-24s%-24s\n",
-		       "ID", "Name", "State", "Assigned CPUs", "Failed CPUs");
+		printf("%-8s%-24s%-18s%-24s%-24s%-24s\n",
+		       "ID", "Name", "State", "Assigned CPUs", "Assigned RPUs", "Failed CPUs");
 	for (i = 0; i < num_entries; i++) {
 		id = (unsigned int)strtoul(namelist[i]->d_name, NULL, 10);
 
 		cinfo = get_cell_info(id);
-		printf("%-8d%-24s%-18s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
-		       cinfo->state, cinfo->cpus_assigned_list, cinfo->cpus_failed_list);
+		printf("%-8d%-24s%-18s%-24s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
+		       cinfo->state, cinfo->cpus_assigned_list, cinfo->rpus_assigned_list, cinfo->cpus_failed_list);
 		cell_info_free(cinfo);
 		free(namelist[i]);
 	}

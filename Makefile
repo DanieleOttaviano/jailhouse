@@ -39,6 +39,12 @@ endif
 modules clean:
 	$(Q)$(MAKE) $(kbuild)
 
+remote:
+	$(Q)$(MAKE) -C inmates/demos/armr5
+
+clean-remote:
+	$(Q)$(MAKE) -C inmates/demos/armr5 clean
+
 # documentation, build needs to be triggered explicitly
 docs:
 	$(DOXYGEN) Documentation/Doxyfile
@@ -59,4 +65,4 @@ ifeq ($(strip $(PYTHON_PIP_USABLE)), yes)
 endif
 
 .PHONY: modules_install install clean firmware_install modules tools docs \
-	docs_clean
+	docs_clean remote clean-remote

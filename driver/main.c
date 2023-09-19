@@ -204,6 +204,27 @@ static long get_max_cpus(u32 cpu_set_size,
 	return -EINVAL;
 }
 
+static long get_max_rpus(u32 rpu_set_size,
+			 const struct jailhouse_system __user *system_config)
+{
+	u8 __user *rpu_set =
+		(u8 __user *)jailhouse_cell_rpu_set(
+				(const struct jailhouse_cell_desc * __force)
+				&system_config->root_cell);
+	unsigned int pos = rpu_set_size;
+	long max_rpu_id;
+	u8 bitmap;
+
+	while (pos-- > 0) {
+		if (get_user(bitmap, rpu_set + pos))
+			return -EFAULT;
+		max_rpu_id = fls(bitmap);
+		if (max_rpu_id > 0)
+			return pos * 8 + max_rpu_id;
+	}
+	return -EINVAL;
+}
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
 #define __get_vm_area(size, flags, start, end)			\
 	__get_vm_area_caller(size, flags, start, end,		\
@@ -380,6 +401,7 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	unsigned int clock_gates;
 	const char *fw_name;
 	long max_cpus;
+	long max_rpus;
 	int err;
 
 	fw_name = jailhouse_get_fw_name();
@@ -412,6 +434,15 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 		return max_cpus;
 	if (max_cpus > UINT_MAX)
 		return -EINVAL;
+	
+	max_rpus = get_max_rpus(config_header.root_cell.rpu_set_size, arg);
+	if (max_rpus < 0)
+		return max_rpus;
+	if (max_rpus > UINT_MAX)
+		return -EINVAL;
+
+	pr_err("max_cpus : %ld\n",max_cpus);
+	pr_err("max_rpus : %ld\n",max_rpus);
 
 	if (mutex_lock_interruptible(&jailhouse_lock) != 0)
 		return -EINTR;
@@ -456,7 +487,7 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 		   sizeof(header->signature)) != 0 ||
 	    hypervisor->size >= hv_mem->size)
 		goto error_release_fw;
-
+	//Do we need space also for RPUs?
 	hv_core_and_percpu_size = header->core_size +
 		max_cpus * header->percpu_size;
 	config_size = jailhouse_system_config_size(&config_header);
