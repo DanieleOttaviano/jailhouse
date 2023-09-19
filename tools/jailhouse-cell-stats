@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+
+# Jailhouse, a Linux-based partitioning hypervisor
+#
+# Copyright (c) Siemens AG, 2014
+#
+# Authors:
+#  Jan Kiszka <jan.kiszka@siemens.com>
+#
+# This work is licensed under the terms of the GNU GPL, version 2.  See
+# the COPYING file in the top-level directory.
+
+import curses
+import datetime
+import os
+import sys
+
+cells_dir = "/sys/devices/jailhouse/cells/"
+cell_dir  = cells_dir + "%d/"
+stats_dir = cell_dir + "statistics/"
+
+
+def main(stdscr, cell_id, cell_name, stats_names, cpus):
+    def reset_stats():
+        curses.halfdelay(10)
+        return dict.fromkeys(stats_names, None)
+
+    try:
+        curses.use_default_colors()
+        curses.curs_set(0)
+    except curses.error:
+        pass
+    curses.noecho()
+    value = dict.fromkeys(stats_names)
+    old_value = reset_stats()
+    cpu = -1
+    while True:
+        now = datetime.datetime.now()
+
+        for name in stats_names:
+            cpu_dir = ("/cpu%d" % cpus[cpu]) if cpu >= 0 else ""
+            f = open((stats_dir + cpu_dir + "/%s") % (cell_id, name), "r")
+            value[name] = int(f.read())
+
+        def sortkey(name):
+            if old_value[name] is None:
+                return (-value[name], name)
+            else:
+                return (old_value[name] - value[name], -value[name], name)
+
+        stdscr.erase()
+        stdscr.addstr(0, 0, "Statistics for %s cell" % cell_name)
+        (height, width) = stdscr.getmaxyx()
+        stdscr.hline(2, 0, " ", width, curses.A_REVERSE)
+        stdscr.addstr(2, 0, "COUNTER ", curses.A_REVERSE)
+        if cpu >= 0:
+            stdscr.addstr(2, 8, "(CPU %d)" % cpus[cpu], curses.A_REVERSE)
+        else:
+            stdscr.addstr(2, 8, "(All CPUs)", curses.A_REVERSE)
+        stdscr.addstr(2, 30, "%10s" % "SUM", curses.A_REVERSE)
+        stdscr.addstr(2, 40, "%10s" % "PER SEC", curses.A_REVERSE)
+        line = 3
+        for name in sorted(stats_names, key=sortkey):
+            stdscr.addstr(line, 0, name)
+            stdscr.addstr(line, 30, "%10u" % value[name])
+            if not old_value[name] is None:
+                dt = (now - last_refresh).total_seconds()
+                delta_per_sec = (value[name] - old_value[name]) / dt
+                stdscr.addstr(line, 40, "%10u" % round(delta_per_sec))
+            old_value[name] = value[name]
+            line += 1
+        stdscr.hline(height - 1, 0, " ", width, curses.A_REVERSE)
+        stdscr.addstr(height - 1, 1,
+                      "Q - Quit | C - Toggle CPU | A - All CPUs",
+                      curses.A_REVERSE)
+        stdscr.refresh()
+
+        last_refresh = now
+
+        try:
+            c = stdscr.getch()
+            if c == ord('q'):
+                break
+            elif c == ord('c'):
+                old_value = reset_stats()
+                cpu = (cpu + 1) % len(cpus)
+            elif c == ord('a'):
+                old_value = reset_stats()
+                cpu = -1
+            else:
+                curses.halfdelay(40)
+        except KeyboardInterrupt:
+            break
+        except curses.error:
+            continue
+
+
+def usage(exit_code):
+    prog = os.path.basename(sys.argv[0]).replace('-', ' ')
+    print("usage: %s { ID | [--name] NAME }" % prog)
+    exit(exit_code)
+
+
+argc = len(sys.argv)
+use_name = argc >= 2 and sys.argv[1] == "--name"
+
+if argc < 2 or argc > 3 or (not use_name and argc > 2):
+    usage(1)
+if sys.argv[1] in ("--help", "-h"):
+    usage(0)
+
+cell_id = -1
+try:
+    if use_name:
+        cell_name = sys.argv[2]
+    else:
+        cell_name = sys.argv[1]
+        try:
+            cell_id = int(sys.argv[1])
+            with open((cell_dir + "name") % cell_id, "r") as f:
+                cell_name = f.read().rstrip()
+        except ValueError:
+            pass
+
+    if cell_id == -1:
+        for id in os.listdir(cells_dir):
+            f = open((cell_dir + "name") % int(id), "r")
+            if f.read().rstrip() == cell_name:
+                cell_id = int(id)
+                break
+
+    entries = os.listdir(stats_dir % cell_id)
+    stats_names = [d for d in entries if d.startswith("vmexits_")]
+    cpus = sorted([int(d[3:]) for d in entries if d.startswith("cpu")])
+except OSError as e:
+    print("reading stats: %s" % e.strerror, file=sys.stderr)
+    exit(1)
+
+curses.wrapper(main, cell_id, cell_name, stats_names, cpus)

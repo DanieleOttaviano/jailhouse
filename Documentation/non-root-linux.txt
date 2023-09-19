@@ -1,0 +1,80 @@
+Booting Linux in non-root cells
+===============================
+
+Jailhouse exposes only a minimal environment to inmates of non-root cells.
+Specifically on x86, the available resources are insufficient to boot standard
+operating systems without modifications. This document describes the necessary
+steps to configure Linux for booting in a non-root cell.
+
+
+Kernel patches
+--------------
+
+We currently maintain a queue of patches to enable booting of Linux in an x86
+non-root cell:
+
+    git://git.kiszka.org/linux.git queues/jailhouse
+
+Note that this branch may be rebased from time to time to move it to a more
+recent kernel version or to cleanup and adjust the patches. The plan is to
+push those patches upstream once their usefulness and correctness have been
+confirmed.
+
+Booting a Linux kernel on an ARM/ARM64 target is significantly simpler than on
+x86, so in this case we do not need a specially modified Linux kernel for the
+non-root cell.
+
+
+x86 Kernel configuration
+------------------------
+
+After checking out the above kernel branch, create a configuration that
+contains at least the following adjustments:
+
+- enable CONFIG_JAILHOUSE_GUEST
+- disable CONFIG_SERIO
+- disable CONFIG_PM_TRACE_RTC
+
+Note that only 64-bit kernels are supported.
+
+The proper UART configuration depends on the desired console setup. There is
+currently no console available via the inter-cell communication channel, thus
+it may be useful for testing purposes to configure the first physical UART for
+the non-root cell. CONFIG_SERIAL_8250_RUNTIME_UARTS should therefore be set to
+1, and the root cell should avoid using the first UART for its own purposes
+(the linux-x86-demo will revoke the access for the root cell). As the non-root
+Linux cells have no IOAPIC support, there is also no IRQ support for the UART.
+The patch queue currently contains a hack to disable the interrupt for that
+UART and switch Linux to timer-based polling mode. If you don't use a UART,
+CONFIG_SERIAL_8250_RUNTIME_UARTS should be set to 0.
+
+In general, the non-root Linux kernel configuration should be tuned to disable
+all unneeded drivers and features so that no undesired probing will take place
+and the image size as well as the memory footprint is minimized.
+
+
+Non-root Linux start
+--------------------
+
+The easiest way to start a non-root Linux inmate is via the jailhouse tool:
+
+    jailhouse cell linux CELLCONFIG KERNEL [-d | --dtb DTB] [-i | --initrd FILE]
+                         [-c | --cmdline "STRING"] [-w | --write-params FILE]
+
+A device tree (DTB) is only required on ARM and ARM64 systems. You can find
+templates for the supported targets under
+configs/{arm, arm64}/dts/inmate-<target>.dts. Those device tree source files
+are compiled to their binary representations (*.dtb) during the build.
+
+To create, load and start a Linux cell and use the first UART as console, issue
+
+    jailhouse cell linux /path/to/linux.cell /path/to/bzImage \
+        -i /path/to/initrd -c "console=ttyS0,115200"
+
+Alternatively, you can prepare the required configuration image in advance via
+
+    jailhouse cell linux /path/to/linux.cell /path/to/bzImage \
+        -i /path/to/initrd -c "console=ttyS0,115200" -w /path/to/linux-params
+
+and then issue the basic tool commands on the target as printed by the command
+above.

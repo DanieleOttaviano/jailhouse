@@ -1,0 +1,51 @@
+#
+# Jailhouse, a Linux-based partitioning hypervisor
+#
+# Copyright (c) Siemens AG, 2013-2017
+# Copyright (c) Valentine Sinitsyn, 2014
+#
+# Authors:
+#  Jan Kiszka <jan.kiszka@siemens.com>
+#  Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
+#
+# This work is licensed under the terms of the GNU GPL, version 2.  See
+# the COPYING file in the top-level directory.
+#
+
+include $(ALWAYS_COMPAT_MK)
+
+-include $(GEN_CONFIG_MK)
+
+ccflags-$(CONFIG_JAILHOUSE_GCOV) += -fprofile-arcs -ftest-coverage
+
+always-y := lib-amd.a lib-intel.a
+
+common-objs-y := apic.o dbg-write.o entry.o setup.o control.o mmio.o iommu.o \
+		 paging.o pci.o i8042.o vcpu.o efifb.o ivshmem.o
+# memguard stub
+common-objs-y += memguard.o
+
+CFLAGS_efifb.o := -I$(src)
+
+$(obj)/efifb.o: $(src)/altc-8x16
+
+# units initialization order as defined by linking order:
+# iommu, ioapic, [test-device], [cat], <generic units>
+
+common-objs-y += ioapic.o
+
+common-objs-$(CONFIG_TEST_DEVICE) += test-device.o
+
+amd-objs := svm.o amd_iommu.o svm-vmexit.o $(common-objs-y)
+intel-objs := vmx.o vtd.o vmx-vmexit.o $(common-objs-y) cat.o
+
+targets += $(amd-objs) $(intel-objs)
+
+quiet_cmd_link_archive = AR      $@
+cmd_link_archive = rm -f $@; $(AR) rcs$(KBUILD_ARFLAGS) $@ $(filter-out FORCE,$^)
+
+$(obj)/lib-amd.a: $(addprefix $(obj)/,$(amd-objs)) FORCE
+	$(call if_changed,link_archive)
+
+$(obj)/lib-intel.a: $(addprefix $(obj)/,$(intel-objs)) FORCE
+	$(call if_changed,link_archive)

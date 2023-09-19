@@ -1,0 +1,202 @@
+/*
+ * Jailhouse, a Linux-based partitioning hypervisor
+ *
+ * Copyright (c) Siemens AG, 2014-2017
+ *
+ * This work is licensed under the terms of the GNU GPL, version 2.  See
+ * the COPYING file in the top-level directory.
+ *
+ * Alternatively, you can use or redistribute this file under the following
+ * BSD license:
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Configuration for ${product[0]} ${product[1]}
+ * created with '${argstr}'
+ *
+ * NOTE: This config expects the following to be appended to your kernel cmdline
+ *       "memmap=${hex(ourmem[1])}$${hex(ourmem[0])}"
+ */
+
+#include <jailhouse/types.h>
+#include <jailhouse/cell-config.h>
+
+struct {
+	struct jailhouse_system header;
+	__u64 cpus[${int((cpucount + 63) / 64)}];
+	struct jailhouse_memory mem_regions[${len(mem_regions)}];
+	struct jailhouse_irqchip irqchips[${len(irqchips)}];
+	struct jailhouse_pio pio_regions[${len([1 for r in port_regions if r.permit])}];
+	struct jailhouse_pci_device pci_devices[${len(pcidevices)}];
+	struct jailhouse_pci_capability pci_caps[${len(pcicaps)}];
+} __attribute__((packed)) config = {
+	.header = {
+		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
+		.revision = JAILHOUSE_CONFIG_REVISION,
+		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,
+		.hypervisor_memory = {
+			.phys_start = ${hex(hvmem[0])},
+			.size = ${hex(hvmem[1])},
+		},
+		.debug_console = {
+			% if debug_console.address != 0:
+			.address = ${hex(debug_console.address)},
+			.type = JAILHOUSE_CON_TYPE_8250,
+			% if not debug_console.pio:
+			.size = 0x1000,
+			% endif
+			% if debug_console.pio:
+			.flags = JAILHOUSE_CON_ACCESS_PIO |
+			% else:
+			.flags = JAILHOUSE_CON_ACCESS_MMIO |
+			% endif
+			% if debug_console.dist1:
+				 JAILHOUSE_CON_REGDIST_1,
+			% else:
+				 JAILHOUSE_CON_REGDIST_4,
+			% endif
+			% else:
+			.type = JAILHOUSE_CON_TYPE_NONE,
+			% endif
+		},
+		.platform_info = {
+			.pci_mmconfig_base = ${hex(mmconfig.base)},
+			.pci_mmconfig_end_bus = ${hex(mmconfig.end_bus)},
+			% if iommu_units:
+			.iommu_units = {
+				% for unit in iommu_units:
+				{
+					.type = ${unit.type},
+					.base = ${hex(unit.base_addr)},
+					.size = ${hex(unit.mmio_size)},
+					% if unit.is_amd_iommu:
+					.amd.bdf = ${hex(unit.amd_bdf)},
+					.amd.base_cap = ${hex(unit.amd_base_cap)},
+					.amd.msi_cap = ${hex(unit.amd_msi_cap)},
+					.amd.features = ${hex(unit.amd_features)},
+					% endif
+				},
+				% endfor
+			},
+			% endif
+			.x86 = {
+				.pm_timer_address = ${hex(pm_timer_base)},
+				.vtd_interrupt_limit = ${int(vtd_interrupt_limit)},
+			},
+		},
+		.root_cell = {
+			.name = "RootCell",
+			.cpu_set_size = sizeof(config.cpus),
+			.num_memory_regions = ARRAY_SIZE(config.mem_regions),
+			.num_irqchips = ARRAY_SIZE(config.irqchips),
+			.num_pio_regions = ARRAY_SIZE(config.pio_regions),
+			.num_pci_devices = ARRAY_SIZE(config.pci_devices),
+			.num_pci_caps = ARRAY_SIZE(config.pci_caps),
+		},
+	},
+
+	.cpus = {
+		% for n in range(int(cpucount / 64)):
+		0xffffffffffffffff,
+		% endfor
+		% if (cpucount % 64):
+		${'0x%016x,' % ((1 << (cpucount % 64)) - 1)}
+		% endif
+	},
+
+	.mem_regions = {
+		% for r in mem_regions:
+		/* ${str(r)} */
+		% for c in r.comments:
+		/* ${c} */
+		% endfor
+		{
+			.phys_start = ${r.start_str()},
+			.virt_start = ${r.start_str()},
+			.size = ${r.size_str()},
+			.flags = ${r.flagstr('\t\t')},
+		},
+		% endfor
+	},
+
+	.irqchips = {
+		% for i in irqchips:
+		/* ${str(i)} */
+		{
+			.address = ${hex(i.address)},
+			.id = ${hex(i.irqchip_id())},
+			.pin_bitmap = {
+				0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff
+			},
+		},
+		% endfor
+	},
+
+	.pio_regions = {
+		% for r in port_regions:
+		/* ${str(r)} */
+		${'' if r.permit else '/* '}PIO_RANGE(${r.start_str()}, ${r.size_str()}),${'' if r.permit else ' */'}
+		% endfor
+	},
+
+	.pci_devices = {
+		% for d in pcidevices:
+		/* ${str(d)} */
+		{
+			.type = ${d.type},
+			% if d.iommu is not None:
+			.iommu = ${d.iommu},
+			% endif
+			.domain = ${hex(d.domain)},
+			.bdf = ${hex(d.bdf())},
+			.bar_mask = {
+				${'0x%08x' % d.bars.mask[0]}, ${'0x%08x' % d.bars.mask[1]}, ${'0x%08x' % d.bars.mask[2]},
+				${'0x%08x' % d.bars.mask[3]}, ${'0x%08x' % d.bars.mask[4]}, ${'0x%08x' % d.bars.mask[5]},
+			},
+			.caps_start = ${d.caps_start},
+			.num_caps = ${d.num_caps},
+			.num_msi_vectors = ${d.num_msi_vectors},
+			.msi_64bits = ${d.msi_64bits},
+			.msi_maskable = ${d.msi_maskable},
+			.num_msix_vectors = ${d.num_msix_vectors},
+			.msix_region_size = ${hex(d.msix_region_size)},
+			.msix_address = ${hex(d.msix_address).strip('L')},
+		},
+		% endfor
+	},
+
+	.pci_caps = {
+		% for c in pcicaps:
+		% for comment in c.comments:
+		/* ${comment} */
+		% endfor
+		{
+			.id = ${c.gen_id_str()},
+			.start = ${hex(c.start)},
+			.len = ${hex(c.len)},
+			.flags = ${c.flags},
+		},
+		% endfor
+	},
+};

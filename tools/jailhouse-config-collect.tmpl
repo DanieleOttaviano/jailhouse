@@ -1,0 +1,78 @@
+#!/bin/sh
+#
+# Jailhouse, a Linux-based partitioning hypervisor
+#
+# Copyright (c) Siemens AG, 2014
+#
+# This work is licensed under the terms of the GNU GPL, version 2.  See
+# the COPYING file in the top-level directory.
+#
+# This script will collect information needed to generate a Jailhouse
+# configuration for hypervisor and root cell (Linux).
+#
+# Run it like that:
+#  $ jailhouse-config-collect.sh mytarget.tar
+#
+# Copying files and directories from /sys and /proc is surprisingly hard
+# it would be nice to use just one tool together with the list of files.
+# The main problem is that stat does not report the correct file sizes. In
+# procfs files seem to have a size of 0 while in sysfs they often appear
+# bigger than they really are.
+# Archivers like tar/cpio etc. can not be used for procfs and sysfs.
+# This script first gets a temporary copy of all the files we want. After
+# copying the files can be archived with tar.
+
+set -e
+
+if test "x$( id -u )" != "x0"; then
+	echo "Please run as root" 1>&2
+	exit 1
+fi
+
+if test -z "$1" || test "$1" = "--help"; then
+	echo "Usage: $0 mytarget.tar" 1>&2
+	exit 1
+fi
+
+filelist="${filelist}"
+filelist_opt="${filelist_opt}"
+filelist_intel="${filelist_intel}"
+filelist_amd="${filelist_amd}"
+
+tmpdir=/tmp/jailhouse-config-collect.$$
+
+rm -rf $tmpdir
+mkdir $tmpdir
+
+copy_file()
+{
+	dstdir=$tmpdir/$(dirname $1)
+	if [ ! -d $dstdir ]; then
+		mkdir -p $dstdir
+	fi
+	cp -p $1 $tmpdir/$1
+}
+
+# copy all the files we need to a temporary directory first
+for f in $filelist; do
+	copy_file $f
+done
+grep GenuineIntel /proc/cpuinfo > /dev/null &&
+	for f in $filelist_intel; do
+		copy_file $f
+	done
+grep AuthenticAMD /proc/cpuinfo > /dev/null &&
+	for f in $filelist_amd; do
+		copy_file $f
+	done
+for f in $filelist_opt; do
+	if [ -f $f ]; then
+		copy_file $f
+	fi
+done
+
+# now archive it and remove temporary copy
+tar -C $tmpdir -cf $1 .
+rm -rf $tmpdir
+
+exit 0

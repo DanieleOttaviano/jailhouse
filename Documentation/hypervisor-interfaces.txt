@@ -1,0 +1,509 @@
+Hypervisor Interface for Cells
+==============================
+
+The Jailhouse hypervisor provides three kinds of interfaces to interact with
+its cells during runtime. The first is a read-only detection interface. The
+second is a set of hypercalls which cells can invoke synchronously by executing
+architecture specific instructions that switch to hypervisor mode. The third
+interface consists of variables located in a per-cell memory region that is
+shared between hypervisor and that particular cell.
+
+
+Detection
+---------
+
+This interface is useful for cell code that should work not only inside a
+Jailhouse cell. The ABI is architecture specific. So far, it is only available
+for x86.
+
+
+x86 ABI
+- - - -
+
+On x86, Jailhouse modifies the register values returned when executing the
+cpuid instruction as follows:
+
+
+Function (EAX): 0x01
+Result in EAX:  passed unmodified
+          EBX:  passed unmodified
+          ECX:  bit 31 ("hypervisor") set, all other bits passed unmodified
+          EDX:  passed unmodified
+
+Note: A cell should first check if bit 31 is set in ECX before querying the
+signature function 0x40000000.
+
+
+Function (EAX): 0x40000000 (signature)
+Result in EAX:  highest supported hypervisor function, currently 0x40000001
+          EBX:  0x6c69614a ("Jail")
+          ECX:  0x73756f68 ("hous")
+          EDX:  0x00000065 ("e")
+
+Note: A cell should first validate the presence of Jailhouse via both checking
+the hypervisor feature bit (function 31) and then the signature (function
+0x40000000) before evaluating the returned values of the feature function
+0x40000001.
+
+
+Function (EAX): 0x40000001 (features)
+Result in EAX:  0
+          EBX:  0
+          ECX:  0
+          EDX:  0
+
+
+Hypercalls
+----------
+
+A hypercall is typically issued via a designated instruction that causes a
+context switch from guest to hypervisor mode. Before causing the mode switch, a
+cell has to prepare potential arguments of the call in predefined registers or
+a known memory location. A return code of the completed hypercall is passed via
+a similar channel. Details of the hypercall ABI are architecture specific and
+will be defined in the following.
+
+
+x86 ABI
+- - - -
+
+Instruction:    vmcall (IA-32/32e) / vmmcall (AMD64)
+Hypercall code: EAX
+1. argument:    RDI (64-bit mode) / EDI (32-bit mode)
+2. argument:    RSI (64-bit mode) / ESI (32-bit mode)
+Return code:    EAX
+
+
+ARMv7 ABI
+- - - - -
+
+Instruction:    hvc #0x4a48
+Hypercall code: r0
+1. argument:    r1
+2. argument:    r2
+Return code:    r0
+
+
+ARMv8 ABI
+- - - - -
+
+Instruction:    hvc #0x4a48
+Hypercall code: x0
+1. argument:    x1
+2. argument:    x2
+Return code:    x0
+
+
+Hypercall "Disable" (code 0)
+- - - - - - - - - - - - - - -
+
+Tries to shuts down the hypervisor, returning full control over the hardware
+back to Linux. All non-root cells must have been destroyed prior to issuing
+this hypercall. The hypercall has to be invoked on all CPUs of the root cell to
+achieve a consistent shutdown.
+
+This hypercall can only be issued on CPUs belonging to the Linux cell.
+
+Arguments: None
+
+Return code: 0 on success, negative error code otherwise
+
+    Possible errors are:
+        -EPERM  (-1)  - hypercall was issued over a non-Linux cell or an active
+                        cell rejected the shutdown request
+        -EBUSY  (-16) - one or more non-root cells still exist
+
+
+Hypercall "Cell Create" (code 1)
+- - - - - - - - - - - - - - - - -
+
+Creates a new cell according to the provided configuration. The cell's memory
+content will not be initialized, and the cell will be put in suspended state,
+i.e. no code is executed on its CPUs after this hypercall completed.
+
+This hypercall can only be issued on CPUs belonging to the Linux cell.
+
+Arguments: 1. Guest-physical address of cell configuration (see [2] for
+              details)
+
+Return code: 0 on success or negative error code
+
+    Possible errors are:
+        -EPERM  (-1)  - hypercall was issued over a non-root cell or an active
+                        cell locked the cell configurations
+        -E2BIG  (-7)  - configuration data too large to process
+        -ENOMEM (-12) - insufficient hypervisor-internal memory
+        -EBUSY  (-16) - a resource of the new cell is already in use by another
+                        non-root cell, or the caller's CPU is supposed to be
+                        given to the new cell
+        -EEXIST (-17) - a cell with the given name or id already exists
+        -EINVAL (-22) - incorrect or inconsistent configuration data
+
+
+Hypercall "Cell Start" (code 2)
+- - - - - - - - - - - - - - - -
+
+Sets all cell CPUs to an architecture-specific start state and resumes
+execution of the cell if it was previously suspended. At least one CPU will
+then execute the bootstrap code that must have been loaded into the cell's
+memory at the reset address before invoking this hypercall. See [1] for details
+on the start state of cell CPUs. In addition, access from the root cell to
+memory regions of this cell that are marked "loadable" [2] is revoked.
+
+This hypercall can only be issued on CPUs belonging to the Linux cell.
+
+Arguments: 1. ID of target cell
+
+Return code: 0 on success or negative error code
+
+    Possible errors are:
+        -EPERM  (-1)  - hypercall was issued over a non-root cell or the target
+                        cell rejected the reset request
+        -ENOENT (-2)  - cell with provided ID does not exist
+        -EINVAL (-22) - root cell specified, which cannot be started
+
+
+Hypercall "Cell Set Loadable" (code 3)
+- - - - - - - - - - - - - - - - - - - -
+
+Shuts down a running cell and enables (re-)loading of their memory regions that
+are marked "loadable" in the cell's configuration. This is achieved by mapping
+the marked regions into the root cell.
+
+Arguments: 1. ID of target cell
+
+Return code: 0 on success or negative error code
+
+    Possible errors are:
+        -EPERM  (-1)  - hypercall was issued over a non-root cell or the target
+                        cell rejected the shutdown request
+        -ENOENT (-2)  - cell with provided ID does not exist
+        -EINVAL (-22) - root cell specified, which cannot be set loadable
+
+
+Hypercall "Cell Destroy" (code 4)
+- - - - - - - - - - - - - - - - -
+
+Destroys the cell of the provided name, returning its resources to the root
+cell if they are part of the system configuration, i.e. belonged to the root
+cell directly after hypervisor start.
+
+This hypercall can only be issued on CPUs belonging to the root cell.
+
+Arguments: 1. ID of cell to be destroyed
+
+Return code: 0 on success, negative error code otherwise
+
+    Possible errors are:
+        -EPERM  (-1)  - hypercall was issued over a non-root cell, the target
+                        cell rejected the destruction request or another active
+                        cell locked the cell configurations
+        -ENOENT (-2)  - cell with provided ID does not exist
+        -ENOMEM (-12) - insufficient hypervisor-internal memory for
+                        reconfiguration
+        -EINVAL (-22) - root cell specified, which cannot be destroyed
+
+Note: The root cell uses ID 0. Passing this ID to "Cell Destroy" is illegal.
+
+
+Hypercall "Hypervisor Get Info" (code 5)
+- - - - - - - - - - - - - - - - - - - - -
+
+Obtain information about specific hypervisor states.
+
+Arguments: 1. Information type:
+               0 - number of pages in hypervisor memory pool
+               1 - used pages of hypervisor memory pool
+               2 - number of pages in hypervisor remapping pool
+               3 - used pages of hypervisor remapping pool
+               4 - number of registered cells
+
+Return code: Requested value (>=0) or negative error code
+
+    Possible errors are:
+        -EINVAL (-22) - invalid information type
+
+
+Hypercall "Cell Get State" (code 6)
+- - - - - - - - - - - - - - - - - -
+
+Obtain information about the state of a specific cell.
+
+Arguments: 1. ID of cell to be queried
+
+This hypercall can only be issued on CPUs belonging to the root cell.
+
+Return code: Cell state (>=0) or negative error code
+
+    Valid cell states are:
+        0 - Running
+        1 - Shut down
+        2 - Failed
+
+    Possible errors are:
+        -EPERM  (-1)  - hypercall was issued over a non-root cell
+        -EINVAL (-22) - cell state is invalid
+
+
+Hypercall "CPU Get Info" (code 7)
+- - - - - - - - - - - - - - - - -
+
+Obtain information about a specific CPU.
+
+Arguments: 1. Logical ID of CPU to be queried
+           2. Generic information type:
+                  0 - CPU state
+               1000 - Total number of VM exits
+               1001 - VM exits due to MMIO accesses
+               1002 - VM exits due to management events
+               1003 - VM exits due to hypercalls
+
+               x86-specific type:
+
+               1004 - VM exits due to PIO accesses
+               1005 - VM exits due to xAPIC accesses
+               1006 - VM exits due to CR accesses
+               1007 - VM exits due to CPUID instructions
+               1008 - VM exits due to XSETBV instructions
+               1009 - VM exits due to exceptions
+               1010 - VM exits due to unspecified MSR accesses
+               1011 - VM exits due to x2APIC ICR MSR accesses
+
+               ARMv7/ARMv8-specific type:
+
+               1004 - VM exits due to maintenance IRQs
+               1005 - VM exits due to IRQ injections
+               1006 - VM exits due to SGI injections
+               1007 - VM exits due to PSCI calls
+               1008 - VM exits due to SMCCC calls
+               1009 - VM exits due to CP15 accesses (only ARMv7)
+
+Statistic counters are reset when a CPU is assigned to a different cell. The
+total number of VM exits may be different from the sum of all specific VM exit
+counters.
+
+Return code: Requested value (>=0) or negative error code
+
+    Possible CPU states are:
+        0 - Running
+        2 - Failed
+
+    Possible errors are:
+        -EPERM  (-1)  - hypercall was issued over a non-root cell and the CPU
+                        does not belong to the issuing cell
+        -EINVAL (-22) - invalid CPU ID
+
+
+Hypercall "Debug Console putc" (code 8)
+- - - - - - - - - - - - - - - - - - - -
+
+Write a single character to the hypervisor's debug console.
+
+Arguments: 1. character to write
+
+Return code: 0 on success, negative error code otherwise
+
+    Possible errors are:
+        -EPERM  (-1)  - cell lacks JAILHOUSE_CELL_VIRTUAL_CONSOLE_PERMITTED
+                        flag in its configuration
+
+
+Communication Region
+--------------------
+
+The communication region is a per-cell shared memory area that both the
+hypervisor and the particular cell can read from and write to by default. It is
+an optional communication mechanism. If the region shall be used by a cell, it
+has to be mapped into the cell's address space via its configuration (see [2]
+for details). If the cell is configured to be passive with respect to the
+communication region (cell flag JAILHOUSE_CELL_PASSIVE_COMMREG) and the region
+is mapped, it has to be declared read-only in the cell configuration.
+
+
+Communication region layout
+- - - - - - - - - - - - - -
+
+    +------------------------------+ - begin of communication region
+    |  Signature "JHCOMM" (6 byte) |   (lower address)
+    +------------------------------+
+    |     ABI Revision (16 bit)    |
+    +------------------------------+
+    |     Cell State (32 bit)      |
+    +------------------------------+
+    |   Message to Cell (32 bit)   |
+    +------------------------------+
+    |  Message from Cell (32 bit)  |
+    +------------------------------+
+    : Generic Platform Information :
+    +------------------------------+
+    :     Architecture-specific    :
+    :     Platform Information     :
+    +------------------------------+ - higher address
+
+All fields use the native endianness of the system. The format is of the
+Platform Information part is architecture-specific. Its content is filled by
+the hypervisor during cell creation and shall be considered read-only until
+cell destruction.
+
+The ABI revision described here is 2. Future versions may not use a compatible
+layout or field semantic, except for the fields "Signature", "ABI Revision" and
+"Cell State".
+
+
+Logical Channel "Message"
+- - - - - - - - - - - - -
+
+The first logical channel of the region is formed by the fields "Message to
+Cell" and "Message from Cell". The hypervisor uses this channel to inform the
+cell about specific state changes in the system or request permission to
+perform state changes that the cell can affect.
+
+Before the hypervisor sends a new message, it first sets the "Message from
+Cell" field to 0. It then writes a non-zero message code in the "Message to
+Cell" field. Finally the hypervisor reads from the "Message from Cell" field
+in order to receive the cell's answer.
+
+For answering a message, the cell first has to clear the "Message to Cell"
+field. It then has to write a non-zero reply code into the "Message from Cell"
+field. If a cell receives an unknown message code, it has to send the reply
+"Message unknown" (code 1).
+
+Write ordering of all updates has to be ensured by both the hypervisor
+and the cell according to the requirements of the hardware architecture.
+
+The hypervisor may wait for a message reply by spinning until the "Message from
+Cell" field becomes non-zero. Therefore, a cell should check for pending
+messages periodically and answer them as soon as possible. The hypervisor will
+not use a CPU assigned to non-root cell to wait for message replies, but long
+message responds times may still affect the root cell negatively.
+
+The following messages and corresponding replies are defined:
+
+ - Shutdown Request (code 1):
+        The cell is supposed to be shut down, either to destroy only the cell
+        itself or to disable the hypervisor completely.
+
+   Possible replies:
+        2 - Request denied
+        3 - Request approved
+
+   Note: The hypervisor does not request shutdown permission from a cell if
+         that cell has the "Passive Communication Region" flag set in its
+         configuration (see also [2]) or if the cell state is set to "Shut
+         Down" or "Failed" (see below).
+
+ - Reconfiguration Completed (code 2):
+        A cell configuration was changed. This message is for information only
+        but has to be confirmed on reception nevertheless.
+
+   Possible replies:
+        4 - Message received
+
+   Note: The hypervisor does not expect reception confirmation from a cell if
+         that cell has the "Passive Communication Region" flag set in its
+         configuration (see also [2]) or if the cell state is set to "Shut
+         Down" or "Failed" (see below).
+
+
+Logical Channel "Cell State"
+- - - - - - - - - - - - - - -
+
+The cell state field provides the second logical channel. On cell startup, it
+is initialized by the hypervisor to the state "Running". From then on, the
+field becomes conceptually read-only for the hypervisor and will only be
+updated by the cell until a terminal state is reached. The following states are
+defined:
+
+ - Running (code 0)
+ - Running, cell configurations locked (code 1)
+ - Shut down (code 2), terminal state
+ - Failed (code 3), terminal state
+ - Communication region ABI mismatch (code 4), terminal state
+
+Once a cell declared to have reached a terminal state, the hypervisor is free
+to destroy or restart that cell. On restart, it will also reset the state field
+to "Running".
+
+
+Generic Platform Information
+- - - - - - - - - - - - - - -
+
+    +--------------------------------------+ - begin of communication region
+    :          header, see above           :   (lower address)
+    +--------------------------------------+
+    |      Information Flags (32 bit)      |
+    +--------------------------------------+
+    |       Console Address (64 bit)       |
+    +--------------------------------------+
+    |        Console Size (32 bit)         |
+    +--------------------------------------+
+    |        Console Type (16 bit)         |
+    +--------------------------------------+
+    |        Console Flags (16 bit)        |
+    +--------------------------------------+
+    |    Console UART Divider (32 bit)     |
+    +--------------------------------------+
+    |    Console UART Gate No. (32 bit)    |
+    +--------------------------------------+
+    | Console UART Clock Register (64 bit) |
+    +--------------------------------------+
+    |    PCI MMCONFIG Address (64 bit)     |
+    +--------------------------------------+
+    :         Architecture-specific        :
+    :         Platform Information         :
+    +--------------------------------------+ - higher address
+
+The Information Flags field defines two bits so far: Bit 0 is set when the cell
+may use the Debug Console putc hypercall. Bit 1 is set when the cell shall use
+the Debug Console putc hypercall as output console. Other bits in this field
+are reserved.
+
+See [3] for a description of the console fields.
+
+
+Platform Information for x86
+- - - - - - - - - - - - - - -
+
+    +--------------------------------------+ - begin of communication region
+    :          header, see above           :   (lower address)
+    +--------------------------------------+
+    :    generic information, see above    :
+    +--------------------------------------+
+    |       PM Timer Address (16 bit)      |
+    +--------------------------------------+
+    |       Number of CPUs (16 bit)        |
+    +--------------------------------------+
+    |    TSC Frequency in kHz (32 bit)     |
+    +--------------------------------------+
+    | APIC Timer Frequency in kHz (32 bit) |
+    +--------------------------------------+ - higher address
+
+
+Platform Information for ARMv7 and ARMv8
+- - - - - - - - - - - - - - - - - - - - -
+
+    +--------------------------------------+ - begin of communication region
+    :          header, see above           :   (lower address)
+    +--------------------------------------+
+    :    generic information, see above    :
+    +--------------------------------------+
+    |         GIC Version (8 bit)          |
+    +--------------------------------------+
+    |          Reserved (56 bit)           |
+    +--------------------------------------+
+    |   GIC Distributor Address (64 bit)   |
+    +--------------------------------------+
+    |  GIC CPU Interface Address (64 bit)  |
+    +--------------------------------------+
+    |  GIC Redistributor Address (64 bit)  |
+    +--------------------------------------+
+    |  Virtual PCI Host IRQ Base (32 bit)  |
+    +--------------------------------------+ - higher address
+
+
+References
+----------
+
+[1] Documentation/cell-environments.txt
+[2] Documentation/configuration-format.txt
+[3] Documentation/debug-output.md

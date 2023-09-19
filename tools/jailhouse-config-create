@@ -1,0 +1,336 @@
+#!/usr/bin/env python3
+#
+# Jailhouse, a Linux-based partitioning hypervisor
+#
+# Copyright (c) Siemens AG, 2014-2017
+# Copyright (c) Valentine Sinitsyn, 2014-2015
+#
+# Authors:
+#  Henning Schild <henning.schild@siemens.com>
+#  Jan Kiszka <jan.kiszka@siemens.com>
+#  Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
+#
+# This work is licensed under the terms of the GNU GPL, version 2.  See
+# the COPYING file in the top-level directory.
+#
+# This script should help to create a basic jailhouse configuration file.
+# It needs to be executed on the target machine, where it will gather
+# information about the system. For more advanced scenarios you will have
+# to change the generated C-code.
+
+import sys
+import os
+import math
+import re
+import argparse
+import struct
+
+try:
+    from mako.template import Template
+except ImportError:
+    print("This script requires the mako library to run.")
+    sys.exit(1)
+
+# Imports from directory containing this must be done before the following
+sys.path[0] = os.path.dirname(os.path.abspath(__file__)) + "/.."
+import pyjailhouse.sysfs_parser as sysfs_parser
+
+datadir = None
+
+if datadir:
+    template_default_dir = datadir + "/jailhouse"
+else:
+    template_default_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+
+# pretend to be part of the jailhouse tool
+sys.argv[0] = sys.argv[0].replace('-', ' ')
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-g', '--generate-collector',
+                    help='generate a script to collect input files on '
+                         'a remote machine',
+                    action='store_true')
+parser.add_argument('-r', '--root',
+                    help='gather information in ROOT/, the default is "/" '
+                         'which means creating a config for localhost',
+                    default='/',
+                    action='store',
+                    type=str)
+parser.add_argument('-t', '--template-dir',
+                    help='the directory where the templates are located,'
+                         'the default is "' + template_default_dir + '"',
+                    default=template_default_dir,
+                    action='store',
+                    type=str)
+parser.add_argument('-c', '--console',
+                    help='the name of the UART device that should be used as '
+                         'primary hypervisor debug console ("ttyX" or "none")',
+                    default='ttyS0',
+                    action='store',
+                    type=str)
+
+memargs = [['--mem-inmates', '76M', 'inmate'],
+           ['--mem-hv', '6M', 'hypervisor']]
+
+for entry in memargs:
+    parser.add_argument(entry[0],
+                        help='the amount of ' + entry[2] +
+                             ' memory, default is "' + entry[1] +
+                             '", format "xxx[K|M|G]"',
+                        default=entry[1],
+                        action='store',
+                        type=str)
+
+parser.add_argument('file', metavar='FILE',
+                    help='name of file to write out',
+                    type=str)
+
+options = parser.parse_args()
+
+
+def kmg_multiply(value, kmg):
+    if (kmg == 'K' or kmg == 'k'):
+        return 1024 * value
+    if (kmg == 'M' or kmg == 'm'):
+        return 1024**2 * value
+    if (kmg == 'G' or kmg == 'g'):
+        return 1024**3 * value
+    return value
+
+
+def kmg_multiply_str(str):
+    m = re.match(r'([0-9a-fA-FxX]+)([KMG]?)', str)
+    if m is not None:
+        return kmg_multiply(int(m.group(1)), m.group(2))
+    raise RuntimeError('kmg_multiply_str can not parse input "' + str + '"')
+
+
+def input_readline(name, optional=False):
+    f = sysfs_parser.input_open(name, optional=optional)
+    line = f.readline()
+    f.close()
+    return line
+
+
+def parse_kernel_cmdline():
+    line = input_readline('/proc/cmdline')
+    ma = re.findall(r'memmap=([0-9a-fA-FxX]+)([KMG]?)\$'
+                    '([0-9a-fA-FxX]+)([KMG]?)', line)
+    if (len(ma) == 0):
+        return None
+    size = kmg_multiply(int(ma[0][0], 0), ma[0][1])
+    start = kmg_multiply(int(ma[0][2], 0), ma[0][3])
+    if (len(ma) > 1):
+        print('WARNING: Multiple "memmap" reservations in /proc/cmdline. '
+              'Picking the first for jailhouse!', file=sys.stderr)
+
+    return [start, size]
+
+
+def alloc_mem(regions, size):
+    mem = [0x3a000000, size]
+    for r in regions:
+        if (
+            r.typestr == 'System RAM' and
+            r.start <= mem[0] and
+            r.stop + 1 >= mem[0] + mem[1]
+        ):
+            if r.start < mem[0]:
+                head_r = sysfs_parser.MemRegion(r.start, mem[0] - 1, r.typestr,
+                                                r.comments)
+                regions.insert(regions.index(r), head_r)
+            if r.stop + 1 > mem[0] + mem[1]:
+                tail_r = sysfs_parser.MemRegion(mem[0] + mem[1], r.stop,
+                                                r.typestr, r.comments)
+                regions.insert(regions.index(r), tail_r)
+            regions.remove(r)
+            return mem
+    for r in reversed(regions):
+        if (r.typestr == 'System RAM' and r.size() >= mem[1]):
+            mem[0] = r.start
+            r.start += mem[1]
+            return mem
+    raise RuntimeError('failed to allocate memory')
+
+
+def count_cpus():
+    list = sysfs_parser.input_listdir('/sys/devices/system/cpu', ['cpu*/uevent'])
+    count = 0
+    for f in list:
+        if re.match(r'cpu[0-9]+', f):
+            count += 1
+    return count
+
+class MMConfig:
+    def __init__(self, base, end_bus):
+        self.base = base
+        self.end_bus = end_bus
+
+    @staticmethod
+    def parse():
+        f = sysfs_parser.input_open('/sys/firmware/acpi/tables/MCFG', 'rb')
+        signature = f.read(4)
+        if signature != b'MCFG':
+            raise RuntimeError('MCFG: incorrect input file format %s' %
+                               signature)
+        (length,) = struct.unpack('<I', f.read(4))
+        if length > 60:
+            raise RuntimeError('Multiple MMCONFIG regions found! '
+                               'This is not supported')
+        f.seek(44)
+        (base, segment, start_bus, end_bus) = \
+            struct.unpack('<QHBB', f.read(12))
+        if segment != 0 or start_bus != 0:
+            raise RuntimeError('Invalid MCFG structure found')
+        return MMConfig(base, end_bus)
+
+
+class DebugConsole:
+    def __init__(self, console):
+        self.address = 0
+        self.pio = False
+        self.dist1 = False
+        if console == 'none':
+            return
+        try:
+            type = int(input_readline('/sys/class/tty/%s/io_type' % console,
+                                      True))
+            if type == 0:
+                self.address = int(input_readline(
+                    '/sys/class/tty/%s/port' % console, True), 16)
+                self.pio = True
+                self.dist1 = True
+            elif type in (2, 3):
+                shift = int(input_readline(
+                    '/sys/class/tty/%s/iomem_reg_shift' % console, True))
+                if (type == 2 and shift != 0) or (type == 3 and shift != 2):
+                    print('WARNING: Unexpected UART MMIO access mode: '
+                          'type=%d, shift=%d. Disabling console.' %
+                          (type, shift))
+                else:
+                    self.address = int(input_readline(
+                        '/sys/class/tty/%s/iomem_base' % console, True), 16)
+                    self.pio = False
+                    self.dist1 = (shift == 0)
+        except ValueError:
+            pass
+
+
+if options.generate_collector:
+    f = open(options.file, 'w')
+    filelist = ' '.join(sysfs_parser.inputs['files'])
+    filelist_opt = ' '.join(sysfs_parser.inputs['files_opt'])
+    filelist_intel = ' '.join(sysfs_parser.inputs['files_intel'])
+    filelist_amd = ' '.join(sysfs_parser.inputs['files_amd'])
+
+    tmpl = Template(filename=os.path.join(options.template_dir,
+                                          'jailhouse-config-collect.tmpl'))
+    f.write(tmpl.render(filelist=filelist, filelist_opt=filelist_opt,
+            filelist_intel=filelist_intel, filelist_amd=filelist_amd))
+    f.close()
+    sys.exit(0)
+
+if options.root == '/' and os.geteuid() != 0:
+    print('ERROR: You have to be root to work on "/"!', file=sys.stderr)
+    sys.exit(1)
+
+sysfs_parser.set_root_dir(options.root)
+
+jh_enabled = input_readline('/sys/devices/jailhouse/enabled', True).rstrip()
+if jh_enabled == '1':
+    print('ERROR: Jailhouse was enabled when collecting input files! '
+          'Disable jailhouse and try again.',
+          file=sys.stderr)
+    sys.exit(1)
+
+# Information collection
+#########################
+debug_console = DebugConsole(options.console)
+
+# System infromation
+product = [
+    input_readline('/sys/class/dmi/id/sys_vendor', True).rstrip(),
+    input_readline('/sys/class/dmi/id/product_name', True).rstrip(),
+]
+cpu_count = count_cpus()
+mmconfig = MMConfig.parse()
+
+# Query devices
+pci_devices = sysfs_parser.parse_pcidevices()
+(mem_regions, dmar_regions) = sysfs_parser.parse_iomem(pci_devices)
+(port_regions, pm_timer_base) = sysfs_parser.parse_ioports()
+ioapics = sysfs_parser.parse_madt()
+vendor = sysfs_parser.get_cpu_vendor()
+if vendor == 'GenuineIntel':
+    (iommu_units, extra_memregs) = sysfs_parser.parse_dmar(pci_devices, ioapics,
+                                                           dmar_regions)
+else:
+    (iommu_units, extra_memregs) = sysfs_parser.parse_ivrs(pci_devices, ioapics)
+mem_regions += extra_memregs
+
+IOAPIC_MAX_PINS = 120
+int_src_count = IOAPIC_MAX_PINS
+
+# Collect all PCI capabilities
+pci_caps = []
+for i,d in enumerate(pci_devices):
+    if d.caps:
+        duplicate = False
+        # look for duplicate capability patterns
+        for d2 in pci_devices[:i]:
+            if d2.caps == d.caps:
+                # reused existing capability list, but record all users
+                d2.caps[0].comments.append(str(d))
+                d.caps_start = d2.caps_start
+                duplicate = True
+                break
+        if not duplicate:
+            d.caps[0].comments.append(str(d))
+            d.caps_start = len(pci_caps)
+            pci_caps.extend(d.caps)
+    int_src_count += max(d.num_msi_vectors, d.num_msix_vectors)
+
+vtd_interrupt_limit = 2**math.ceil(math.log(int_src_count, 2))
+
+# Determine hypervisor memory
+inmatemem = kmg_multiply_str(options.mem_inmates)
+hvmem = [0, kmg_multiply_str(options.mem_hv)]
+total = hvmem[1] + inmatemem
+
+ourmem = parse_kernel_cmdline()
+if ourmem is None:
+    # kernel does not have memmap region, pick one
+    ourmem = alloc_mem(mem_regions, total)
+elif (total > ourmem[1]):
+    raise RuntimeError('Your memmap reservation is too small you need >="' +
+                       hex(total) + '". Hint: your kernel cmd line needs '
+                       '"memmap=' + hex(total) + '$' + hex(ourmem[0]) + '"')
+
+hvmem[0] = ourmem[0]
+mem_regions.append(sysfs_parser.MemRegion(ourmem[0] + hvmem[1],
+                                          ourmem[0] + hvmem[1] + inmatemem - 1,
+                                          'JAILHOUSE Inmate Memory'))
+
+kwargs = {
+    'mem_regions': mem_regions,
+    'port_regions': port_regions,
+    'ourmem': ourmem,
+    'argstr': ' '.join(sys.argv),
+    'hvmem': hvmem,
+    'product': product,
+    'pcidevices': pci_devices,
+    'pcicaps': pci_caps,
+    'cpucount': cpu_count,
+    'irqchips': ioapics,
+    'pm_timer_base': pm_timer_base,
+    'vtd_interrupt_limit': vtd_interrupt_limit,
+    'mmconfig': mmconfig,
+    'iommu_units': iommu_units,
+    'debug_console': debug_console,
+}
+
+tmpl = Template(filename=os.path.join(options.template_dir,
+                                      'root-cell-config.c.tmpl'))
+
+with open(options.file, 'w') as f:
+    f.write(tmpl.render(**kwargs))

@@ -1,0 +1,79 @@
+From d4886f6f608cf7c25527eed3db757650231f2a7b Mon Sep 17 00:00:00 2001
+From: Andrea Bastoni <andrea.bastoni@tum.de>
+Date: Wed, 23 Dec 2020 11:48:30 +0100
+Subject: [PATCH] SVC for (QoS) register r/w on ZCU102
+
+The patch applies on xilinx's arm-trusted-firmware tag: xilinx-v2020.2
+
+Signed-off-by: Rohan Tabish <rohantabish@gmail.com>.
+Signed-off-by: Andrea Bastoni <andrea.bastoni@tum.de>
+---
+ include/services/std_svc.h              |  4 ++++
+ plat/xilinx/zynqmp/include/zynqmp_def.h |  5 ++++-
+ services/std_svc/std_svc_setup.c        | 12 ++++++++++++
+ 3 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/include/services/std_svc.h b/include/services/std_svc.h
+index b0614fb42..ba16e0dea 100644
+--- a/include/services/std_svc.h
++++ b/include/services/std_svc.h
+@@ -14,6 +14,10 @@
+ /*					0x8400ff02 is reserved */
+ #define ARM_STD_SVC_VERSION		0x8400ff03
+ 
++/* SVCs to read EL3 mapped registers on ZCU102 */
++#define ARM_STD_SVC_READ_REG		0x8400ff04
++#define ARM_STD_SVC_WRITE_REG		0x8400ff05
++
+ /* ARM Standard Service Calls version numbers */
+ #define STD_SVC_VERSION_MAJOR		0x0
+ #define STD_SVC_VERSION_MINOR		0x1
+diff --git a/plat/xilinx/zynqmp/include/zynqmp_def.h b/plat/xilinx/zynqmp/include/zynqmp_def.h
+index 23075ef2e..c2b1eef4e 100644
+--- a/plat/xilinx/zynqmp/include/zynqmp_def.h
++++ b/plat/xilinx/zynqmp/include/zynqmp_def.h
+@@ -34,7 +34,10 @@
+ 
+ /* For cpu reset APU space here too 0xFE5F1000 CRF_APB*/
+ #define CRF_APB_BASE		U(0xFD1A0000)
+-#define CRF_APB_SIZE		U(0x00600000)
++/* QoS support ZCU 102: extend do cover FPD_GPV and LPD_GPV
++ * FIXME: does this generate problems with the IOMMU?
++ */
++#define CRF_APB_SIZE		U(0x02000000)
+ #define CRF_APB_CLK_BASE	U(0xFD1A0020)
+ 
+ /* CRF registers and bitfields */
+diff --git a/services/std_svc/std_svc_setup.c b/services/std_svc/std_svc_setup.c
+index 1d80fa343..1bef27c6b 100644
+--- a/services/std_svc/std_svc_setup.c
++++ b/services/std_svc/std_svc_setup.c
+@@ -13,6 +13,7 @@
+ #include <lib/pmf/pmf.h>
+ #include <lib/psci/psci.h>
+ #include <lib/runtime_instr.h>
++#include <lib/mmio.h>
+ #include <services/sdei.h>
+ #include <services/spm_svc.h>
+ #include <services/std_svc.h>
+@@ -137,6 +138,17 @@ static uintptr_t std_svc_smc_handler(uint32_t smc_fid,
+ 		/* Return the version of current implementation */
+ 		SMC_RET2(handle, STD_SVC_VERSION_MAJOR, STD_SVC_VERSION_MINOR);
+ 
++	case ARM_STD_SVC_READ_REG:
++		//NOTICE(" X1: 0x%lx\n", x1);
++		SMC_RET1(handle, mmio_read_32(x1));
++
++	case ARM_STD_SVC_WRITE_REG:
++		//NOTICE(" X1: 0x%lx X2: 0x%lx\n", x1, x2);
++		mmio_write_32(x1, x2);
++		//NOTICE(" X1: 0x%lx X2: 0x%lx\n", x1, x2);
++
++		SMC_RET1(handle, mmio_read_32(x1));
++
+ 	default:
+ 		WARN("Unimplemented Standard Service Call: 0x%x \n", smc_fid);
+ 		SMC_RET1(handle, SMC_UNK);
+-- 
+2.30.2
+

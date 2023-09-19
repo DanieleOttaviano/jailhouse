@@ -1,0 +1,30 @@
+#
+# Jailhouse, a Linux-based partitioning hypervisor
+#
+# Copyright (c) Siemens AG, 2013-2016
+#
+# Authors:
+#  Jan Kiszka <jan.kiszka@siemens.com>
+#
+# This work is licensed under the terms of the GNU GPL, version 2.  See
+# the COPYING file in the top-level directory.
+#
+
+include $(src)/../arm-common/Kbuild
+
+always-y := lib.a
+
+# units initialization order as defined by linking order:
+# irqchip (common-objs-y), <generic units>
+
+lib-y := $(common-objs-y)
+lib-y += entry.o setup.o control.o traps.o mmio.o lib.o
+lib-y += mmu_hyp.o caches.o iommu.o
+# memguard stub
+lib-y += memguard.o
+
+# in here we switch of the MMU and stuff, cant profile such code
+# NOTE
+#  gcc7 will bring a new function attribute "no_profile_instrument_function"
+#  should switch to that for higher granularity, but gcc7 is not even there
+CFLAGS_mmu_hyp.o += -fno-profile-arcs -fno-test-coverage

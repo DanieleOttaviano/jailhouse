@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+
+# Jailhouse, a Linux-based partitioning hypervisor
+#
+# Copyright (c) Siemens AG, 2018
+#
+# Authors:
+#  Jan Kiszka <jan.kiszka@siemens.com>
+#
+# This work is licensed under the terms of the GNU GPL, version 2.  See
+# the COPYING file in the top-level directory.
+
+import mmap
+import os
+import struct
+import sys
+
+# Imports from directory containing this must be done before the following
+sys.path[0] = os.path.dirname(os.path.abspath(__file__)) + "/.."
+import pyjailhouse.sysfs_parser as sysfs_parser
+
+
+check_passed = True
+ran_all = True
+
+
+def check_feature(msg, ok, optional=False):
+    if not (ok or optional):
+        global check_passed
+        check_passed = False
+    print('%-32s%s' % (msg, 'ok' if ok else
+                            ('missing (optional)' if optional else 'MISSING')))
+    return ok
+
+
+def parse_cpuinfo():
+    vendor = None
+    features = None
+    cpus = 0
+    with open('/proc/cpuinfo', 'r') as info:
+        for line in info:
+            if not line.strip():
+                continue
+            key, value = line.split(':')
+            if key.strip() == 'vendor_id':
+                if not vendor:
+                    vendor = value.strip()
+                elif vendor != value.strip():
+                    print('ERROR: Inconsistent vendor string on CPU %d' % cpus,
+                          file=sys.stderr)
+                    sys.exit(2)
+                cpus += 1
+            if key.strip() == 'flags':
+                if not features:
+                    features = value.strip().split(' ')
+                elif features != value.strip().split(' '):
+                    print('ERROR: Inconsistent feature set on CPU %d' % cpus,
+                          file=sys.stderr)
+                    sys.exit(2)
+    return (vendor, features, cpus)
+
+
+class MSR:
+    IA32_FEATURE_CONTROL = 0x0000003a
+    IA32_VMX_BASIC = 0x00000480
+    IA32_VMX_PINBASED_CTLS = 0x00000481
+    IA32_VMX_PROCBASED_CTLS = 0x00000482
+    IA32_VMX_EXIT_CTLS = 0x00000483
+    IA32_VMX_ENTRY_CTLS = 0x00000484
+    IA32_VMX_MISC = 0x00000485
+    IA32_VMX_PROCBASED_CTLS2 = 0x0000048b
+    IA32_VMX_EPT_VPID_CAP = 0x0000048c
+    IA32_VMX_TRUE_PROCBASED_CTLS = 0x0000048e
+
+    def __init__(self, num_cpus):
+        self.num_cpus = num_cpus
+        self.msr = []
+        for n in range(self.num_cpus):
+            self.msr.append(open('/dev/cpu/%d/msr' % n, 'rb', 0))
+
+    def read(self, index):
+        try:
+            self.msr[0].seek(index)
+            value = struct.unpack('Q', self.msr[0].read(8))[0]
+        except:
+            return 0
+
+        for n in range(1, self.num_cpus):
+            self.msr[n].seek(index)
+            if value != struct.unpack('Q', self.msr[n].read(8))[0]:
+                print('ERROR: Inconsistent value of MSR 0x%x on CPU %d' %
+                      (index, n), file=sys.stderr)
+                sys.exit(2)
+            return value
+
+
+class MMIO:
+    def __init__(self, base, size):
+        self.mmap = None
+        try:
+            f = os.open('/dev/mem', os.O_RDONLY | os.O_SYNC)
+            self.mmap = mmap.mmap(f, size, mmap.MAP_SHARED, mmap.PROT_READ,
+                                  offset=base)
+        except (PermissionError, OSError, mmap.error):
+            pass
+
+    def read64(self, offset):
+        if self.mmap is None:
+            global ran_all
+            print(' Skipping MMIO tests, your kernel might have '
+                  'CONFIG_STRICT_DEVMEM enabled.\n Disable for thorough '
+                  'testing.\n')
+            ran_all = False
+            return None
+        self.mmap.seek(offset)
+        return struct.unpack('Q', self.mmap.read(8))[0]
+
+
+if os.uname()[4] not in ('x86_64', 'i686'):
+    print('Unsupported architecture', file=sys.stderr)
+    sys.exit(1)
+
+
+ioapics = sysfs_parser.parse_madt()
+pci_devices = sysfs_parser.parse_pcidevices()
+
+(cpu_vendor, cpu_features, cpu_count) = parse_cpuinfo()
+
+print('Feature                         Availability')
+print('------------------------------  ------------------')
+check_feature('Number of CPUs > 1', cpu_count > 1)
+check_feature('Long mode', 'lm' in cpu_features)
+
+if cpu_vendor == 'GenuineIntel':
+    if not os.access('/dev/cpu/0/msr', os.R_OK):
+        if os.system('/sbin/modprobe msr'):
+            sys.exit(1)
+
+    msr = MSR(cpu_count)
+
+    _, dmar_regions = sysfs_parser.parse_iomem(pci_devices)
+    iommu, _ = sysfs_parser.parse_dmar(pci_devices, ioapics, dmar_regions)
+
+    check_feature('x2APIC', 'x2apic' in cpu_features, True)
+    print()
+    check_feature('VT-x (VMX)', 'vmx' in cpu_features)
+
+    feature = msr.read(MSR.IA32_FEATURE_CONTROL)
+    check_feature('  VMX outside SMX', feature & (1 << 2))
+    check_feature('  VMX inside SMX', feature & (1 << 1), True)
+    check_feature('  IA32_TRUE_*_CLTS',
+                  msr.read(MSR.IA32_VMX_BASIC) & (1 << 55))
+
+    pinbased = msr.read(MSR.IA32_VMX_PINBASED_CTLS) >> 32
+    check_feature('  NMI exiting', pinbased & (1 << 3))
+    check_feature('  Preemption timer', pinbased & (1 << 6))
+
+    procbased = msr.read(MSR.IA32_VMX_PROCBASED_CTLS) >> 32
+    check_feature('  I/O bitmap', procbased & (1 << 25))
+    check_feature('  MSR bitmap', procbased & (1 << 28))
+    check_feature('  Secondary controls', procbased & (1 << 31))
+    check_feature('  Optional CR3 interception',
+                  (msr.read(MSR.IA32_VMX_TRUE_PROCBASED_CTLS) &
+                   (3 << 15)) == 0)
+
+    procbased2 = msr.read(MSR.IA32_VMX_PROCBASED_CTLS2) >> 32
+    check_feature('  Virtualize APIC access', procbased2 & (1 << 0))
+    check_feature('  RDTSCP', procbased2 & (1 << 3),
+                  'rdtscp' not in cpu_features)
+    check_feature('  Unrestricted guest', procbased2 & (1 << 7))
+    check_feature('  INVPCID', procbased2 & (1 << 12),
+                  'invpcid' not in cpu_features)
+    check_feature('  XSAVES', procbased2 & (1 << 20),
+                  'xsaves' not in cpu_features)
+
+    check_feature('  EPT', procbased2 & (1 << 1))
+    ept_cap = msr.read(MSR.IA32_VMX_EPT_VPID_CAP)
+    check_feature('    4-level page walk', ept_cap & (1 << 6))
+    check_feature('    EPTP write-back', ept_cap & (1 << 14))
+    check_feature('    2M pages', ept_cap & (1 << 16), True)
+    check_feature('    1G pages', ept_cap & (1 << 17), True)
+    check_feature('    INVEPT', ept_cap & (1 << 20))
+    check_feature('      Single or all-context', ept_cap & (3 << 25))
+
+    vmexit = msr.read(MSR.IA32_VMX_EXIT_CTLS) >> 32
+    check_feature('  VM-exit save IA32_PAT', vmexit & (1 << 18))
+    check_feature('  VM-exit load IA32_PAT', vmexit & (1 << 19))
+    check_feature('  VM-exit save IA32_EFER', vmexit & (1 << 20))
+    check_feature('  VM-exit load IA32_EFER', vmexit & (1 << 21))
+
+    vmentry = msr.read(MSR.IA32_VMX_ENTRY_CTLS) >> 32
+    check_feature('  VM-entry load IA32_PAT', vmentry & (1 << 14))
+    check_feature('  VM-entry load IA32_EFER', vmentry & (1 << 15))
+    check_feature('  Activity state HLT',
+                  msr.read(MSR.IA32_VMX_MISC) & (1 << 6))
+
+    for n in range(len(iommu)):
+        if iommu[n].base_addr == 0 and n > 0:
+            break
+        print()
+        check_feature('VT-d (IOMMU #%d)' % n, iommu[n].base_addr)
+        if iommu[n].base_addr == 0:
+            break
+        mmio = MMIO(iommu[n].base_addr, iommu[n].mmio_size)
+        cap = mmio.read64(0x08)
+        if cap is None:
+            continue
+        check_feature('  39-bit AGAW', cap & (1 << 9), cap & (1 << 10))
+        check_feature('  48-bit AGAW', cap & (1 << 10), cap & (1 << 9))
+        check_feature('  2M pages', cap & (1 << 34), True)
+        check_feature('  1G pages', cap & (1 << 35), True)
+        ecap = mmio.read64(0x10)
+        check_feature('  Queued invalidation', ecap & (1 << 1))
+        check_feature('  Interrupt remapping', ecap & (1 << 3))
+        check_feature('  Extended interrupt mode', ecap & (1 << 4),
+                      'x2apic' not in cpu_features)
+
+elif cpu_vendor == 'AuthenticAMD':
+    iommu, _ = sysfs_parser.parse_ivrs(pci_devices, ioapics)
+
+    print()
+    check_feature('AMD-V (SVM)', 'svm' in cpu_features)
+    check_feature('  NPT', 'npt' in cpu_features)
+    check_feature('  Decode assist', 'decodeassists' in cpu_features, True)
+    check_feature('  AVIC', 'avic' in cpu_features, True)
+    check_feature('  Flush by ASID', 'flushbyasid' in cpu_features, True)
+
+    for n in range(len(iommu)):
+        if iommu[n].base_addr == 0 and n > 0:
+            break
+        print()
+        check_feature('AMD-Vi (IOMMU #%d)' % n, iommu[n].base_addr)
+        if iommu[n].base_addr == 0:
+            break
+
+        bdf = iommu[n].amd_bdf
+        path = '/sys/bus/pci/devices/0000:%02x:%02x.%x/config' % \
+            (bdf >> 8, (bdf >> 3) & 0x1f, bdf & 0x7)
+        with open(path, 'rb') as config:
+            config.seek(iommu[n].amd_base_cap)
+            (caps, base) = struct.unpack('QQ', config.read(16))
+
+        check_feature('  Extended feature register', caps & (1 << 27))
+        check_feature('  Valid base register',
+                      (base & (1 << 0)) == 0 or
+                      base == (iommu[n].base_addr | (1 << 0)))
+
+        mmio = MMIO(iommu[n].base_addr, iommu[n].mmio_size)
+        efr = mmio.read64(0x30)
+        if efr is not None and \
+           check_feature('  SMI filter', ((efr >> 16) & 0x3) == 1):
+            smi_filter_ok = True
+            num_filter_regs = 1 << ((efr >> 18) & 7)
+            for reg in range(num_filter_regs):
+                smi_freg = mmio.read64(0x60 + reg * 8)
+                # must not be locked AND set to match against specific device
+                if smi_freg & (1 << 17) and smi_freg & (1 << 16):
+                    smi_filter_ok = False
+            check_feature('    Valid filter registers', smi_filter_ok)
+
+        he_feature = iommu[n].amd_features
+        if he_feature == 0 and efr:
+            he_feature = efr
+        check_feature('  Hardware events', he_feature & (1 << 8), True)
+
+else:
+    print('Unsupported CPU', file=sys.stderr)
+
+print('\nCheck %s!' % ('passed' if check_passed else 'FAILED'))
+if not ran_all:
+    print('BUT: Some essential checks had to be skipped!\n')
+    sys.exit(1)
+sys.exit(0 if check_passed else 2)
