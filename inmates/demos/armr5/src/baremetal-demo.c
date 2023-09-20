@@ -52,10 +52,30 @@
 
 int main()
 {
-    init_platform();
+  //Pointer to RPU memory
+  unsigned char* ptr_rpu_mem = (unsigned char*)0x3ed01000;
+  unsigned char* ptr_apu_mem = (unsigned char*)0x75609000;
+  //unsigned char* ptr_kernel = (unsigned char*)0x01560000;
+  size_t bytes_to_read = 32; // Read 32 bytes
 
-    print("Hello World\n\r");
-    print("Successfully ran Hello World application\n");
-    cleanup_platform();
-    return 0;
+  init_platform();
+  print("Hello World\n");
+  
+  //Read RPU memory
+  print("Reading RPU memory...\n");
+  for (size_t i = 1; i < bytes_to_read; i++) {
+    xil_printf("%02X ", ptr_rpu_mem[i]); // Print in hexadecimal format
+  }
+  print("\n");
+
+  //Read APU memory
+  print("Reading APU memory...\n");
+  for (size_t i = 1; i < bytes_to_read; i++) {
+    xil_printf("%02X ", ptr_apu_mem[i]); // Print in hexadecimal format
+  }
+  print("\n");
+
+  print("Successfully ran Hello World application\n\n");
+  cleanup_platform();
+  return 0;
 }
