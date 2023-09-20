@@ -37,3 +37,7 @@ ci/*.tar.xz
 *.pyc
 .cache/
 compile_commands.json
+.DS_Store
+._.DS_Store
+*.d
+*.o
