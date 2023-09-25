@@ -98,3 +98,4 @@ tools/jailhouse-config-collect
 tools/jailhouse-enable.8
 tools/jailhouse-gcov-extract
 tools/jailhouse.8
+hypervisor/jailhouse.bin
