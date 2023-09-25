@@ -44,6 +44,7 @@ compile_commands.json
 *.tmp
 *.cmd
 inmates/demos/*/*.bin
+inmates/tools/arm64/*.bin
 Module.symvers
 configs/arm64/dts/inmate-amd-seattle.dtb
 configs/arm64/dts/inmate-espressobin.dtb
