@@ -59,23 +59,24 @@ int main()
   size_t bytes_to_read = 32; // Read 32 bytes
 
   init_platform();
-  print("Hello World\n");
+  print("\n\r");
+  print("Hello World\n\r");
   
   //Read RPU memory
-  print("Reading RPU memory...\n");
+  print("Reading RPU memory...\n\r");
   for (size_t i = 1; i < bytes_to_read; i++) {
     xil_printf("%02X ", ptr_rpu_mem[i]); // Print in hexadecimal format
   }
-  print("\n");
+  print("\n\r");
 
   //Read APU memory
-  print("Reading APU memory...\n");
+  print("Reading APU memory...\n\r");
   for (size_t i = 1; i < bytes_to_read; i++) {
     xil_printf("%02X ", ptr_apu_mem[i]); // Print in hexadecimal format
   }
-  print("\n");
+  print("\n\r");
 
-  print("Successfully ran Hello World application\n\n");
+  print("Successfully ran Hello World application\n\n\r");
   cleanup_platform();
   return 0;
 }
