@@ -39,6 +39,7 @@ ci/*.tar.xz
 compile_commands.json
 .DS_Store
 ._.DS_Store
+.vscode/*
 *.d
 *.o
 *.tmp
