@@ -17,6 +17,10 @@
 #define XMPU_DDR_3_BASE_ADDR      0xFD030000U
 #define XMPU_DDR_4_BASE_ADDR      0xFD040000U
 #define XMPU_DDR_5_BASE_ADDR      0xFD050000U
+#define XMPU_FPD_BASE_ADDR        0xFD5D0000U
+#define XMPU_OCM_BASE_ADDR        0xFFA70000U
+#define XPPU_BASE_ADDR            0xFF980000U
+#define XPPU_POISON_OFFSET_ADDR   0xFF9CFF00U
 
 /* XMPU status register offsets */
 #define XMPU_CTRL_OFFSET          0x00U
@@ -96,8 +100,13 @@ typedef struct xmpu_region_config{
 }xmpu_region_config;
 
 
-void set_xmpu_status(uint32_t xmpu_base, xmpu_status_config *config);
-void set_xmpu_region(uint32_t xmpu_base, uint32_t region, xmpu_region_config *config);
+// Set DDR_XMPU registers
+void set_ddr_xmpu_status(uint32_t xmpu_base, xmpu_status_config *config);
+void set_ddr_xmpu_region(uint32_t xmpu_base, uint32_t region, xmpu_region_config *config);
+
+// Set FPD_XMPU registers
+void set_fpd_xmpu_status(uint32_t xmpu_base, xmpu_status_config *config);
+void set_fpd_xmpu_region(uint32_t xmpu_base, uint32_t region, xmpu_region_config *config);
 
 //Debug Print
 void print_xmpu_status_regs(uint32_t xmpu_base);
