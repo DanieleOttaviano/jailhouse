@@ -59,6 +59,9 @@ int main()
   xmpu_status_config xmpu0_status_config;
   xmpu_region_config xmpu0_region_config;
   
+  xmpu_status_config fpd_xmpu_status_config;
+  xmpu_region_config fpd_xmpu_region_config;
+  
   xmpu_status_config xmpu1_status_config;
   xmpu_region_config xmpu1_region_config;
   
@@ -70,14 +73,15 @@ int main()
   //Pointer to APU memory
   unsigned int* ptr_apu_mem = (unsigned int*)0x75609000;  
   size_t bytes_to_read = 4; // Read 4 bytes
-
+  int i;
 
   //Initialize the Plaftorm
   init_platform();
   print("\n\r");
   print("Start!\n\n\r");
 
-  // Configure XMPU0
+
+  // Configure XMPU0 to protect APU memory from RPU accesses
   xmpu0_region_config.addr_start =    0x3ED00000;
   xmpu0_region_config.addr_end =      0x3EEFFFFF;
   xmpu0_region_config.master_id =     0x0000;
@@ -87,16 +91,15 @@ int main()
   xmpu0_region_config.wrallowed =     1;
   xmpu0_region_config.rdallowed =     1;
   xmpu0_region_config.enable =        1;  
-  set_xmpu_region(XMPU_DDR_0_BASE_ADDR, R00_OFFSET, &xmpu0_region_config);
+  set_ddr_xmpu_region(XMPU_DDR_0_BASE_ADDR, R00_OFFSET, &xmpu0_region_config);
   xmpu0_status_config.poison =        1;
   xmpu0_status_config.align =         1;
   xmpu0_status_config.def_wr_allowed =0;
   xmpu0_status_config.def_rd_allowed =0;
   xmpu0_status_config.lock =          0;
-  set_xmpu_status(XMPU_DDR_0_BASE_ADDR, &xmpu0_status_config);
+  set_ddr_xmpu_status(XMPU_DDR_0_BASE_ADDR, &xmpu0_status_config);
 
-
-  // Configure XMPU1
+  // Configure XMPU1 to protect RPU memory from APU accesses
   xmpu1_region_config.addr_start =    0x3ED00000;
   xmpu1_region_config.addr_end =      0x3EEFFFFF;
   xmpu1_region_config.master_id =     0x0080;
@@ -106,16 +109,16 @@ int main()
   xmpu1_region_config.wrallowed =     0;
   xmpu1_region_config.rdallowed =     0;
   xmpu1_region_config.enable =        1;
-  set_xmpu_region(XMPU_DDR_1_BASE_ADDR, R00_OFFSET, &xmpu1_region_config);  
+  set_ddr_xmpu_region(XMPU_DDR_1_BASE_ADDR, R00_OFFSET, &xmpu1_region_config);  
   xmpu1_status_config.poison =        1;
   xmpu1_status_config.align =         1;
   xmpu1_status_config.def_wr_allowed =1;
   xmpu1_status_config.def_rd_allowed =1;
   xmpu1_status_config.lock =          0;
-  set_xmpu_status(XMPU_DDR_1_BASE_ADDR, &xmpu1_status_config);
+  set_ddr_xmpu_status(XMPU_DDR_1_BASE_ADDR, &xmpu1_status_config);
 
 
-  // Configure XMPU2
+  // Configure XMPU2 to protect RPU memory from APU acceses
   xmpu2_region_config.addr_start =    0x3ED00000;
   xmpu2_region_config.addr_end =      0x3EEFFFFF;
   xmpu2_region_config.master_id =     0x0080;
@@ -125,19 +128,24 @@ int main()
   xmpu2_region_config.wrallowed =     0;
   xmpu2_region_config.rdallowed =     0;
   xmpu2_region_config.enable =        1;
-  set_xmpu_region(XMPU_DDR_2_BASE_ADDR, R00_OFFSET, &xmpu2_region_config);
+  set_ddr_xmpu_region(XMPU_DDR_2_BASE_ADDR, R00_OFFSET, &xmpu2_region_config);
   xmpu2_status_config.poison =        1;
   xmpu2_status_config.align =         1;
   xmpu2_status_config.def_wr_allowed =1;
   xmpu2_status_config.def_rd_allowed =1;
   xmpu2_status_config.lock =          0;
-  set_xmpu_status(XMPU_DDR_2_BASE_ADDR, &xmpu2_status_config);
+  set_ddr_xmpu_status(XMPU_DDR_2_BASE_ADDR, &xmpu2_status_config);
 
 
   // Print XMPU registers
   xil_printf("XMPU0 registers:\n\r");
   print_xmpu_status_regs(XMPU_DDR_0_BASE_ADDR);
   print_xmpu_region_regs(XMPU_DDR_0_BASE_ADDR, R00_OFFSET);
+
+  xil_printf("FPD_XMPU registers:\n\r");
+  print_xmpu_status_regs(XMPU_FPD_BASE_ADDR);
+  print_xmpu_region_regs(XMPU_FPD_BASE_ADDR, R00_OFFSET);
+
   xil_printf("XMPU1 registers:\n\r");
   print_xmpu_status_regs(XMPU_DDR_1_BASE_ADDR);
   print_xmpu_region_regs(XMPU_DDR_1_BASE_ADDR, R00_OFFSET);
@@ -145,15 +153,40 @@ int main()
   print_xmpu_status_regs(XMPU_DDR_2_BASE_ADDR);
   print_xmpu_region_regs(XMPU_DDR_2_BASE_ADDR, R00_OFFSET);
 
+
+  // Configure FPD_XMPU to protect XMPUs configuration registers from RPU accesses
+  fpd_xmpu_region_config.addr_start =    0xFD000000;
+  fpd_xmpu_region_config.addr_end =      0xFF9CFF00;
+  fpd_xmpu_region_config.master_id =     0x0000;
+  fpd_xmpu_region_config.master_mask =   0x03E0;
+  fpd_xmpu_region_config.ns_checktype =  0;
+  fpd_xmpu_region_config.region_ns =     0;
+  fpd_xmpu_region_config.wrallowed =     0;
+  fpd_xmpu_region_config.rdallowed =     0;
+  fpd_xmpu_region_config.enable =        1;
+  set_fpd_xmpu_region(XMPU_FPD_BASE_ADDR, R00_OFFSET, &fpd_xmpu_region_config);
+  fpd_xmpu_status_config.poison =        1;
+  fpd_xmpu_status_config.align =         0; //4kb
+  fpd_xmpu_status_config.def_wr_allowed =1;
+  fpd_xmpu_status_config.def_rd_allowed =1;
+  fpd_xmpu_status_config.lock =          0;
+  set_fpd_xmpu_status(XMPU_FPD_BASE_ADDR, &fpd_xmpu_status_config);
+
+
+  printf("DDR_XMPU0 registers after FPD_XMPU configuration:\n\r");
+  print_xmpu_status_regs(XMPU_DDR_0_BASE_ADDR);
+  print_xmpu_region_regs(XMPU_DDR_0_BASE_ADDR, R00_OFFSET);
+  
+  
   // Read RPU memory
   print("Reading RPU memory...\n\r");
-  for (int i = 0; i < bytes_to_read/4; i++) {
+  for (i = 0; i < bytes_to_read/4; i++) {
     xil_printf("ptr_rpu_mem[%d] = 0x%08X\t", i, ptr_rpu_mem[i]);
   }
   print("\n\n\r");
   // Write in RPU memory
   print("Writing RPU memory...\n\r"); 
-  for (int i = 0; i < bytes_to_read/4; i++) {
+  for (i = 0; i < bytes_to_read/4; i++) {
     ptr_rpu_mem[i] = 0xFFFFFFFF;
     xil_printf("ptr_rpu_mem[%d] = 0x%08X\t",i, ptr_rpu_mem[i]);
   }
@@ -162,13 +195,13 @@ int main()
 
   // Read APU memory
   print("Reading APU memory...\n\r");
-  for (int i = 0; i < bytes_to_read/4; i++) {
+  for (i = 0; i < bytes_to_read/4; i++) {
     xil_printf("ptr_apu_mem[%d] = 0x%08X\t", i, ptr_apu_mem[i]);
   }
   print("\n\n\r");
   // Write in APU memory
   print("Writing APU memory...\n\r");
-  for (int i = 0; i < bytes_to_read/4; i++) {
+  for (i = 0; i < bytes_to_read/4; i++) {
     ptr_apu_mem[i] = 0xFFFFFFFF;
     xil_printf("ptr_apu_mem[%d] = 0x%08X\t",i, ptr_apu_mem[i]);
   }
