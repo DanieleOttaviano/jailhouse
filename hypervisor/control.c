@@ -527,6 +527,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 	if (err)
 		goto err_cell_exit;
 
+	printk("Before smmu programming\r\n");
 	for_each_unit(unit) {
 		err = unit->cell_init(cell);
 		if (err) {
@@ -536,6 +537,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		}
 	}
 
+	printk("After smmu programming\r\n");
 	/*
 	 * Shrinking: the new cell's CPUs are parked, then removed from the root
 	 * cell, assigned to the new cell and get their stats cleared.
