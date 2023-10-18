@@ -1,45 +1,38 @@
 
 #include "xmpu.h"
 
-void set_ddr_xmpu_status(uint32_t xmpu_base, xmpu_status_config *config){
-  *(XMPU_CTRL_REGISTER(xmpu_base))   = (0x00000000 | (config->align << 3) | (config->def_wr_allowed << 1) | (config->def_rd_allowed));
-  *(XMPU_POISON_REGISTER(xmpu_base)) = (0x00000000 | (config->poison << 20));
+void set_xmpu_status(uint32_t xmpu_base, xmpu_status_config *config){
+  bool poison;
+ 
+  poison = (xmpu_base == XMPU_FPD_BASE_ADDR) ? !(config->poison) : config->poison;
+
+  if(xmpu_base == XMPU_FPD_BASE_ADDR){
+    *(XMPU_CTRL_REGISTER(xmpu_base)) = (0x00000000 | (config->align << 3) | (1<<2) | (config->def_wr_allowed << 1) | (config->def_rd_allowed));
+  }
+  else{
+    *(XMPU_CTRL_REGISTER(xmpu_base)) = (0x00000000 | (config->align << 3) | (0<<2) | (config->def_wr_allowed << 1) | (config->def_rd_allowed));
+  }
+
+  *(XMPU_POISON_REGISTER(xmpu_base)) = (0x00000000 | (poison << 20));
   *(XMPU_LOCK_REGISTER(xmpu_base))   = (0x00000000 | (config->lock));
 }
 
-void set_ddr_xmpu_region(uint32_t xmpu_base, uint32_t region_offset, xmpu_region_config *config){
+void set_xmpu_region(uint32_t xmpu_base, uint32_t region_offset, xmpu_region_config *config){
   uint32_t tmp_addr;
   uint32_t region_addr_start;
   uint32_t region_addr_end;
 
-  tmp_addr = config->addr_start >> 20;
-  region_addr_start = tmp_addr << 8;
-  
-  tmp_addr = config->addr_end >> 20;
-  region_addr_end = tmp_addr << 8;
-
-  *(XMPU_START_REGISTER(xmpu_base, region_offset))  = region_addr_start;
-  *(XMPU_END_REGISTER(xmpu_base, region_offset))    = region_addr_end;
-  *(XMPU_MASTER_REGISTER(xmpu_base, region_offset)) = (0x00000000 | (config->master_mask << 16) | (config->master_id));
-  *(XMPU_CONFIG_REGISTER(xmpu_base, region_offset)) = (0x00000000 | (config->ns_checktype << 4) | (config->region_ns << 3) | (config->wrallowed << 2) | (config->rdallowed << 1) | (config->enable));
-}
-
-void set_fpd_xmpu_status(uint32_t xmpu_base, xmpu_status_config *config){
-  *(XMPU_CTRL_REGISTER(xmpu_base))   = (0x00000000 | (config->align << 3) | (config->def_wr_allowed << 1) | (config->def_rd_allowed));
-  *(XMPU_POISON_REGISTER(xmpu_base)) = (0x00000000 | (!(config->poison) << 20));
-  *(XMPU_LOCK_REGISTER(xmpu_base))   = (0x00000000 | (config->lock));
-}
-
-void set_fpd_xmpu_region(uint32_t xmpu_base, uint32_t region_offset, xmpu_region_config *config){
-  uint32_t tmp_addr;
-  uint32_t region_addr_start;
-  uint32_t region_addr_end;
-
-  tmp_addr = config->addr_start >> 12;
-  region_addr_start = tmp_addr;
-  
-  tmp_addr = config->addr_end >> 12;
-  region_addr_end = tmp_addr;
+  if(xmpu_base == XMPU_FPD_BASE_ADDR){ 
+    tmp_addr = config->addr_start >> 12;
+    region_addr_start = tmp_addr; 
+    tmp_addr = config->addr_end >> 12;
+    region_addr_end = tmp_addr; 
+  } else {
+    tmp_addr = config->addr_start >> 20;
+    region_addr_start = tmp_addr << 8;
+    tmp_addr = config->addr_end >> 20;
+    region_addr_end = tmp_addr << 8;
+  }
 
   *(XMPU_START_REGISTER(xmpu_base, region_offset))  = region_addr_start;
   *(XMPU_END_REGISTER(xmpu_base, region_offset))    = region_addr_end;
