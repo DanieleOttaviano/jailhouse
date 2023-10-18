@@ -547,6 +547,10 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 	printk("XMPU0 registers:\n\r");
   	print_xmpu_status_regs(XMPU_DDR_0_BASE_ADDR);
   	print_xmpu_region_regs(XMPU_DDR_0_BASE_ADDR, R00_OFFSET);
+
+	printk("FPD_XMPU registers:\n\r");
+  	print_xmpu_status_regs(XMPU_FPD_BASE_ADDR);
+  	print_xmpu_region_regs(XMPU_FPD_BASE_ADDR, R00_OFFSET);
 	//Configure XMPU0 to protect APU memory from RPU accesses
 	ddr_xmpu0_region_config.addr_start =    0x3ED00000;
 	ddr_xmpu0_region_config.addr_end =      0x3EEFFFFF;
@@ -862,6 +866,12 @@ static int cell_destroy(struct per_cpu *cpu_data, unsigned long id)
 		return err;
 
 	printk("Closing cell \"%s\"\n", cell->config->name);
+
+	//Set default values for XMPU registers
+	set_xmpu_default(XMPU_DDR_0_BASE_ADDR);
+	set_xmpu_default(XMPU_DDR_1_BASE_ADDR);
+	set_xmpu_default(XMPU_DDR_2_BASE_ADDR);
+	set_xmpu_default(XMPU_FPD_BASE_ADDR);
 
 	cell_destroy_internal(cell);
 
