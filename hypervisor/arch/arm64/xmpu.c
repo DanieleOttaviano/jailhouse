@@ -86,6 +86,30 @@ void set_xmpu_region(u32 xmpu_base, u32 region_offset, xmpu_region_config *confi
 }
 
 
+void set_xmpu_default(u32 xmpu_base){
+  u32 xmpu_start_register   = 0x00000000;
+  u32 xmpu_end_register     = 0x00000000;
+  u32 xmpu_master_register  = 0x00000000;
+  u32 xmpu_config_register  = 0x00000008; 
+  u32 xmpu_ctrl_register    = 0x0000000b;
+  u32 xmpu_poison_register  = 0x00000000;
+
+  if(xmpu_base == XMPU_FPD_BASE_ADDR){
+    xmpu_ctrl_register    = 0x00000007;
+    xmpu_poison_register  = 0x000fd4f0;
+  }
+  
+  xmpu_write32((void *)(XMPU_CTRL_REGISTER(xmpu_base)), xmpu_ctrl_register);
+  xmpu_write32((void *)(XMPU_POISON_REGISTER(xmpu_base)), xmpu_poison_register);
+  
+  u32 region_offset = R00_OFFSET;
+  xmpu_write32((void *)(XMPU_START_REGISTER(xmpu_base, region_offset)), xmpu_start_register);
+  xmpu_write32((void *)(XMPU_END_REGISTER(xmpu_base, region_offset)), xmpu_end_register);
+  xmpu_write32((void *)(XMPU_MASTER_REGISTER(xmpu_base, region_offset)), xmpu_master_register);
+  xmpu_write32((void *)(XMPU_CONFIG_REGISTER(xmpu_base, region_offset)), xmpu_config_register);
+
+}
+
 //Print the XMPU status registers
 void print_xmpu_status_regs(u32 xmpu_base){
 

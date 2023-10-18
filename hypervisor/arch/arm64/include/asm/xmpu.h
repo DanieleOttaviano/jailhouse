@@ -78,6 +78,7 @@ typedef struct xmpu_region_config{
 // Set XMPU registers
 void set_xmpu_status(u32 xmpu_base, xmpu_status_config *config);
 void set_xmpu_region(u32 xmpu_base, u32 region, xmpu_region_config *config);
+void set_xmpu_default(u32 xmpu_base);
 
 //Debug Print
 void print_xmpu_status_regs(u32 xmpu_base);
