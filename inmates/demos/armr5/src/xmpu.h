@@ -100,13 +100,9 @@ typedef struct xmpu_region_config{
 }xmpu_region_config;
 
 
-// Set DDR_XMPU registers
-void set_ddr_xmpu_status(uint32_t xmpu_base, xmpu_status_config *config);
-void set_ddr_xmpu_region(uint32_t xmpu_base, uint32_t region, xmpu_region_config *config);
-
-// Set FPD_XMPU registers
-void set_fpd_xmpu_status(uint32_t xmpu_base, xmpu_status_config *config);
-void set_fpd_xmpu_region(uint32_t xmpu_base, uint32_t region, xmpu_region_config *config);
+// Set XMPU registers
+void set_xmpu_status(uint32_t xmpu_base, xmpu_status_config *config);
+void set_xmpu_region(uint32_t xmpu_base, uint32_t region, xmpu_region_config *config);
 
 //Debug Print
 void print_xmpu_status_regs(uint32_t xmpu_base);
