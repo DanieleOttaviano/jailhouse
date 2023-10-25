@@ -218,7 +218,7 @@ static long get_max_cpus(u32 cpu_set_size,
 	long max_cpu_id;
 	u8 bitmap;
 
-	pr_err("cpu_set_size: %u\n",pos);
+	// pr_err("cpu_set_size: %u\n",pos);
 	while (pos-- > 0) {
 		if (get_user(bitmap, cpu_set + pos))
 			return -EFAULT;
@@ -240,7 +240,7 @@ static long get_max_rpus(u32 rpu_set_size,
 	long max_rpu_id;
 	u8 bitmap;
 
-	pr_err("rpu_set_size: %u\n",pos);
+	// pr_err("rpu_set_size: %u\n",pos);
 	while (pos-- > 0) {
 		if (get_user(bitmap, rpu_set + pos))
 			return -EFAULT;
@@ -485,8 +485,8 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	if (max_rpus > UINT_MAX)
 		return -EINVAL;
 
-	pr_err("max_cpus : %ld\n",max_cpus);
-	pr_err("max_rpus : %ld\n",max_rpus);
+	// pr_err("max_cpus : %ld\n",max_cpus);
+	// pr_err("max_rpus : %ld\n",max_rpus);
 
 	if (mutex_lock_interruptible(&jailhouse_lock) != 0)
 		return -EINTR;

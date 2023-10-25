@@ -435,8 +435,8 @@ static int arm_smmu_cell_init(struct cell *cell)
 				return trace_error(ret);
 			idx = ret;
 
-			printk("Assigning SID 0x%x, Mask 0x%x to cell \"%s\"\n",
-			       sid, smask, cell->config->name);
+			// printk("Assigning SID 0x%x, Mask 0x%x to cell \"%s\"\n",
+			//       sid, smask, cell->config->name);
 
 			arm_smmu_write_s2cr(smmu, idx, S2CR_TYPE_TRANS, vmid);
 
