@@ -1,0 +1,1019 @@
+Image Size: 1
+[ 5897.350840] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5897.442766] remoteproc remoteproc0: Booting fw image baremetal-demo-1Mb.elf, size 1889540
+[ 5897.455922] remoteproc remoteproc0: no resource table found.
+[ 5897.465118] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x8AFA4474
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x8E18D421
+[ 5899.477602] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5899.497623] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5899.507456] remoteproc remoteproc0: Booting fw image baremetal-demo-1Mb.elf, size 1889540
+[ 5899.523587] remoteproc remoteproc0: no resource table found.
+[ 5899.532773] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x97C614D5
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x9843E953
+[ 5901.545175] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5901.558379] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5901.568106] remoteproc remoteproc0: Booting fw image baremetal-demo-1Mb.elf, size 1889540
+[ 5901.584259] remoteproc remoteproc0: no resource table found.
+[ 5901.593467] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xA40E7D32
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xA4C4646D
+[ 5903.605832] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5903.621721] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5903.631346] remoteproc remoteproc0: Booting fw image baremetal-demo-1Mb.elf, size 1889540
+[ 5903.647513] remoteproc remoteproc0: no resource table found.
+[ 5903.656738] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xB05AE27F
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xB381A52F
+[ 5905.669135] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5905.682352] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5905.691998] remoteproc remoteproc0: Booting fw image baremetal-demo-1Mb.elf, size 1889540
+[ 5905.708131] remoteproc remoteproc0: no resource table found.
+[ 5905.717309] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xBCA320C7
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xBD957CDF
+[ 5907.730708] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5907.744064] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5907.753771] remoteproc remoteproc0: Booting fw image baremetal-demo-1Mb.elf, size 1889540
+[ 5907.769872] remoteproc remoteproc0: no resource table found.
+[ 5907.779049] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xC8ECFCE9
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xCDFC0667
+[ 5909.791413] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5909.804508] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5909.814115] remoteproc remoteproc0: Booting fw image baremetal-demo-1Mb.elf, size 1889540
+[ 5909.830181] remoteproc remoteproc0: no resource table found.
+[ 5909.839259] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xD534F787
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xD7B91EC9
+[ 5911.851605] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5911.864600] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5911.874111] remoteproc remoteproc0: Booting fw image baremetal-demo-1Mb.elf, size 1889540
+[ 5911.890068] remoteproc remoteproc0: no resource table found.
+[ 5911.899007] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xE17C7363
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xE20740E3
+[ 5913.911227] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5913.924153] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5913.933651] remoteproc remoteproc0: Booting fw image baremetal-demo-1Mb.elf, size 1889540
+[ 5913.949621] remoteproc remoteproc0: no resource table found.
+[ 5913.958637] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xEDC300B2
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xEE5A3941
+[ 5915.970891] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5915.983934] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5915.993534] remoteproc remoteproc0: Booting fw image baremetal-demo-1Mb.elf, size 1889540
+[ 5916.009597] remoteproc remoteproc0: no resource table found.
+[ 5916.018691] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xFA09F0AC
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xFC8AF165
+[ 5918.031024] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+
+Image Size: 10
+[ 5918.044184] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5918.527468] remoteproc remoteproc0: Booting fw image baremetal-demo-10Mb.elf, size 113268
+[ 5918.543684] remoteproc remoteproc0: no resource table found.
+[ 5918.556812] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x0651A689
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x0D47B1AF
+[ 5920.570547] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5920.583604] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5920.602017] remoteproc remoteproc0: Booting fw image baremetal-demo-10Mb.elf, size 113268
+[ 5920.618278] remoteproc remoteproc0: no resource table found.
+[ 5920.631874] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x157472EE
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x17FE759F
+[ 5922.645463] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5922.658570] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5922.675566] remoteproc remoteproc0: Booting fw image baremetal-demo-10Mb.elf, size 113268
+[ 5922.691799] remoteproc remoteproc0: no resource table found.
+[ 5922.705141] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x21D28FDA
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x2265104C
+[ 5924.718762] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5924.742102] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5924.758769] remoteproc remoteproc0: Booting fw image baremetal-demo-10Mb.elf, size 113268
+[ 5924.775008] remoteproc remoteproc0: no resource table found.
+[ 5924.788242] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x2E3BD2ED
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x332EFE17
+[ 5926.801779] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5926.814889] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5926.831915] remoteproc remoteproc0: Booting fw image baremetal-demo-10Mb.elf, size 113268
+[ 5926.848172] remoteproc remoteproc0: no resource table found.
+[ 5926.861447] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x3A988BB3
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x3C7137FC
+[ 5928.875016] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5928.888142] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5928.905114] remoteproc remoteproc0: Booting fw image baremetal-demo-10Mb.elf, size 113268
+[ 5928.921411] remoteproc remoteproc0: no resource table found.
+[ 5928.934733] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x46F3F089
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x47FF94B5
+[ 5930.948663] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5930.961791] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5930.978772] remoteproc remoteproc0: Booting fw image baremetal-demo-10Mb.elf, size 113268
+[ 5930.995033] remoteproc remoteproc0: no resource table found.
+[ 5931.008454] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x53501BBD
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x5797F3C9
+[ 5933.022046] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5933.035160] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5933.052141] remoteproc remoteproc0: Booting fw image baremetal-demo-10Mb.elf, size 113268
+[ 5933.068416] remoteproc remoteproc0: no resource table found.
+[ 5933.081764] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x5FABCE82
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x6064FBCD
+[ 5935.095977] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5935.109026] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5935.125972] remoteproc remoteproc0: Booting fw image baremetal-demo-10Mb.elf, size 113268
+[ 5935.142228] remoteproc remoteproc0: no resource table found.
+[ 5935.155716] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x6C08431D
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x6CD5A493
+[ 5937.169431] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5937.182569] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5937.199525] remoteproc remoteproc0: Booting fw image baremetal-demo-10Mb.elf, size 113268
+[ 5937.215817] remoteproc remoteproc0: no resource table found.
+[ 5937.229339] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x78642FCA
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x7B8A8129
+[ 5939.242957] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+
+Image Size: 20
+[ 5939.256141] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5940.179798] remoteproc remoteproc0: Booting fw image baremetal-demo-20Mb.elf, size 218128
+[ 5940.196053] remoteproc remoteproc0: no resource table found.
+[ 5940.213918] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x84C03941
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x8DB391A0
+[ 5942.229071] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5942.247670] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5942.274991] remoteproc remoteproc0: Booting fw image baremetal-demo-20Mb.elf, size 218128
+[ 5942.291264] remoteproc remoteproc0: no resource table found.
+[ 5942.309050] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x9694D7AA
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x972D2C95
+[ 5944.323870] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5944.336963] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5944.362161] remoteproc remoteproc0: Booting fw image baremetal-demo-20Mb.elf, size 218128
+[ 5944.378429] remoteproc remoteproc0: no resource table found.
+[ 5944.396139] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xA308D5FF
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xA82A3134
+[ 5946.410990] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5946.424033] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5946.447910] remoteproc remoteproc0: Booting fw image baremetal-demo-20Mb.elf, size 218128
+[ 5946.464168] remoteproc remoteproc0: no resource table found.
+[ 5946.482423] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xAF796CB7
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xB1A5712A
+[ 5948.507307] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5948.520410] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5948.544520] remoteproc remoteproc0: Booting fw image baremetal-demo-20Mb.elf, size 218128
+[ 5948.560779] remoteproc remoteproc0: no resource table found.
+[ 5948.578858] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xBBF8351A
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xBC806933
+[ 5950.594104] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5950.607229] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5950.631607] remoteproc remoteproc0: Booting fw image baremetal-demo-20Mb.elf, size 218128
+[ 5950.647864] remoteproc remoteproc0: no resource table found.
+[ 5950.666980] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xC86864F0
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xCD895773
+[ 5952.682035] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5952.695157] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5952.719412] remoteproc remoteproc0: Booting fw image baremetal-demo-20Mb.elf, size 218128
+[ 5952.735661] remoteproc remoteproc0: no resource table found.
+[ 5952.753575] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xD4DA4C27
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xD6BBB9DB
+[ 5954.769331] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5954.782526] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5954.806595] remoteproc remoteproc0: Booting fw image baremetal-demo-20Mb.elf, size 218128
+[ 5954.822852] remoteproc remoteproc0: no resource table found.
+[ 5954.841542] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xE14B3C95
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xE2D9FA6F
+[ 5956.856904] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5956.869980] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5956.894313] remoteproc remoteproc0: Booting fw image baremetal-demo-20Mb.elf, size 218128
+[ 5956.910565] remoteproc remoteproc0: no resource table found.
+[ 5956.928182] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xEDBC83BA
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xF26BD288
+[ 5958.943243] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5958.956317] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5958.981512] remoteproc remoteproc0: Booting fw image baremetal-demo-20Mb.elf, size 218128
+[ 5958.997762] remoteproc remoteproc0: no resource table found.
+[ 5959.015561] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xFA2BFAB7
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xFB43B1A0
+[ 5961.030410] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+
+Image Size: 30
+[ 5961.043621] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5962.404700] remoteproc remoteproc0: Booting fw image baremetal-demo-30Mb.elf, size 322988
+[ 5962.420938] remoteproc remoteproc0: no resource table found.
+[ 5962.443195] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x069CE9E7
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x0F77F5B6
+[ 5964.459704] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5964.472827] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5964.508401] remoteproc remoteproc0: Booting fw image baremetal-demo-30Mb.elf, size 322988
+[ 5964.524664] remoteproc remoteproc0: no resource table found.
+[ 5964.547094] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x1B0D674E
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x1F495F56
+[ 5966.564524] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5966.583208] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5966.615031] remoteproc remoteproc0: Booting fw image baremetal-demo-30Mb.elf, size 322988
+[ 5966.631290] remoteproc remoteproc0: no resource table found.
+[ 5966.655119] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x27A18835
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x28707E6B
+[ 5968.671695] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5968.684775] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5968.716440] remoteproc remoteproc0: Booting fw image baremetal-demo-30Mb.elf, size 322988
+[ 5968.732700] remoteproc remoteproc0: no resource table found.
+[ 5968.756652] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x34284753
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x35187763
+[ 5970.773273] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5970.786389] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5970.817673] remoteproc remoteproc0: Booting fw image baremetal-demo-30Mb.elf, size 322988
+[ 5970.833926] remoteproc remoteproc0: no resource table found.
+[ 5970.857494] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x40AF0EAB
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x43094F1F
+[ 5972.874078] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5972.887233] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5972.918354] remoteproc remoteproc0: Booting fw image baremetal-demo-30Mb.elf, size 322988
+[ 5972.934621] remoteproc remoteproc0: no resource table found.
+[ 5972.957368] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x4D34A42C
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x4E518AC4
+[ 5974.973980] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5974.987100] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5975.018955] remoteproc remoteproc0: Booting fw image baremetal-demo-30Mb.elf, size 322988
+[ 5975.035234] remoteproc remoteproc0: no resource table found.
+[ 5975.057236] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x59B8C0B5
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x5E4A0B03
+[ 5977.073783] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5977.089711] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5977.123639] remoteproc remoteproc0: Booting fw image baremetal-demo-30Mb.elf, size 322988
+[ 5977.139903] remoteproc remoteproc0: no resource table found.
+[ 5977.161964] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x66410927
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x67A77E27
+[ 5979.187431] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5979.200527] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5979.233107] remoteproc remoteproc0: Booting fw image baremetal-demo-30Mb.elf, size 322988
+[ 5979.249388] remoteproc remoteproc0: no resource table found.
+[ 5979.271532] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x72D5DD75
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x73964F7C
+[ 5981.288034] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5981.301125] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5981.333530] remoteproc remoteproc0: Booting fw image baremetal-demo-30Mb.elf, size 322988
+[ 5981.349793] remoteproc remoteproc0: no resource table found.
+[ 5981.371838] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x7F5B1B79
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x83995DA9
+[ 5983.388360] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+
+Image Size: 40
+[ 5983.401615] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5985.206826] remoteproc remoteproc0: Booting fw image baremetal-demo-40Mb.elf, size 427848
+[ 5985.223077] remoteproc remoteproc0: no resource table found.
+[ 5985.249496] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x8BE01175
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x983A4D21
+[ 5987.267362] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5987.283285] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5987.326655] remoteproc remoteproc0: Booting fw image baremetal-demo-40Mb.elf, size 427848
+[ 5987.342929] remoteproc remoteproc0: no resource table found.
+[ 5987.369384] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xA30310AC
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xA76D9A4D
+[ 5989.387151] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5989.400205] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5989.441893] remoteproc remoteproc0: Booting fw image baremetal-demo-40Mb.elf, size 427848
+[ 5989.458162] remoteproc remoteproc0: no resource table found.
+[ 5989.485210] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xAFA137EE
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xB0C8E104
+[ 5991.502954] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5991.516064] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5991.554353] remoteproc remoteproc0: Booting fw image baremetal-demo-40Mb.elf, size 427848
+[ 5991.570616] remoteproc remoteproc0: no resource table found.
+[ 5991.598770] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xBC3DB2E8
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xBD104353
+[ 5993.616469] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5993.629558] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5993.668521] remoteproc remoteproc0: Booting fw image baremetal-demo-40Mb.elf, size 427848
+[ 5993.684771] remoteproc remoteproc0: no resource table found.
+[ 5993.712989] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xC8D694D7
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xCBB5AF78
+[ 5995.730776] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5995.743861] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5995.783974] remoteproc remoteproc0: Booting fw image baremetal-demo-40Mb.elf, size 427848
+[ 5995.800247] remoteproc remoteproc0: no resource table found.
+[ 5995.829620] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xD570B745
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xD67C6E78
+[ 5997.848366] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5997.861576] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 5997.900108] remoteproc remoteproc0: Booting fw image baremetal-demo-40Mb.elf, size 427848
+[ 5997.916357] remoteproc remoteproc0: no resource table found.
+[ 5997.942986] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xE20FFF5D
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xE555948F
+[ 5999.960743] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 5999.973846] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6000.013149] remoteproc remoteproc0: Booting fw image baremetal-demo-40Mb.elf, size 427848
+[ 6000.029452] remoteproc remoteproc0: no resource table found.
+[ 6000.055865] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xEEA71681
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xF10D8C4B
+[ 6002.073993] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6002.087093] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6002.125408] remoteproc remoteproc0: Booting fw image baremetal-demo-40Mb.elf, size 427848
+[ 6002.141663] remoteproc remoteproc0: no resource table found.
+[ 6002.168084] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xFB3FA6F0
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xFC918987
+[ 6004.185844] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6004.199017] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6004.237657] remoteproc remoteproc0: Booting fw image baremetal-demo-40Mb.elf, size 427848
+[ 6004.253920] remoteproc remoteproc0: no resource table found.
+[ 6004.280555] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x07D62855
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x0BD9D435
+[ 6006.298263] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+
+Image Size: 50
+[ 6006.314000] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6008.550468] remoteproc remoteproc0: Booting fw image baremetal-demo-50Mb.elf, size 532698
+[ 6008.566716] remoteproc remoteproc0: no resource table found.
+[ 6008.597621] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x147157BB
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x2690E5E5
+[ 6010.616982] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6010.630112] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6010.682275] remoteproc remoteproc0: Booting fw image baremetal-demo-50Mb.elf, size 532698
+[ 6010.698557] remoteproc remoteproc0: no resource table found.
+[ 6010.729326] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x2E2B236D
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x2FE3F248
+[ 6012.748763] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6012.761874] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6012.810776] remoteproc remoteproc0: Booting fw image baremetal-demo-50Mb.elf, size 532698
+[ 6012.827053] remoteproc remoteproc0: no resource table found.
+[ 6012.857859] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x3ADFE47F
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x3BBDB0CA
+[ 6014.877360] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6014.890506] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6014.935792] remoteproc remoteproc0: Booting fw image baremetal-demo-50Mb.elf, size 532698
+[ 6014.952071] remoteproc remoteproc0: no resource table found.
+[ 6014.984012] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x478FEB0F
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x4A9CD19F
+[ 6017.003452] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6017.019225] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6017.064562] remoteproc remoteproc0: Booting fw image baremetal-demo-50Mb.elf, size 532698
+[ 6017.080830] remoteproc remoteproc0: no resource table found.
+[ 6017.111449] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x54400BEC
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x55275F49
+[ 6019.130940] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6019.144074] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6019.190499] remoteproc remoteproc0: Booting fw image baremetal-demo-50Mb.elf, size 532698
+[ 6019.206783] remoteproc remoteproc0: no resource table found.
+[ 6019.237466] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x60EA30DB
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x65F3B24E
+[ 6021.257001] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6021.270118] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6021.320546] remoteproc remoteproc0: Booting fw image baremetal-demo-50Mb.elf, size 532698
+[ 6021.336815] remoteproc remoteproc0: no resource table found.
+[ 6021.367545] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x6D965861
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x6F7241A6
+[ 6023.387018] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6023.400131] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6023.447413] remoteproc remoteproc0: Booting fw image baremetal-demo-50Mb.elf, size 532698
+[ 6023.463700] remoteproc remoteproc0: no resource table found.
+[ 6023.496309] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x7A486EA7
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x7B731AC2
+[ 6025.515799] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6025.528900] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6025.575531] remoteproc remoteproc0: Booting fw image baremetal-demo-50Mb.elf, size 532698
+[ 6025.591806] remoteproc remoteproc0: no resource table found.
+[ 6025.623768] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x86F8A2BE
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x8A6DC54D
+[ 6027.643342] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6027.656421] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6027.706318] remoteproc remoteproc0: Booting fw image baremetal-demo-50Mb.elf, size 532698
+[ 6027.722581] remoteproc remoteproc0: no resource table found.
+[ 6027.753279] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x93A6FA71
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x94D9CC58
+[ 6029.772646] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+
+Image Size: 60
+[ 6029.785887] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6032.461006] remoteproc remoteproc0: Booting fw image baremetal-demo-60Mb.elf, size 637558
+[ 6032.477242] remoteproc remoteproc0: no resource table found.
+[ 6032.512201] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xA0583B51
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xB1110DE3
+[ 6034.532994] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6034.546118] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6034.606600] remoteproc remoteproc0: Booting fw image baremetal-demo-60Mb.elf, size 637558
+[ 6034.622874] remoteproc remoteproc0: no resource table found.
+[ 6034.660298] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xBCB7B481
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xBFF83715
+[ 6036.681959] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6036.695085] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6036.749030] remoteproc remoteproc0: Booting fw image baremetal-demo-60Mb.elf, size 637558
+[ 6036.765296] remoteproc remoteproc0: no resource table found.
+[ 6036.801948] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xC986BCA7
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xCAA83C41
+[ 6038.823680] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6038.836779] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6038.894540] remoteproc remoteproc0: Booting fw image baremetal-demo-60Mb.elf, size 637558
+[ 6038.910822] remoteproc remoteproc0: no resource table found.
+[ 6038.945863] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xD64AA926
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xDB7CEB05
+[ 6040.966649] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6040.979765] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6041.033957] remoteproc remoteproc0: Booting fw image baremetal-demo-60Mb.elf, size 637558
+[ 6041.050237] remoteproc remoteproc0: no resource table found.
+[ 6041.086164] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xE3108F0E
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xE4048FA7
+[ 6043.106859] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6043.119966] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6043.173131] remoteproc remoteproc0: Booting fw image baremetal-demo-60Mb.elf, size 637558
+[ 6043.189414] remoteproc remoteproc0: no resource table found.
+[ 6043.227432] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xEFD23AE1
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xF0C86753
+[ 6045.248097] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6045.261208] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6045.316006] remoteproc remoteproc0: Booting fw image baremetal-demo-60Mb.elf, size 637558
+[ 6045.332282] remoteproc remoteproc0: no resource table found.
+[ 6045.367355] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xFC9574B2
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xFEE1F9E2
+[ 6047.387962] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6047.401056] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6047.459166] remoteproc remoteproc0: Booting fw image baremetal-demo-60Mb.elf, size 637558
+[ 6047.475461] remoteproc remoteproc0: no resource table found.
+[ 6047.510646] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x095695AC
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x0A8EF0E2
+[ 6049.531311] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6049.544423] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6049.597345] remoteproc remoteproc0: Booting fw image baremetal-demo-60Mb.elf, size 637558
+[ 6049.613600] remoteproc remoteproc0: no resource table found.
+[ 6049.652347] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x161D1359
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x197038AB
+[ 6051.672955] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6051.686066] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6051.739282] remoteproc remoteproc0: Booting fw image baremetal-demo-60Mb.elf, size 637558
+[ 6051.755557] remoteproc remoteproc0: no resource table found.
+[ 6051.792251] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x22E0EB2A
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x24B6FE2D
+[ 6053.812878] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+
+Image Size: 70
+[ 6053.826118] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6056.941221] remoteproc remoteproc0: Booting fw image baremetal-demo-70Mb.elf, size 742418
+[ 6056.957489] remoteproc remoteproc0: no resource table found.
+[ 6056.998817] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x2FA25935
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x452B51C1
+[ 6059.021147] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6059.034263] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6059.103797] remoteproc remoteproc0: Booting fw image baremetal-demo-70Mb.elf, size 742418
+[ 6059.120076] remoteproc remoteproc0: no resource table found.
+[ 6059.159405] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x4EAD4736
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x501B859E
+[ 6061.181774] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6061.194898] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6061.255507] remoteproc remoteproc0: Booting fw image baremetal-demo-70Mb.elf, size 742418
+[ 6061.271789] remoteproc remoteproc0: no resource table found.
+[ 6061.311268] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x5B8E1997
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x5F4D67F6
+[ 6063.333671] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6063.346821] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6063.413516] remoteproc remoteproc0: Booting fw image baremetal-demo-70Mb.elf, size 742418
+[ 6063.429791] remoteproc remoteproc0: no resource table found.
+[ 6063.473719] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x6861A698
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x69E06A40
+[ 6065.496078] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6065.509160] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6065.570747] remoteproc remoteproc0: Booting fw image baremetal-demo-70Mb.elf, size 742418
+[ 6065.587039] remoteproc remoteproc0: no resource table found.
+[ 6065.626625] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x7545147A
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x7B184794
+[ 6067.649029] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6067.662099] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6067.723046] remoteproc remoteproc0: Booting fw image baremetal-demo-70Mb.elf, size 742418
+[ 6067.739328] remoteproc remoteproc0: no resource table found.
+[ 6067.778783] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x821A2E0C
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x83C94A50
+[ 6069.801180] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6069.814324] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6069.876890] remoteproc remoteproc0: Booting fw image baremetal-demo-70Mb.elf, size 742418
+[ 6069.893158] remoteproc remoteproc0: no resource table found.
+[ 6069.933673] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x8EEE2A96
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x902473DD
+[ 6071.956048] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6071.969120] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6072.034030] remoteproc remoteproc0: Booting fw image baremetal-demo-70Mb.elf, size 742418
+[ 6072.050304] remoteproc remoteproc0: no resource table found.
+[ 6072.093329] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x9BC61B01
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x9EAFD256
+[ 6074.115698] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6074.128779] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6074.189457] remoteproc remoteproc0: Booting fw image baremetal-demo-70Mb.elf, size 742418
+[ 6074.205732] remoteproc remoteproc0: no resource table found.
+[ 6074.245158] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xA8A570A4
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xA9C06CE6
+[ 6076.267580] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6076.280671] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6076.341304] remoteproc remoteproc0: Booting fw image baremetal-demo-70Mb.elf, size 742418
+[ 6076.357585] remoteproc remoteproc0: no resource table found.
+[ 6076.396882] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xB578F1E4
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xB9773613
+[ 6078.419341] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+
+Image Size: 80
+[ 6078.432535] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6081.982378] remoteproc remoteproc0: Booting fw image baremetal-demo-80Mb.elf, size 847278
+[ 6081.998648] remoteproc remoteproc0: no resource table found.
+[ 6082.042408] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xC24C6AF9
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xDC8F01AF
+[ 6084.066673] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6084.079802] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6084.164775] remoteproc remoteproc0: Booting fw image baremetal-demo-80Mb.elf, size 847278
+[ 6084.181064] remoteproc remoteproc0: no resource table found.
+[ 6084.226894] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xE3F55821
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xE5CAEEB5
+[ 6086.251635] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6086.264705] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6086.333118] remoteproc remoteproc0: Booting fw image baremetal-demo-80Mb.elf, size 847278
+[ 6086.349405] remoteproc remoteproc0: no resource table found.
+[ 6086.393273] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xF0FB3782
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xF267A3AC
+[ 6088.416901] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6088.430031] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6088.497287] remoteproc remoteproc0: Booting fw image baremetal-demo-80Mb.elf, size 847278
+[ 6088.513551] remoteproc remoteproc0: no resource table found.
+[ 6088.557308] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xFDE3364C
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x00D20957
+[ 6090.580913] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6090.594007] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6090.669379] remoteproc remoteproc0: Booting fw image baremetal-demo-80Mb.elf, size 847278
+[ 6090.685638] remoteproc remoteproc0: no resource table found.
+[ 6090.735283] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x0AC926E6
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x0C119B36
+[ 6092.758950] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6092.772037] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6092.840627] remoteproc remoteproc0: Booting fw image baremetal-demo-80Mb.elf, size 847278
+[ 6092.856894] remoteproc remoteproc0: no resource table found.
+[ 6092.900777] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x17C482DA
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x1B840D3A
+[ 6094.924427] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6094.937550] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6095.005503] remoteproc remoteproc0: Booting fw image baremetal-demo-80Mb.elf, size 847278
+[ 6095.021774] remoteproc remoteproc0: no resource table found.
+[ 6095.065600] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x24ACBE45
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x25A8167E
+[ 6097.099202] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6097.112297] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6097.182743] remoteproc remoteproc0: Booting fw image baremetal-demo-80Mb.elf, size 847278
+[ 6097.199002] remoteproc remoteproc0: no resource table found.
+[ 6097.247782] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x31A32713
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x36501028
+[ 6099.271437] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6099.284519] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6099.357877] remoteproc remoteproc0: Booting fw image baremetal-demo-80Mb.elf, size 847278
+[ 6099.374133] remoteproc remoteproc0: no resource table found.
+[ 6099.418191] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x3E95ABD6
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x400DBA3B
+[ 6101.441834] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6101.455012] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6101.524019] remoteproc remoteproc0: Booting fw image baremetal-demo-80Mb.elf, size 847278
+[ 6101.540322] remoteproc remoteproc0: no resource table found.
+[ 6101.584225] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x4B858CA5
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x4CA89297
+[ 6103.607856] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+
+Image Size: 90
+[ 6103.621065] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6107.615185] remoteproc remoteproc0: Booting fw image baremetal-demo-90Mb.elf, size 952128
+[ 6107.631446] remoteproc remoteproc0: no resource table found.
+[ 6107.679692] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x586EA8A7
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x75C24268
+[ 6109.705161] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6109.718299] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6109.805651] remoteproc remoteproc0: Booting fw image baremetal-demo-90Mb.elf, size 952128
+[ 6109.821933] remoteproc remoteproc0: no resource table found.
+[ 6109.870110] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x7CC630C7
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x7F5B7177
+[ 6111.895622] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6111.911532] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6111.987420] remoteproc remoteproc0: Booting fw image baremetal-demo-90Mb.elf, size 952128
+[ 6112.003680] remoteproc remoteproc0: no resource table found.
+[ 6112.051673] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x89D8C463
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x8B2D383E
+[ 6114.077134] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6114.090258] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6114.171110] remoteproc remoteproc0: Booting fw image baremetal-demo-90Mb.elf, size 952128
+[ 6114.187376] remoteproc remoteproc0: no resource table found.
+[ 6114.244151] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0x96D53BDF
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0x99AC5934
+[ 6116.269568] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6116.282689] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6116.362198] remoteproc remoteproc0: Booting fw image baremetal-demo-90Mb.elf, size 952128
+[ 6116.378450] remoteproc remoteproc0: no resource table found.
+[ 6116.426727] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xA3E69207
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xA5ADC534
+[ 6118.452153] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6118.465218] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6118.541076] remoteproc remoteproc0: Booting fw image baremetal-demo-90Mb.elf, size 952128
+[ 6118.557363] remoteproc remoteproc0: no resource table found.
+[ 6118.605381] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xB0E8CFF7
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xB53FDB6A
+[ 6120.630840] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6120.643943] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6120.720079] remoteproc remoteproc0: Booting fw image baremetal-demo-90Mb.elf, size 952128
+[ 6120.736355] remoteproc remoteproc0: no resource table found.
+[ 6120.785966] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xBDE53D21
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xBF563504
+[ 6122.811388] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6122.824460] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6122.906676] remoteproc remoteproc0: Booting fw image baremetal-demo-90Mb.elf, size 952128
+[ 6122.922964] remoteproc remoteproc0: no resource table found.
+[ 6122.976122] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xCAE46C85
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xD05F1A50
+[ 6125.001633] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6125.014735] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6125.091711] remoteproc remoteproc0: Booting fw image baremetal-demo-90Mb.elf, size 952128
+[ 6125.108003] remoteproc remoteproc0: no resource table found.
+[ 6125.156070] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xD7F279DB
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xD99794BB
+[ 6127.181545] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
+[ 6127.194663] remoteproc remoteproc0: powering up ff9a0000.rf5ss:r5f_0
+[ 6127.271265] remoteproc remoteproc0: Booting fw image baremetal-demo-90Mb.elf, size 952128
+[ 6127.287539] remoteproc remoteproc0: no resource table found.
+[ 6127.335561] remoteproc remoteproc0: remote processor ff9a0000.rf5ss:r5f_0 is now up
+init_time: 0xE4F0C08B
+create_time: 0
+load_time: 0
+start_time: 0
+end_time: 0xE6271B53
+[ 6129.360989] remoteproc remoteproc0: stopped remote processor ff9a0000.rf5ss:r5f_0
