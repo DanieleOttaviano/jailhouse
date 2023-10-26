@@ -100,7 +100,7 @@ init_platform()
      */
     /* ps7_init();*/
     /* psu_init();*/
-    disable_caches();
+    enable_caches();
     init_uart();
 }
 
