@@ -131,6 +131,7 @@ enum trap_return handle_smc(struct trap_context *ctx)
 	enum trap_return ret = TRAP_HANDLED;
 	u32 *stats = this_cpu_public()->stats;
 
+
 	switch (SMCCC_GET_OWNER(regs[0])) {
 	case ARM_SMCCC_OWNER_ARCH:
 		stats[JAILHOUSE_CPU_STAT_VMEXITS_SMCCC]++;

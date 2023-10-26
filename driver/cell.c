@@ -339,14 +339,24 @@ static int load_image(struct cell *cell,
 	if (copy_from_user(&image, uimage, sizeof(image)))
 		return -EFAULT;
 
+	// DEBUG PRINT
+	// pr_err("\nimage.size: %dBytes (0x%x)", image.size, image.size);
+	// pr_err("image.source_address: 0x%x\n", image.source_address);
+	// pr_err("image.target_address: 0x%x\n", image.target_address);
+	// pr_err("image.padding: %dBytes (0x%x)\n", image.padding, image.padding);
+
 	if (image.size == 0)
 		return 0;
 
 	mem = cell->memory_regions;
 	for (regions = cell->num_memory_regions; regions > 0; regions--) {
 		image_offset = image.target_address - mem->virt_start;
+		// pr_err("Check if image target > mem virt start and if image_offset < mem size \n");
+		// pr_err("image.target_address:0x%x - mem->virt_start:0x%x = image_offset:0x%x\n",image.target_address, mem->virt_start, image_offset);
 		if (image.target_address >= mem->virt_start &&
 		    image_offset < mem->size) {
+			// pr_err("Check on image size \n");
+			// pr_err("image.size:0x%x > mem->size:0x%x - image_offset:0x%x\n",image.size, mem->size, image_offset);
 			if (image.size > mem->size - image_offset ||
 			    (mem->flags & MEM_REQ_FLAGS) != MEM_REQ_FLAGS)
 				return -EINVAL;
@@ -400,6 +410,7 @@ static int load_image(struct cell *cell,
 		phys_start = (mem->phys_start + image_offset) & PAGE_MASK;
 	}
 	page_offs = offset_in_page(image_offset);
+	// pr_err("ioremap phys_start:0x%x image.size(0x%x) + page_offs(0x%x)\n",phys_start, image.size, page_offs);
 	image_mem = jailhouse_ioremap(phys_start, 0,
 				      PAGE_ALIGN(image.size + page_offs));
 	if (!image_mem) {
@@ -451,6 +462,8 @@ int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 	if (err)
 		goto unlock_out;
 
+	// DEBUG PRINT
+	// pr_err("cell_load.num_preload_images: %d\n",cell_load.num_preload_images);
 	for (n = cell_load.num_preload_images; n > 0; n--, image++) {
 		err = load_image(cell, image);
 		if (err)
@@ -498,11 +511,12 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 		regs[2] = (ack << 32) | (bootmem<<32) ; 		//0x100000000;
 		regs[3] = 0;
 		regs[4] = 0;
-		pr_err("reg[0]:%lx",regs[0]);
-		pr_err("reg[1]:%lx",regs[1]);
-		pr_err("reg[2]:%lx",regs[2]);
-		pr_err("reg[3]:%lx",regs[3]);
-		pr_err("reg[4]:%lx",regs[4]);
+		// DEBUG PRINT
+		// pr_err("reg[0]:%lx",regs[0]);
+		// pr_err("reg[1]:%lx",regs[1]);
+		// pr_err("reg[2]:%lx",regs[2]);
+		// pr_err("reg[3]:%lx",regs[3]);
+		// pr_err("reg[4]:%lx",regs[4]);
 		regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);	
 	} 
 	//if(!cpumask_empty(&cell->cpus_assigned)){
@@ -521,9 +535,7 @@ static int cell_destroy(struct cell *cell)
 	unsigned long regs[5] 	 = {0};
 	unsigned long PM_SIP_SCV = 0xC2000000;
 	unsigned long PM_API_ID  = 0x00000008; // Power Down
-	unsigned long bootmem 	 = 1;
 	unsigned long ipnode 	 = 0x00000007;
-	unsigned long set_addr 	 = 1;
 	unsigned long ack 		 = 2;
 
 	if(!cpumask_empty(&cell->rpus_assigned)){
@@ -532,11 +544,12 @@ static int cell_destroy(struct cell *cell)
 		regs[2] = 0; 		
 		regs[3] = 0;
 		regs[4] = 0;
-		pr_err("reg[0]:%lx",regs[0]);
-		pr_err("reg[1]:%lx",regs[1]);
-		pr_err("reg[2]:%lx",regs[2]);
-		pr_err("reg[3]:%lx",regs[3]);
-		pr_err("reg[4]:%lx",regs[4]);
+		// DEBUG PRINT
+		// pr_err("reg[0]:%lx",regs[0]);
+		// pr_err("reg[1]:%lx",regs[1]);
+		// pr_err("reg[2]:%lx",regs[2]);
+		// pr_err("reg[3]:%lx",regs[3]);
+		// pr_err("reg[4]:%lx",regs[4]);
 		regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);	
 	}
 	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_DESTROY, cell->id);
