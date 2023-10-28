@@ -554,7 +554,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
   	// print_xmpu_region_regs(XMPU_FPD_BASE_ADDR, R00_OFFSET);
 	//Configure XMPU0 to protect APU memory from RPU accesses
 	ddr_xmpu0_region_config.addr_start =    0x3ED00000;
-	ddr_xmpu0_region_config.addr_end =      0x3EEFFFFF;
+	ddr_xmpu0_region_config.addr_end =      0x450FFFFF;
 	ddr_xmpu0_region_config.master_id =     0x0000;
 	ddr_xmpu0_region_config.master_mask =   0x03E0;
 	ddr_xmpu0_region_config.ns_checktype =  0;
@@ -725,7 +725,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	// printk("Before xmpu programming\r\n");
 	// Configure XMPU1 to protect RPU memory from APU accesses
 	ddr_xmpu1_region_config.addr_start =    0x3ED00000;
-	ddr_xmpu1_region_config.addr_end =      0x3EEFFFFF;
+	ddr_xmpu1_region_config.addr_end =      0x450FFFFF;
 	ddr_xmpu1_region_config.master_id =     0x0080;
 	ddr_xmpu1_region_config.master_mask =   0x03C0;
 	ddr_xmpu1_region_config.ns_checktype =  0;
@@ -743,7 +743,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 
 	// Configure XMPU2 to protect RPU memory from APU acceses
 	ddr_xmpu2_region_config.addr_start =    0x3ED00000;
-	ddr_xmpu2_region_config.addr_end =      0x3EEFFFFF;
+	ddr_xmpu2_region_config.addr_end =      0x450FFFFF;
 	ddr_xmpu2_region_config.master_id =     0x0080;
 	ddr_xmpu2_region_config.master_mask =   0x03C0;
 	ddr_xmpu2_region_config.ns_checktype =  0;
