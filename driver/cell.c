@@ -492,6 +492,10 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 	if (err)
 		return err;
 
+	//if(!cpumask_empty(&cell->cpus_assigned)){
+	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_START, cell->id);
+	//}
+
 	// Check if the start request is for RPU 
 	if(!cpumask_empty(&cell->rpus_assigned)){	
 		// GET NODE STATUS to check that is not already on? 	
@@ -514,9 +518,7 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 		// pr_err("reg[4]:%lx",regs[4]);
 		regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);	
 	} 
-	if(!cpumask_empty(&cell->cpus_assigned)){
-		err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_START, cell->id);
-	}
+
 	mutex_unlock(&jailhouse_lock);
 
 	return err;
