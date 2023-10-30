@@ -7,7 +7,7 @@ DEMARMR5 := .
 SRCS = $(wildcard $(DEMARMR5)/src/*.c)
 OBJ = $(DEMARMR5)/obj/
 OBJS = 	$(addprefix $(OBJ), $(notdir $(SRCS:.c=.o)))
-LD_SRCS = $(LIBARMR5)/lscript.ld
+LD_SRCS = $(DEMARMR5)/src/lscript.ld
 INC = -I$(LIBARMR5)/include
 LIBSRC_MAKEFILES := $(wildcard $(LIBARMR5)/libsrc/*/src)
 
