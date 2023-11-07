@@ -333,20 +333,20 @@ static ssize_t cpus_failed_list_show(struct kobject *kobj,
 	return print_failed_cpus(buf, PAGE_SIZE, cell, true);
 }
 
-static ssize_t rpus_assigned_show(struct kobject *kobj,
+static ssize_t rcpus_assigned_show(struct kobject *kobj,
 				  struct kobj_attribute *attr, char *buf)
 {
 	struct cell *cell = container_of(kobj, struct cell, kobj);
 
-	return print_cpumask(buf, PAGE_SIZE, &cell->rpus_assigned, false);
+	return print_cpumask(buf, PAGE_SIZE, &cell->rcpus_assigned, false);
 }
 
-static ssize_t rpus_assigned_list_show(struct kobject *kobj,
+static ssize_t rcpus_assigned_list_show(struct kobject *kobj,
 				  struct kobj_attribute *attr, char *buf)
 {
 	struct cell *cell = container_of(kobj, struct cell, kobj);
 
-	return print_cpumask(buf, PAGE_SIZE, &cell->rpus_assigned, true);
+	return print_cpumask(buf, PAGE_SIZE, &cell->rcpus_assigned, true);
 }
 
 static struct kobj_attribute cell_name_attr = __ATTR_RO(name);
@@ -358,10 +358,10 @@ static struct kobj_attribute cell_cpus_assigned_list_attr =
 static struct kobj_attribute cell_cpus_failed_attr = __ATTR_RO(cpus_failed);
 static struct kobj_attribute cell_cpus_failed_list_attr =
 	__ATTR_RO(cpus_failed_list);
-static struct kobj_attribute cell_rpus_assigned_attr =
-	__ATTR_RO(rpus_assigned);
-static struct kobj_attribute cell_rpus_assigned_list_attr =
-	__ATTR_RO(rpus_assigned_list);
+static struct kobj_attribute cell_rcpus_assigned_attr =
+	__ATTR_RO(rcpus_assigned);
+static struct kobj_attribute cell_rcpus_assigned_list_attr =
+	__ATTR_RO(rcpus_assigned_list);
 
 static struct attribute *cell_attrs[] = {
 	&cell_name_attr.attr,
@@ -370,8 +370,8 @@ static struct attribute *cell_attrs[] = {
 	&cell_cpus_assigned_list_attr.attr,
 	&cell_cpus_failed_attr.attr,
 	&cell_cpus_failed_list_attr.attr,
-	&cell_rpus_assigned_attr.attr,
-	&cell_rpus_assigned_list_attr.attr,
+	&cell_rcpus_assigned_attr.attr,
+	&cell_rcpus_assigned_list_attr.attr,
 	NULL,
 };
 COMPAT_ATTRIBUTE_GROUPS(cell);

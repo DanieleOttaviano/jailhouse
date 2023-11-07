@@ -19,7 +19,7 @@
 struct {
 	struct jailhouse_cell_desc cell;
 	__u64 cpus[1];
-	__u64 rpus[1];
+	__u64 rcpus[1];
 	struct jailhouse_memory mem_regions[5];
 	union jailhouse_stream_id stream_ids[2];
 } __attribute__((packed)) config = {
@@ -30,7 +30,7 @@ struct {
 		.flags = JAILHOUSE_CELL_PASSIVE_COMMREG,
 
 		.cpu_set_size = sizeof(config.cpus),
-		.rpu_set_size = sizeof(config.rpus),
+		.rcpu_set_size = sizeof(config.rcpus),
 		.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 		.num_irqchips = 0,
 		.num_pci_devices = 0,
@@ -48,7 +48,7 @@ struct {
 		0x0,
 	},
 
-	.rpus = {
+	.rcpus = {
 		0x1,
 	},
 

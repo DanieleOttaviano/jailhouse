@@ -19,7 +19,6 @@ EXT_CFLAGS = -DARMR5 -Wall -O0 -g3 -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.
 LIBS = 	-Wl,--start-group,-lxil,-lfreertos,-lgcc,-lc,--end-group
 
 # Toolchain
-#COMPILER_PREFIX = armr5-none-eabi-
 COMPILER_PREFIX = $(REMOTE_COMPILE)
 CC = $(COMPILER_PREFIX)gcc 
 LD = $(COMPILER_PREFIX)ld
@@ -29,7 +28,7 @@ OBJDUMP = $(COMPILER_PREFIX)objdump
 OBJCOPY = $(COMPILER_PREFIX)objcopy
 
 # Misc
-RM      = rm -rf 					# Remove recursively command
+RM = rm -rf 					# Remove recursively command
 
 # All Target
 all: $(INMATE)_tcm.bin $(INMATE).bin

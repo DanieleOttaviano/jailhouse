@@ -206,25 +206,25 @@ static long get_max_cpus(u32 cpu_set_size,
 	return -EINVAL;
 }
 
-static long get_max_rpus(u32 rpu_set_size,
+static long get_max_rcpus(u32 rcpu_set_size,
 			 const struct jailhouse_system __user *system_config)
 {
-	u8 __user *rpu_set =
-		(u8 __user *)jailhouse_cell_rpu_set(
+	u8 __user *rcpu_set =
+		(u8 __user *)jailhouse_cell_rcpu_set(
 				(const struct jailhouse_cell_desc * __force)
 				&system_config->root_cell);
-	unsigned int pos = rpu_set_size;
-	long max_rpu_id;
+	unsigned int pos = rcpu_set_size;
+	long max_rcpu_id;
 	u8 bitmap;
 
 	// DEBUG PRINT
-	//pr_err("rpu_set_size: %u\n",pos);
+	//pr_err("rcpu_set_size: %u\n",pos);
 	while (pos-- > 0) {
-		if (get_user(bitmap, rpu_set + pos))
+		if (get_user(bitmap, rcpu_set + pos))
 			return -EFAULT;
-		max_rpu_id = fls(bitmap);
-		if (max_rpu_id > 0)
-			return pos * 8 + max_rpu_id;
+		max_rcpu_id = fls(bitmap);
+		if (max_rcpu_id > 0)
+			return pos * 8 + max_rcpu_id;
 	}
 	return -EINVAL;
 }
@@ -405,7 +405,7 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	unsigned int clock_gates;
 	const char *fw_name;
 	long max_cpus;
-	long max_rpus;
+	long max_rcpus;
 	int err;
 
 	fw_name = jailhouse_get_fw_name();
@@ -439,15 +439,15 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	if (max_cpus > UINT_MAX)
 		return -EINVAL;
 	
-	max_rpus = get_max_rpus(config_header.root_cell.rpu_set_size, arg);
-	if (max_rpus < 0)
-		return max_rpus;
-	if (max_rpus > UINT_MAX)
+	max_rcpus = get_max_rcpus(config_header.root_cell.rcpu_set_size, arg);
+	if (max_rcpus < 0)
+		return max_rcpus;
+	if (max_rcpus > UINT_MAX)
 		return -EINVAL;
 
 	// DEBUG PRINT
 	// pr_err("max_cpus : %ld\n",max_cpus);
-	// pr_err("max_rpus : %ld\n",max_rpus);
+	// pr_err("max_rcpus : %ld\n",max_rcpus);
 
 	if (mutex_lock_interruptible(&jailhouse_lock) != 0)
 		return -EINTR;
@@ -492,7 +492,7 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 		   sizeof(header->signature)) != 0 ||
 	    hypervisor->size >= hv_mem->size)
 		goto error_release_fw;
-	//Do we need space also for RPUs?
+	//Do we need space also for rCPUs?
 	hv_core_and_percpu_size = header->core_size +
 		max_cpus * header->percpu_size;
 	config_size = jailhouse_system_config_size(&config_header);
