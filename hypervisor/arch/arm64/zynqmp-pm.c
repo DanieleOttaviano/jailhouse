@@ -82,10 +82,10 @@ static int do_fw_call_smc(u64 arg0, u64 arg1, u64 arg2, u64 arg3,
 	
 	smc_arg3(arg0, arg1, arg2, arg3, &res);
 	// DEBUG
-	printk("res.a0 = %ld\n", res.a0);
-	printk("res.a1 = %ld\n", res.a1);
-	printk("res.a2 = %ld\n", res.a2);
-	printk("res.a3 = %ld\n", res.a3);
+	// printk("res.a0 = %ld\n", res.a0);
+	// printk("res.a1 = %ld\n", res.a1);
+	// printk("res.a2 = %ld\n", res.a2);
+	// printk("res.a3 = %ld\n", res.a3);
 	
 	if (ret_payload) {
 		ret_payload[0] = lower_32_bits(res.a0);
@@ -93,10 +93,10 @@ static int do_fw_call_smc(u64 arg0, u64 arg1, u64 arg2, u64 arg3,
 		ret_payload[2] = lower_32_bits(res.a1);
 		ret_payload[3] = upper_32_bits(res.a1);
 		// DEBUG
-		printk("ret_payload[0] = %d\n", ret_payload[0]);
-		printk("ret_payload[1] = %d\n", ret_payload[1]);
-		printk("ret_payload[2] = %d\n", ret_payload[2]);
-		printk("ret_payload[3] = %d\n", ret_payload[3]);
+		// printk("ret_payload[0] = %d\n", ret_payload[0]);
+		// printk("ret_payload[1] = %d\n", ret_payload[1]);
+		// printk("ret_payload[2] = %d\n", ret_payload[2]);
+		// printk("ret_payload[3] = %d\n", ret_payload[3]);
 	}
 
 	return zynqmp_pm_ret_code((enum pm_ret_status)res.a0);
