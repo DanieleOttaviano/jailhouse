@@ -285,7 +285,7 @@ int cell_init(struct cell *cell)
 	cell->cpu_set = cpu_set;
 
 	// DEBUG PRINT
-	printk("small_cpu_set->bitmap = %ld\r\n", cell->small_cpu_set.bitmap[0]);
+	// printk("small_cpu_set->bitmap = %ld\r\n", cell->small_cpu_set.bitmap[0]);
 	if (rcpu_set_size > PAGE_SIZE)
 		return trace_error(-EINVAL);
 	if (rcpu_set_size > sizeof(cell->small_rcpu_set.bitmap)) {
@@ -300,7 +300,7 @@ int cell_init(struct cell *cell)
 
 	cell->rcpu_set = rcpu_set;
 	// DEBUG PRINT
-	printk("small_rcpu_set->bitmap = %ld\r\n", cell->small_rcpu_set.bitmap[0]);
+	// printk("small_rcpu_set->bitmap = %ld\r\n", cell->small_rcpu_set.bitmap[0]);
 
 	err = mmio_cell_init(cell);
 	if (err && cell->cpu_set != &cell->small_cpu_set)
