@@ -91,3 +91,24 @@ int zynqmp_r5_tcm_request(int tcm_id){
 	
 	return ret1 || ret2;
 }
+
+int zynqmp_r5_tcm_release(int tcm_id){
+	int ret1,ret2;
+	if(tcm_id == 0){
+		// Request TCM_0_A
+		ret1 = zynqmp_pm_release_node(NODE_TCM_0_A);
+		// Request TCM_1_A
+		ret2 = zynqmp_pm_release_node(NODE_TCM_1_A);
+	}
+	else if(tcm_id == 1){
+		// Request TCM_0_B
+		ret1 = zynqmp_pm_release_node(NODE_TCM_0_B);
+		// Request TCM_1_B
+		ret2 = zynqmp_pm_release_node(NODE_TCM_1_B);
+	}
+	else{
+		return -1;
+	}
+	
+	return ret1 || ret2;
+}

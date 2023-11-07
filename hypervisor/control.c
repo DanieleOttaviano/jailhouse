@@ -24,7 +24,6 @@
 #include <asm/spinlock.h>
 #include <asm/coloring.h>
 #include <asm/xmpu.h>
-#include <asm/zynqmp-pm.h>
 #include <asm/zynqmp-r5.h>
 #ifdef __aarch64__
 /* QoS Support only provided on arm64 */
@@ -306,6 +305,8 @@ int cell_init(struct cell *cell)
 	err = mmio_cell_init(cell);
 	if (err && cell->cpu_set != &cell->small_cpu_set)
 		page_free(&mem_pool, cell->cpu_set, 1);
+	if (err && cell->rcpu_set != &cell->small_rcpu_set)
+		page_free(&mem_pool, cell->rcpu_set, 1);
 
 	return err;
 }
@@ -441,6 +442,7 @@ static void cell_destroy_internal(struct cell *cell)
 
 	// For each rCPU, power them off
 	for_each_cpu(cpu, cell->rcpu_set) {
+		// to do ... call platform and architectueral specific arch_park_rcpu and modify public_per_rcpu stats
 		if(cpu == 0){
 			zynqmp_r5_stop(NODE_RPU_0);
 		}
@@ -647,7 +649,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		       sizeof(public_per_cpu(cpu)->stats));
 	}
 
-	// to do ... public per cpu managment	
+	// to do ... public per rcpu managment	
 	for_each_cpu(cpu, cell->rcpu_set) {
 		//arch_park_cpu(cpu);
 		clear_bit(cpu, root_cell.rcpu_set->bitmap);
@@ -859,6 +861,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 
 	// For each rCPU
 	for_each_cpu(cpu, cell->rcpu_set) {
+		// to do ... call platform and architectueral specific arch_reset_rcpu
 		if(cpu == 0){
 			zynqmp_r5_start(NODE_RPU_0,(u32)0x03ed0000);
 		}
@@ -899,6 +902,8 @@ static int cell_set_loadable(struct per_cpu *cpu_data, unsigned long id)
 		arch_park_cpu(cpu);
 	}
 
+	// to do ... unconditionally park remote CPUs
+
 	if (cell->loadable)
 		goto out_resume;
 
@@ -914,6 +919,7 @@ static int cell_set_loadable(struct per_cpu *cpu_data, unsigned long id)
 			if (err)
 				goto out_resume;
 		}
+		// to do ... call sram request function (platform specific)	
 		if(mem->flags & JAILHOUSE_MEM_TCM_A){
 			zynqmp_r5_tcm_request(ZYNQMP_R5_TCMA_ID);
 		}
@@ -1019,6 +1025,13 @@ void shutdown(void)
 	for_each_mem_region(root_mem, root_cell.config, n) {
 		if (root_mem->flags & JAILHOUSE_MEM_COLORED) {
 			arch_unmap_memory_region(&root_cell, root_mem);
+		}
+		// to do ... call sram release function (platform specific)
+		if(root_mem->flags & JAILHOUSE_MEM_TCM_A){
+			zynqmp_r5_tcm_release(ZYNQMP_R5_TCMA_ID);
+		}
+		if(root_mem->flags & JAILHOUSE_MEM_TCM_B){
+			zynqmp_r5_tcm_release(ZYNQMP_R5_TCMB_ID);
 		}
 	}
 
