@@ -132,7 +132,7 @@ struct jailhouse_cell_desc {
 #define JAILHOUSE_MEM_COLORED_NO_COPY	0x0400
 /* Set internally for remap_to/unmap_from root ops */
 #define JAILHOUSE_MEM_TMP_ROOT_REMAP	0x0800
-#define JAILHOUSE_MEM_RPU		12 /* uses bits 12..13*/
+#define JAILHOUSE_MEM_RPU		12 /* uses bits 12..13*/	// to do ... change to be generic
 #define JAILHOUSE_MEM_TCM_A		(1 << JAILHOUSE_MEM_RPU)
 #define JAILHOUSE_MEM_TCM_B		(2 << JAILHOUSE_MEM_RPU)
 #define JAILHOUSE_MEM_IO_UNALIGNED	0x8000
