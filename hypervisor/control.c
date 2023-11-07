@@ -24,6 +24,8 @@
 #include <asm/spinlock.h>
 #include <asm/coloring.h>
 #include <asm/xmpu.h>
+#include <asm/zynqmp-pm.h>
+#include <asm/zynqmp-r5.h>
 #ifdef __aarch64__
 /* QoS Support only provided on arm64 */
 #include <asm/qos.h>
@@ -261,8 +263,12 @@ int cell_init(struct cell *cell)
 {
 	const unsigned long *config_cpu_set =
 		jailhouse_cell_cpu_set(cell->config);
+	const unsigned long *config_rcpu_set =
+		jailhouse_cell_rcpu_set(cell->config);
 	unsigned long cpu_set_size = cell->config->cpu_set_size;
+	unsigned long rcpu_set_size = cell->config->rcpu_set_size;
 	struct cpu_set *cpu_set;
+	struct cpu_set *rcpu_set;
 	int err;
 
 	if (cpu_set_size > PAGE_SIZE)
@@ -278,6 +284,24 @@ int cell_init(struct cell *cell)
 	memcpy(cpu_set->bitmap, config_cpu_set, cpu_set_size);
 
 	cell->cpu_set = cpu_set;
+
+	// DEBUG PRINT
+	printk("small_cpu_set->bitmap = %ld\r\n", cell->small_cpu_set.bitmap[0]);
+	if (rcpu_set_size > PAGE_SIZE)
+		return trace_error(-EINVAL);
+	if (rcpu_set_size > sizeof(cell->small_rcpu_set.bitmap)) {
+		rcpu_set = page_alloc(&mem_pool, 1);
+		if (!rcpu_set)
+			return -ENOMEM;
+	} else {
+		rcpu_set = &cell->small_rcpu_set;
+	}
+	rcpu_set->max_cpu_id = rcpu_set_size * 8 - 1;
+	memcpy(rcpu_set->bitmap, config_rcpu_set, rcpu_set_size);
+
+	cell->rcpu_set = rcpu_set;
+	// DEBUG PRINT
+	printk("small_rcpu_set->bitmap = %ld\r\n", cell->small_rcpu_set.bitmap[0]);
 
 	err = mmio_cell_init(cell);
 	if (err && cell->cpu_set != &cell->small_cpu_set)
@@ -415,6 +439,20 @@ static void cell_destroy_internal(struct cell *cell)
 		       sizeof(public_per_cpu(cpu)->stats));
 	}
 
+	// For each rCPU, power them off
+	for_each_cpu(cpu, cell->rcpu_set) {
+		if(cpu == 0){
+			zynqmp_r5_stop(NODE_RPU_0);
+		}
+		else if(cpu == 1){
+			zynqmp_r5_stop(NODE_RPU_1);
+		}
+		else{
+			printk("rCPU doesn't exist\r\n");
+		}
+		set_bit(cpu, root_cell.rcpu_set->bitmap);
+	}	
+	
 	for_each_mem_region(mem, cell->config, n) {
 		if (!JAILHOUSE_MEMORY_IS_SUBPAGE(mem))
 			/*
@@ -528,6 +566,13 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			goto err_cell_exit;
 		}
 
+	/* the root cell's rCPU set must be super-set of new cell's set */
+	for_each_cpu(cpu, cell->rcpu_set)
+		if (!cell_owns_rcpu(&root_cell, cpu)) {
+			err = trace_error(-EBUSY);
+			goto err_cell_exit;
+		}
+
 	err = arch_cell_create(cell);
 	if (err)
 		goto err_cell_exit;
@@ -600,6 +645,15 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		public_per_cpu(cpu)->cell = cell;
 		memset(public_per_cpu(cpu)->stats, 0,
 		       sizeof(public_per_cpu(cpu)->stats));
+	}
+
+	// to do ... public per cpu managment	
+	for_each_cpu(cpu, cell->rcpu_set) {
+		//arch_park_cpu(cpu);
+		clear_bit(cpu, root_cell.rcpu_set->bitmap);
+		//public_per_cpu(cpu)->cell = cell;
+		//memset(public_per_cpu(cpu)->stats, 0,
+		//       sizeof(public_per_cpu(cpu)->stats));
 	}
 
 	/*
@@ -803,6 +857,20 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 		arch_reset_cpu(cpu);
 	}
 
+	// For each rCPU
+	for_each_cpu(cpu, cell->rcpu_set) {
+		if(cpu == 0){
+			zynqmp_r5_start(NODE_RPU_0,(u32)0x03ed0000);
+		}
+		else if(cpu == 1){
+			zynqmp_r5_start(NODE_RPU_1,(u32)0x03ed0000);
+		}
+		else{
+			printk("rCPU doesn't exist\r\n");
+			return -1;
+		}
+	}	
+
 	printk("Started cell \"%s\"\n", cell->config->name);
 
 out_resume:
@@ -840,12 +908,19 @@ static int cell_set_loadable(struct per_cpu *cpu_data, unsigned long id)
 	pci_cell_reset(cell);
 
 	/* map all loadable memory regions into the root cell */
-	for_each_mem_region(mem, cell->config, n)
+	for_each_mem_region(mem, cell->config, n){
 		if (mem->flags & JAILHOUSE_MEM_LOADABLE) {
 			err = remap_to_root_cell(mem, ABORT_ON_ERROR);
 			if (err)
 				goto out_resume;
 		}
+		if(mem->flags & JAILHOUSE_MEM_TCM_A){
+			zynqmp_r5_tcm_request(ZYNQMP_R5_TCMA_ID);
+		}
+		if(mem->flags & JAILHOUSE_MEM_TCM_B){
+			zynqmp_r5_tcm_request(ZYNQMP_R5_TCMB_ID);
+		}
+	}
 
 	config_commit(NULL);
 

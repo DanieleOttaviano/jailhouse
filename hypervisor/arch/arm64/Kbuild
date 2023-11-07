@@ -27,6 +27,8 @@ lib-y += coloring.o
 lib-y += timer.o pmu.o memguard.o
 lib-y += qos.o
 lib-y += xmpu.o
+lib-y += xlnx-zynqmp.o
+lib-y += zynqmp-r5.o
 
 ifdef CONFIG_DEBUG
 lib-y += cache_layout.o

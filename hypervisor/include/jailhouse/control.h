@@ -118,6 +118,20 @@ static inline bool cell_owns_cpu(struct cell *cell, unsigned int cpu_id)
 		test_bit(cpu_id, cell->cpu_set->bitmap));
 }
 
+/**
+ * Check if the rCPU is assigned to the specified cell.
+ * @param cell		Cell the rCPU may belong to.
+ * @param rcpu_id	ID of the rCPU.
+ *
+ * @return True if the CPU is assigned to the cell.
+ */
+static inline bool cell_owns_rcpu(struct cell *cell, unsigned int rcpu_id)
+{
+	return (rcpu_id <= cell->rcpu_set->max_cpu_id &&
+		test_bit(rcpu_id, cell->rcpu_set->bitmap));
+}
+
+
 bool cpu_id_valid(unsigned long cpu_id);
 
 int cell_init(struct cell *cell);

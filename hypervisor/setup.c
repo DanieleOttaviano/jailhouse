@@ -171,6 +171,8 @@ static void init_late(void)
 
 	for_each_cpu(cpu, root_cell.cpu_set)
 		expected_cpus++;
+	printk("Online CPUs: %d\n", expected_cpus);
+	printk("hypervisor header online CPUs: %d\n", hypervisor_header.online_cpus);
 	if (hypervisor_header.online_cpus != expected_cpus) {
 		error = trace_error(-EINVAL);
 		return;
