@@ -19,7 +19,9 @@
 struct {
 	struct jailhouse_cell_desc cell;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[3];
+	__u64 rcpus[1];
+	struct jailhouse_memory mem_regions[5];
+	struct jailhouse_irqchip irqchips[1];
 } __attribute__((packed)) config = {
 	.cell = {
 		.signature = JAILHOUSE_CELL_DESC_SIGNATURE,
@@ -28,8 +30,9 @@ struct {
 		.flags = JAILHOUSE_CELL_PASSIVE_COMMREG,
 
 		.cpu_set_size = sizeof(config.cpus),
+		.rcpu_set_size = sizeof(config.rcpus),
 		.num_memory_regions = ARRAY_SIZE(config.mem_regions),
-		.num_irqchips = 0,
+		.num_irqchips = ARRAY_SIZE(config.irqchips),
 		.num_pci_devices = 0,
 
 		.console = {
@@ -41,9 +44,11 @@ struct {
 	},
 
 	.cpus = {
-		0x8,
+		0x1,
 	},
-
+	.rcpus = {
+		0x0,
+	},
 	.mem_regions = {
 		/* UART */ {
 			.phys_start = 0xff010000,
@@ -53,9 +58,9 @@ struct {
 				JAILHOUSE_MEM_IO | JAILHOUSE_MEM_ROOTSHARED,
 		},
 		/* RAM */ {
-			.phys_start = 0x800600000,
+			.phys_start = 0x47000000, //47000000
 			.virt_start = 0,
-			.size = 0x00010000,
+			.size = 0x5000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE,
 		},
@@ -65,5 +70,19 @@ struct {
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_COMM_REGION,
 		},
-	}
+	},
+
+	.irqchips = {
+		/* GIC */ {
+			.address = 0xf9010000,
+			.pin_base = 32,
+			.pin_bitmap = {
+				0,
+				0,
+				0,
+				(1 << (146 - 128)) | (1 << (147 - 128))
+			},
+		},
+	},
+
 };

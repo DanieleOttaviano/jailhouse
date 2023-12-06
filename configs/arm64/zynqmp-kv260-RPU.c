@@ -143,6 +143,13 @@ struct {
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
+		/* TRAFFIC GENERATOR */ {
+			.phys_start = 0x80000000,
+			.virt_start = 0x80000000,
+			.size = 0x00100000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_IO,
+		},
 		/* PCI host bridge */ {
 			.phys_start = 0x8000000000,
 			.virt_start = 0x8000000000,
