@@ -84,7 +84,12 @@ typedef u32 __u32;
 typedef s64 __s64;
 typedef u64 __u64;
 
-typedef enum { true = 1, false = 0 } bool;
+//MARTe2 compatibility
+#ifdef __cplusplus
+	#include <stdbool.h>
+#else 
+	typedef enum { true = 1, false = 0 } bool;
+#endif
 
 #include <jailhouse/hypercall.h>
 

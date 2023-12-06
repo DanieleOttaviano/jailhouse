@@ -11,9 +11,57 @@
 #define FREQUENCY 8  // 8 MHz
 #define PERIOD 100000 // 100 ms
 
+void test_memory_protection(){
+  //Pointer to RPU memory
+  unsigned int* ptr_rpu_mem = (unsigned int*)0x3ed01000;
+  //Pointer to APU memory
+  unsigned int* ptr_apu_mem = (unsigned int*)0x75609000;  
+  //Pointer to XMPU memory
+  unsigned int* ptr_xmpu_mem = (unsigned int*)0xFD000000;
+  size_t bytes_to_read = 4 * 5; // 4 bytes = 1 word
+  int i;
+
+  // Read RPU memory 
+  print("Reading RPU memory...\n\r");
+  for (i = 0; i < bytes_to_read/4; i++) {
+    xil_printf("ptr_rpu_mem[%d] = 0x%08X\t", i, ptr_rpu_mem[i]);
+  }
+  print("\n\n\r");
+  // // Write in RPU memory
+  // print("Writing RPU memory...\n\r"); 
+  // for (i = 0; i < bytes_to_read/4; i++) {
+  //   ptr_rpu_mem[i] = 0xFFFFFFFF;
+  //   xil_printf("ptr_rpu_mem[%d] = 0x%08X\t",i, ptr_rpu_mem[i]);
+  // }
+  // print("\n\n\r");
+
+  print("Reading FPD_XMPU memory...\n\r");
+  for (i = 0; i < bytes_to_read/4; i++) {
+    xil_printf("ptr_xmpu_mem[%d] = 0x%08X\t", i, ptr_xmpu_mem[i]);
+  }
+  print("\n\n\r");
+  
+  // Read APU memory
+  print("Reading APU memory...\n\r");
+  for (i = 0; i < bytes_to_read/4; i++) {
+    xil_printf("ptr_apu_mem[%d] = 0x%08X\t", i, ptr_apu_mem[i]);
+  }
+  print("\n\n\r");
+  // // Write in APU memory
+  // print("Writing APU memory...\n\r");
+  // for (i = 0; i < bytes_to_read/4; i++) {
+  //   ptr_apu_mem[i] = 0xFFFFFFFF;
+  //   xil_printf("ptr_apu_mem[%d] = 0x%08X\t",i, ptr_apu_mem[i]);
+  // }
+  // print("\n\n\r");
+
+}
+
+
 int main()
 {
   u32 *mem_array = (u32 *)0x3EE00000;
+  u32 *shared_memory = (u32 *)0x46d00000;
   XTime start, end, diff;
   u32 readsum = 0;
   u32 time_us = 0;
@@ -23,9 +71,19 @@ int main()
   init_platform();  
   xil_printf("Start!\n\r");
 
+  //DEBUG
+  // test_memory_protection();
+  // cleanup_platform();
+  // return 0;
+
+
   // Mem Array Initialization
   for (i = 0; i < DIM; i++) {
     mem_array[i] = i;
+  }
+  //SHM Array initialization
+  for (i = 0; i < REP_TIME; i++) {
+    shared_memory[i] = 0;
   }
 
  for(k = 0; k < REP_TIME; k++ ){ 
@@ -40,7 +98,8 @@ int main()
     // Calculate time in us
     diff = end - start;
     time_us = diff / FREQUENCY;
-
+    
+    shared_memory[k] = time_us;
     // xil_printf("time(us): ");
     xil_printf("%llu\n\r", time_us);
     

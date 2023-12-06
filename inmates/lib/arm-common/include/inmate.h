@@ -51,8 +51,13 @@ typedef unsigned short u16;
 typedef signed int s32;
 typedef unsigned int u32;
 
-typedef signed long long s64;
-typedef unsigned long long u64;
+//MARTe2 compatibility
+#ifdef __cplusplus
+	#include <stdint.h>
+#else 
+	typedef signed long long s64;
+	typedef unsigned long long u64;
+#endif
 
 static inline u8 mmio_read8(void *address)
 {

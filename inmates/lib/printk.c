@@ -40,7 +40,8 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdarg.h>
+//#include <stdarg.h>
+#include <stdarg_jailhouse.h> //MARTe2 compatibility
 #include <inmate.h>
 #include <uart.h>
 
