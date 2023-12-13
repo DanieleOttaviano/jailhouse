@@ -1,9 +1,22 @@
 
-#ifndef _JAILHOUSE_ASM_XMPU_H
-#define _JAILHOUSE_ASM_XMPU_H
+#ifndef XMPU_H
+#define XMPU_H
 
-#include <jailhouse/types.h>
-#include <jailhouse/string.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <assert.h>
+#include <xbasic_types.h>
+
+typedef signed char s8;
+typedef unsigned char u8;
+
+typedef signed short s16;
+typedef unsigned short u16;
+
+typedef signed long long s64;
+typedef unsigned long long u64;
+
 
 #define NR_XMPU_REGIONS 16
 #define NR_XMPU_DDR     6
@@ -43,7 +56,7 @@
 
 /* Region offset */
 #define XMPU_REGION_OFFSET        0x10U
-#define R00_OFFSET                0x00U
+#define R00_OFFSET  0x00U
 #define R01_OFFSET  (R00_OFFSET + XMPU_REGION_OFFSET)//0x10U       
 #define R02_OFFSET  (R01_OFFSET + XMPU_REGION_OFFSET)//0x20U
 #define R03_OFFSET  (R02_OFFSET + XMPU_REGION_OFFSET)//0x30U
@@ -88,10 +101,16 @@ typedef struct xmpu_channel{
   xmpu_region_config region[NR_XMPU_REGIONS];
 }xmpu_channel;
 
+// Set XMPU registers
+void set_xmpu_status(u32 xmpu_base, xmpu_status_config *config);
+void set_xmpu_region(u32 xmpu_base, u32 region, xmpu_region_config *config);
+void set_xmpu_region_default(u32 xmpu_base, u32 region_offset);
+void set_xmpu_status_default(u32 xmpu_base);
+void set_xmpu_default(u32 xmpu_base);
 
 //Debug Print
 void print_xmpu_status_regs(u32 xmpu_base);
 void print_xmpu_region_regs(u32 xmpu_base, u32 region);
 void print_xmpu(u32 xmpu_base);
 
-#endif /* _JAILHOUSE_ASM_XMPU_H  */
+#endif

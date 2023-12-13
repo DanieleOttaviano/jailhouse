@@ -76,7 +76,6 @@ int main()
   // cleanup_platform();
   // return 0;
 
-
   // Mem Array Initialization
   for (i = 0; i < DIM; i++) {
     mem_array[i] = i;
