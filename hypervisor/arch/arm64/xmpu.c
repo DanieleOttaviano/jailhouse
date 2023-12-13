@@ -206,20 +206,31 @@ static void arm_xmpu_cell_exit(struct cell *cell){
   u8 valid_reg_n = 0;
   u32 region_base = 0;
   u32 xmpu_base = 0;
+  xmpu_channel *xmpu_chnl;
+
   xmpu_print("Shutting down XMPU for cell %d\n\r", cell->config->id);
 
-  xmpu_base = XMPU_DDR_BASE_ADDR; // IF RPU. To do: take from cell configuration 
-  xmpu_channel_n = 0; // IF RPU. To do: take from cell configuration 
-  
+  // todo ... Take from cell configuration and do it for all the subordinates (DDR, FPD, OCM)
+  xmpu_base = XMPU_DDR_BASE_ADDR; 
+  xmpu_channel_n = 0; 
+  xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
+
   if(cell->config->rcpu_set_size != 0){
     for(i = 0; i<NR_XMPU_REGIONS; i++){
-      if(ddr_xmpu_device[xmpu_channel_n].region[i].id == cell->config->id){ 
-        // clean region
+      if(xmpu_chnl->region[i].id == cell->config->id){ 
+        // Clean regions used by the cell
         valid_reg_n = i;
         region_base = valid_reg_n * XMPU_REGION_OFFSET;
+
+        //DEBUG
+        xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
+        xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
+        xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+        xmpu_print("XMPU region: %d\n\r", valid_reg_n);
+
         set_xmpu_region_default(xmpu_base, region_base);
-        ddr_xmpu_device[xmpu_channel_n].region[valid_reg_n].id = 0;
-        ddr_xmpu_device[xmpu_channel_n].region[valid_reg_n].used = 0;
+        xmpu_chnl->region[valid_reg_n].id = 0;
+        xmpu_chnl->region[valid_reg_n].used = 0;
       }
     }
   }
@@ -242,7 +253,7 @@ static int arm_xmpu_cell_init(struct cell *cell){
 
   xmpu_print("Initializing XMPU for cell %d\n\r", cell->config->id);
   
-  // If there is at least one rCPU in the configuration
+  // If there is at least one rCPU in the configuration give the requested accesses
   if(cell->config->rcpu_set_size != 0){
     for_each_mem_region(mem, cell->config, n){
       // If in DDR memory
@@ -274,7 +285,9 @@ static int arm_xmpu_cell_init(struct cell *cell){
 
       //DEBUG
       xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
-      xmpu_print("DDR Channel: %d, region: %d\n\r", xmpu_channel_n, valid_reg_n); 
+      xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
+      xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+      xmpu_print("XMPU region: %d\n\r", valid_reg_n); 
       
       // Configure region
       // RPU (0000, 00, AXI ID[3:0])
