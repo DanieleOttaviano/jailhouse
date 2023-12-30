@@ -70,6 +70,10 @@ int main()
   // Initialize the Platform
   init_platform();  
   xil_printf("Start!\n\r");
+  xil_printf("The Test will last %d s\n\r", (PERIOD*REP_TIME)/1000000);
+  xil_printf("Repetitions: %d\n\r", REP_TIME);
+  xil_printf("Task Period: %d us\n\r", PERIOD);
+  xil_printf("Timer Frequency: %d MHz\n\r", FREQUENCY);
 
   //DEBUG
   // test_memory_protection();

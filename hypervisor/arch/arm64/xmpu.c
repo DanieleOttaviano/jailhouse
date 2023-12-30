@@ -7,6 +7,8 @@
 #include <asm/xmpu-board.h>
 #include <asm/xmpu.h>
 
+#if defined(CONFIG_XMPU_ACTIVE)
+
 #ifdef CONFIG_DEBUG
 #define xmpu_print(fmt, ...)			\
 	printk("[XMPU] " fmt, ##__VA_ARGS__)
@@ -561,3 +563,4 @@ static int arm_xmpu_init(void){
 
 DEFINE_UNIT_MMIO_COUNT_REGIONS_STUB(arm_xmpu);
 DEFINE_UNIT(arm_xmpu, "ARM XMPU");
+#endif /* CONFIG_XMPU */
