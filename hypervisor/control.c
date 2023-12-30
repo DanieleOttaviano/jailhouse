@@ -23,7 +23,6 @@
 #include <asm/control.h>
 #include <asm/spinlock.h>
 #include <asm/coloring.h>
-#include <asm/xmpu.h>
 #include <asm/zynqmp-r5.h>
 #ifdef __aarch64__
 /* QoS Support only provided on arm64 */
@@ -711,10 +710,6 @@ static int cell_management_prologue(enum management_task task,
 
 static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 {
-	// xmpu_status_config ddr_xmpu1_status_config;
-  	// xmpu_region_config ddr_xmpu1_region_config;
-  	// xmpu_status_config ddr_xmpu2_status_config;
-  	// xmpu_region_config ddr_xmpu2_region_config;
 	struct jailhouse_comm_region *comm_region;
 	const struct jailhouse_memory *mem;
 	unsigned int cpu, n;
@@ -724,45 +719,6 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	err = cell_management_prologue(CELL_START, cpu_data, id, &cell);
 	if (err)
 		return err;
-
-	// DEBUG PRINT	
-	// printk("Before xmpu programming\r\n");
-	// Configure XMPU1 to protect RPU memory from APU accesses
-	// ddr_xmpu1_region_config.addr_start =    0x3ED00000;
-	// ddr_xmpu1_region_config.addr_end =      0x450FFFFF;
-	// ddr_xmpu1_region_config.master_id =     0x0080;
-	// ddr_xmpu1_region_config.master_mask =   0x03C0;
-	// ddr_xmpu1_region_config.ns_checktype =  0;
-	// ddr_xmpu1_region_config.region_ns =     0;
-	// ddr_xmpu1_region_config.wrallowed =     0;
-	// ddr_xmpu1_region_config.rdallowed =     0;
-	// ddr_xmpu1_region_config.enable =        1;
-	// set_xmpu_region(XMPU_DDR_1_BASE_ADDR, R00_OFFSET, &ddr_xmpu1_region_config);  
-	// ddr_xmpu1_status_config.poison =        1;
-	// ddr_xmpu1_status_config.align =         1;
-	// ddr_xmpu1_status_config.def_wr_allowed =1;
-	// ddr_xmpu1_status_config.def_rd_allowed =1;
-	// ddr_xmpu1_status_config.lock =          0;
-	// set_xmpu_status(XMPU_DDR_1_BASE_ADDR, &ddr_xmpu1_status_config);
-
-	// Configure XMPU2 to protect RPU memory from APU acceses
-	// ddr_xmpu2_region_config.addr_start =    0x3ED00000;
-	// ddr_xmpu2_region_config.addr_end =      0x450FFFFF;
-	// ddr_xmpu2_region_config.master_id =     0x0080;
-	// ddr_xmpu2_region_config.master_mask =   0x03C0;
-	// ddr_xmpu2_region_config.ns_checktype =  0;
-	// ddr_xmpu2_region_config.region_ns =     0;
-	// ddr_xmpu2_region_config.wrallowed =     0;
-	// ddr_xmpu2_region_config.rdallowed =     0;
-	// ddr_xmpu2_region_config.enable =        1;
-	// set_xmpu_region(XMPU_DDR_2_BASE_ADDR, R00_OFFSET, &ddr_xmpu2_region_config);
-	// ddr_xmpu2_status_config.poison =        1;
-	// ddr_xmpu2_status_config.align =         1;
-	// ddr_xmpu2_status_config.def_wr_allowed =1;
-	// ddr_xmpu2_status_config.def_rd_allowed =1;
-	// ddr_xmpu2_status_config.lock =          0;
-	// set_xmpu_status(XMPU_DDR_2_BASE_ADDR, &ddr_xmpu2_status_config);
-	// printk("After xmpu programming\r\n");
 
 	if (cell->loadable) {
 		/* unmap all loadable memory regions from the root cell */
@@ -896,12 +852,6 @@ static int cell_destroy(struct per_cpu *cpu_data, unsigned long id)
 		return err;
 
 	printk("Closing cell \"%s\"\n", cell->config->name);
-
-	//Set default values for XMPU registers
-	//set_xmpu_default(XMPU_DDR_0_BASE_ADDR);
-	//set_xmpu_default(XMPU_DDR_1_BASE_ADDR);
-	//set_xmpu_default(XMPU_DDR_2_BASE_ADDR);
-	//set_xmpu_default(XMPU_FPD_BASE_ADDR);
 
 	cell_destroy_internal(cell);
 

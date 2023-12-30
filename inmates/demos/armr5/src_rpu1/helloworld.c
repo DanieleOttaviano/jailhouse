@@ -54,7 +54,7 @@
 
 #define REP_TIME 100000	// 10s
 #define FREQUENCY 8  	// 8 MHz
-#define PERIOD 1000 	// 1000 us
+#define PERIOD 	  50 	// 50 us
 
 int main()
 {
@@ -62,26 +62,33 @@ int main()
 	  u32 memory_size = 1024 * 1024; 		// 1Mb
 	  XTime start, end, diff;
 	  u32 time_us = 0;
-	  u32 offset = 0;
-	  u32 bit_position = 0;
+	  //u32 offset = 0;
+	  //u32 bit_position = 0;
 	  int i;
 
 
 	  // Initialize the Platform
 	  init_platform();
-	  //xil_printf("Start RPU1!\n\r");
+	  xil_printf("[RPU1] Start RPU1!\n\r");
+	  xil_printf("[RPU1] base address: 0x%x\n\r", base_address);
+	  xil_printf("[RPU1] memory size: %d\n\r", memory_size);
 
+    //  for(i = 0 ; i < memory_size ; i++){
+    // 		base_address[i] = 0xFF;
+    //  }
 
 	 for(i = 0; i < REP_TIME; i++ ){
 
 	    XTime_GetTime(&start);
 
-	    // Generate a random offset within the memory region
-	    offset = (u32)start % memory_size;
-	    // Generate a random bit position within the selected byte
-	    bit_position = (u32)start % 8;
-	    // Toggle the randomly chosen bit at the specified offset
-	    base_address[offset] ^= (1 << bit_position);
+		base_address[i] = 0xFF;
+
+	    // // Generate a random offset within the memory region
+	    // offset = (u32)start % memory_size;
+	    // // Generate a random bit position within the selected byte
+	    // bit_position = (u32)start % 8;
+	    // // Toggle the randomly chosen bit at the specified offset
+	    // base_address[offset] ^= (1 << bit_position);
 
 	    //xil_printf("accessing offset: %d, bit position:%d\r\n",offset, bit_position);
 
