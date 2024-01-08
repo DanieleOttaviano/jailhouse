@@ -3,13 +3,14 @@
 #include "xil_printf.h"
 #include "xtime_l.h"
 #include "sleep.h"
+#include "xil_cache.h"
 
 #define NPAGES 1024
-#define DIM 128 * NPAGES // 123*32(size fo int)=4096 bytes= 4KB(size of one page)
+#define DIM 12 * NPAGES // 123*32(size fo int)=4096 bytes= 4KB(size of one page)
 #define REP 10
 #define REP_TIME 100
 #define FREQUENCY 8  // 8 MHz
-#define PERIOD 100000 // 100 ms
+#define PERIOD 200000 // 100 ms
 
 void test_memory_protection(){
   //Pointer to RPU memory
@@ -69,6 +70,8 @@ int main()
 
   // Initialize the Platform
   init_platform();  
+  Xil_DCacheDisable();
+  Xil_ICacheDisable();
   xil_printf("Start!\n\r");
   xil_printf("The Test will last %d s\n\r", (PERIOD*REP_TIME)/1000000);
   xil_printf("Repetitions: %d\n\r", REP_TIME);
