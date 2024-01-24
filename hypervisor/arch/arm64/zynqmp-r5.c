@@ -26,8 +26,9 @@ int zynqmp_r5_start(enum pm_node_id node_id, u32 bootaddr)
 	bootmem = (bootaddr & 0xF0000000) == 0xF0000000 ?
 		  PM_RPU_BOOTMEM_HIVEC : PM_RPU_BOOTMEM_LOVEC;
 
-	printk("RPU boot from %s.\n",
-		bootmem == PM_RPU_BOOTMEM_HIVEC ? "OCM" : "TCM");
+	// BOOT EXP
+	//printk("RPU boot from %s.\n",
+	//	bootmem == PM_RPU_BOOTMEM_HIVEC ? "OCM" : "TCM");
 
 	// If core is already powered on, turn off before re-wake.
 	ret = zynqmp_pm_get_node_status(node_id, &status, NULL, NULL);
