@@ -642,7 +642,8 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 
 	cell_reconfig_completed();
 
-	printk("Created cell \"%s\"\n", cell->config->name);
+	// BOOT EXP
+	//printk("Created cell \"%s\"\n", cell->config->name);
 
 	paging_dump_stats("after cell creation");
 
@@ -778,7 +779,8 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 		}
 	}	
 
-	printk("Started cell \"%s\"\n", cell->config->name);
+	// BOOT EXP
+	//printk("Started cell \"%s\"\n", cell->config->name);
 
 out_resume:
 	cell_resume(&root_cell);
@@ -834,7 +836,8 @@ static int cell_set_loadable(struct per_cpu *cpu_data, unsigned long id)
 
 	config_commit(NULL);
 
-	printk("Cell \"%s\" can be loaded\n", cell->config->name);
+	// BOOT EXP
+	//printk("Cell \"%s\" can be loaded\n", cell->config->name);
 
 out_resume:
 	cell_resume(&root_cell);
@@ -851,7 +854,8 @@ static int cell_destroy(struct per_cpu *cpu_data, unsigned long id)
 	if (err)
 		return err;
 
-	printk("Closing cell \"%s\"\n", cell->config->name);
+	// BOOT EXP
+	//printk("Closing cell \"%s\"\n", cell->config->name);
 
 	cell_destroy_internal(cell);
 

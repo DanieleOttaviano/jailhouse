@@ -208,6 +208,8 @@ struct {
 	},
 
 	.qos_devices = {
+
+		/* Peripherials in LPD with QoS Support */
 		{
 			.name = "rpu0",
 			.flags = (FLAGS_HAS_REGUL),
@@ -227,10 +229,114 @@ struct {
 		},
 
 		{
+			.name = "afifm6",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM6_BASE,
+		},
+
+		{
+			.name = "dap",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_DAP_BASE,
+		},
+
+		{
+			.name = "usb0",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_USB0_BASE,
+		},
+
+		{
+			.name = "usb1",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_USB1_BASE,
+		},
+
+		{
+			.name = "intiou",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTIOU_BASE,
+		},
+
+		{
+			.name = "intcsupmu",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTCSUPMU_BASE,
+		},
+
+		{
+			.name = "intlpdinbound",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTLPDINBOUND_BASE,
+		},
+
+		{
+			.name = "intlpdocm",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTLPDOCM_BASE,
+		},
+
+		{
+			.name = "ib5",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB5_BASE,
+		},
+
+		{
+			.name = "ib6",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB6_BASE,
+		},
+		
+		{
+			.name = "ib8",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB8_BASE,
+		},
+
+		{
+			.name = "ib0",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB0_BASE,
+		},
+
+		{
+			.name = "ib11",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB5_BASE,
+		},
+
+		{
+			.name = "ib12",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB5_BASE,
+		},
+		
+		/* Peripherials in FPD with QoS Support */	
+		{
+			.name = "intfpdcci",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTFPDCCI_BASE,
+		},
+
+		{
+			.name = "intfpdsmmutbu3",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTFPDSMMUTBU3_BASE,
+		},
+
+		{
+			.name = "intfpdsmmutbu4",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTFPDSMMUTBU4_BASE,
+		},
+
+		{
 			.name = "afifm0",
 			.flags = (FLAGS_HAS_REGUL),
 			.base = M_AFIFM0_BASE,
 		},
+
 		{
 			.name = "afifm1",
 			.flags = (FLAGS_HAS_REGUL),
@@ -244,7 +350,7 @@ struct {
 		},
 
 		{
-			.name = "smmutbu5",
+			.name = "intfpdsmmutbu5",
 			.flags = (FLAGS_HAS_REGUL),
 			.base = M_INITFPDSMMUTBU5_BASE,
 		},
@@ -308,6 +414,7 @@ struct {
 			.flags = (FLAGS_HAS_REGUL),
 			.base = ISS_IB2_BASE,
 		},
+		
 		{
 			.name = "issib6",
 			.flags = (FLAGS_HAS_REGUL),

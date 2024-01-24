@@ -145,7 +145,7 @@ static void set_xmpu_status_default(u32 xmpu_base){
     xmpu_poison_register  = 0x00000000;
   }
   else{
-    xmpu_print("ERROR: XMPU base address not valid\n\r");
+    //xmpu_print("ERROR: XMPU base address not valid\n\r");
   }
   
   xmpu_write32((void *)(XMPU_CTRL_REGISTER(xmpu_base)), xmpu_ctrl_register);
@@ -170,26 +170,26 @@ static void set_xmpu_default(u32 xmpu_base){
 //Print the XMPU status registers
 void print_xmpu_status_regs(u32 xmpu_base){
 
-  xmpu_print("CTRL:        0x%08x\n\r", xmpu_read32((void *)(XMPU_CTRL_REGISTER(xmpu_base))));
-  xmpu_print("ERR_STATUS1: 0x%08x\n\r", xmpu_read32((void *)(XMPU_ERR_STATUS1_REGISTER(xmpu_base))));
-  xmpu_print("ERR_STATUS2: 0x%08x\n\r", xmpu_read32((void *)(XMPU_ERR_STATUS2_REGISTER(xmpu_base))));
-  xmpu_print("POISON:      0x%08x\n\r", xmpu_read32((void *)(XMPU_POISON_REGISTER(xmpu_base))));
-  xmpu_print("ISR:         0x%08x\n\r", xmpu_read32((void *)(XMPU_ISR_REGISTER(xmpu_base))));
-  xmpu_print("IMR:         0x%08x\n\r", xmpu_read32((void *)(XMPU_IMR_REGISTER(xmpu_base))));
-  xmpu_print("IEN:         0x%08x\n\r", xmpu_read32((void *)(XMPU_IEN_REGISTER(xmpu_base))));
-  xmpu_print("IDS:         0x%08x\n\r", xmpu_read32((void *)(XMPU_IDS_REGISTER(xmpu_base))));
-  xmpu_print("LOCK:        0x%08x\n\r", xmpu_read32((void *)(XMPU_LOCK_REGISTER(xmpu_base))));
-  xmpu_print("\n\r");
+  //xmpu_print("CTRL:        0x%08x\n\r", xmpu_read32((void *)(XMPU_CTRL_REGISTER(xmpu_base))));
+  //xmpu_print("ERR_STATUS1: 0x%08x\n\r", xmpu_read32((void *)(XMPU_ERR_STATUS1_REGISTER(xmpu_base))));
+  //xmpu_print("ERR_STATUS2: 0x%08x\n\r", xmpu_read32((void *)(XMPU_ERR_STATUS2_REGISTER(xmpu_base))));
+  //xmpu_print("POISON:      0x%08x\n\r", xmpu_read32((void *)(XMPU_POISON_REGISTER(xmpu_base))));
+  //xmpu_print("ISR:         0x%08x\n\r", xmpu_read32((void *)(XMPU_ISR_REGISTER(xmpu_base))));
+  //xmpu_print("IMR:         0x%08x\n\r", xmpu_read32((void *)(XMPU_IMR_REGISTER(xmpu_base))));
+  //xmpu_print("IEN:         0x%08x\n\r", xmpu_read32((void *)(XMPU_IEN_REGISTER(xmpu_base))));
+  //xmpu_print("IDS:         0x%08x\n\r", xmpu_read32((void *)(XMPU_IDS_REGISTER(xmpu_base))));
+  //xmpu_print("LOCK:        0x%08x\n\r", xmpu_read32((void *)(XMPU_LOCK_REGISTER(xmpu_base))));
+  #//xmpu_print("\n\r");
 }
 
 // Print the XMPU region registers
 void print_xmpu_region_regs(u32 xmpu_base, u32 region){
 
-  xmpu_print("START:   0x%08x\n\r", xmpu_read32((void *)(XMPU_START_REGISTER(xmpu_base, region))));
-  xmpu_print("END:     0x%08x\n\r", xmpu_read32((void *)(XMPU_END_REGISTER(xmpu_base, region))));
-  xmpu_print("MASTER:  0x%08x\n\r", xmpu_read32((void *)(XMPU_MASTER_REGISTER(xmpu_base, region))));
-  xmpu_print("CONFIG:  0x%08x\n\r", xmpu_read32((void *)(XMPU_CONFIG_REGISTER(xmpu_base, region))));
-  xmpu_print("\n\r");
+  //xmpu_print("START:   0x%08x\n\r", xmpu_read32((void *)(XMPU_START_REGISTER(xmpu_base, region))));
+  //xmpu_print("END:     0x%08x\n\r", xmpu_read32((void *)(XMPU_END_REGISTER(xmpu_base, region))));
+  //xmpu_print("MASTER:  0x%08x\n\r", xmpu_read32((void *)(XMPU_MASTER_REGISTER(xmpu_base, region))));
+  //xmpu_print("CONFIG:  0x%08x\n\r", xmpu_read32((void *)(XMPU_CONFIG_REGISTER(xmpu_base, region))));
+  //xmpu_print("\n\r");
 }
 
 // Print all the XMPU registers
@@ -210,7 +210,7 @@ static void arm_xmpu_cell_exit(struct cell *cell){
   u32 xmpu_base = 0;
   xmpu_channel *xmpu_chnl;
 
-  xmpu_print("Shutting down XMPU for cell %d\n\r", cell->config->id);
+  //xmpu_print("Shutting down XMPU for cell %d\n\r", cell->config->id);
 
   // todo ... Take from cell configuration and do it for all the subordinates (DDR, FPD, OCM)
   xmpu_base = XMPU_DDR_BASE_ADDR; 
@@ -225,10 +225,10 @@ static void arm_xmpu_cell_exit(struct cell *cell){
         region_base = valid_reg_n * XMPU_REGION_OFFSET;
 
         //DEBUG
-        xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
-        xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
-        xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-        xmpu_print("XMPU region: %d\n\r", valid_reg_n);
+        //xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
+        //xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
+        //xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+        //xmpu_print("XMPU region: %d\n\r", valid_reg_n);
 
         set_xmpu_region_default(xmpu_base, region_base);
         xmpu_chnl->region[valid_reg_n].id = 0;
@@ -237,7 +237,7 @@ static void arm_xmpu_cell_exit(struct cell *cell){
     }
   }
   else{
-    xmpu_print("No rCPUs in this cell\n\r"); 
+    //xmpu_print("No rCPUs in this cell\n\r"); 
   }
 }
 
@@ -253,7 +253,7 @@ static int arm_xmpu_cell_init(struct cell *cell){
   const struct jailhouse_memory *mem;
 	unsigned int n;
 
-  xmpu_print("Initializing XMPU for cell %d\n\r", cell->config->id);
+  //xmpu_print("Initializing XMPU for cell %d\n\r", cell->config->id);
   
   // If there is at least one rCPU in the configuration give the requested accesses
   if(cell->config->rcpu_set_size != 0){
@@ -280,16 +280,16 @@ static int arm_xmpu_cell_init(struct cell *cell){
         }
       }
       if (i == NR_XMPU_REGIONS){
-        xmpu_print("ERROR: no free region\n\r");
+        //xmpu_print("ERROR: no free region\n\r");
         return -1;
       }
       region_base = valid_reg_n * XMPU_REGION_OFFSET;
 
       //DEBUG
-      xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
-      xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
-      xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-      xmpu_print("XMPU region: %d\n\r", valid_reg_n); 
+      //xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
+      //xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
+      //xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+      //xmpu_print("XMPU region: %d\n\r", valid_reg_n); 
       
       // Configure region
       // RPU (0000, 00, AXI ID[3:0])
@@ -308,7 +308,7 @@ static int arm_xmpu_cell_init(struct cell *cell){
     }
   }
   else{
-    xmpu_print("No rCPUs in this cell\n\r");
+    //xmpu_print("No rCPUs in this cell\n\r");
   }
 
   return 0;
@@ -318,7 +318,7 @@ static int arm_xmpu_cell_init(struct cell *cell){
 static void arm_xmpu_shutdown(void){
   u8 i = 0;
   u32 xmpu_base = 0;
-  xmpu_print("Shutting down XMPU\n\r");
+  //xmpu_print("Shutting down XMPU\n\r");
 
   // Set to default values
   for(i=0 ; i<NR_XMPU_DDR; i++){
@@ -331,12 +331,12 @@ static void arm_xmpu_shutdown(void){
   // DEBUG
   // for(i=0 ; i<NR_XMPU_DDR; i++){
   //   xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET); 
-  //   xmpu_print("DDR channel %d\n\r", i);
+  //   //xmpu_print("DDR channel %d\n\r", i);
   //   print_xmpu_status_regs(xmpu_base);
   // }
-  // xmpu_print("FPD channel 0\n\r");
+  // //xmpu_print("FPD channel 0\n\r");
   // print_xmpu_status_regs(XMPU_FPD_BASE_ADDR);
-  // xmpu_print("OCM channel 0\n\r");
+  // //xmpu_print("OCM channel 0\n\r");
   // print_xmpu_status_regs(XMPU_OCM_BASE_ADDR); 
 }
 
@@ -536,7 +536,7 @@ static int arm_xmpu_init(void){
   // u8 i,j = 0;
   // u8 xmpu_channel_n = 0;
   // u32 xmpu_base = 0;
-  xmpu_print("Initializing XMPU devices ...\n\r");
+  //xmpu_print("Initializing XMPU devices ...\n\r");
 
   /* DDR */
   xmpu_ddr_init();
@@ -550,12 +550,12 @@ static int arm_xmpu_init(void){
   // DEBUG
   // for(i=0 ; i<NR_XMPU_DDR; i++){
   //   xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET); 
-  //   xmpu_print("DDR channel %d\n\r", i);
+  //   //xmpu_print("DDR channel %d\n\r", i);
   //   print_xmpu_status_regs(xmpu_base);
   // }
-  // xmpu_print("FPD channel 0\n\r");
+  // //xmpu_print("FPD channel 0\n\r");
   // print_xmpu_status_regs(XMPU_FPD_BASE_ADDR);
-  // xmpu_print("OCM channel 0\n\r");
+  // //xmpu_print("OCM channel 0\n\r");
   // print_xmpu_status_regs(XMPU_OCM_BASE_ADDR); 
   
   return 0;
