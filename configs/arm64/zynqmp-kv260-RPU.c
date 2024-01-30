@@ -114,7 +114,7 @@ struct {
 	},
 
 	.rcpus = {
-		0x3,
+		0x7, //0x3
 	},
 
 	.mem_regions = {
@@ -122,6 +122,13 @@ struct {
 		JAILHOUSE_SHMEM_NET_REGIONS(0x060000000, 0),
 		/* IVSHMEM shared memory region for 0001:00:01.0 */
 		JAILHOUSE_SHMEM_NET_REGIONS(0x060100000, 0),
+		/* FPGA configuration ports */ {
+			.phys_start = 0x80000000,
+			.virt_start = 0x80000000,
+			.size = 0x00100000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_IO,
+		},
 		/* MMIO (permissive) */ {
 			.phys_start = 0xfd000000,
 			.virt_start = 0xfd000000,
@@ -142,13 +149,6 @@ struct {
 			.size = 0x080000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
-		},
-		/* TRAFFIC GENERATOR */ {
-			.phys_start = 0x80000000,
-			.virt_start = 0x80000000,
-			.size = 0x00100000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_IO,
 		},
 		/* PCI host bridge */ {
 			.phys_start = 0x8000000000,
