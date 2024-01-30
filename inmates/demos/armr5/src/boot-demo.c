@@ -14,7 +14,7 @@ static volatile const char buffer[(SIZE_BIN-SIZE_NO_BUFFER)*1024]={0};
 int main()
 {
   volatile u32* system_counter = (u32*)0xFF250000;
-  volatile u32* shared_memory  = (u32*)0x46d00000;
+  volatile u32 *shared_memory = (u32 *)0x46d00000;
 
   // Boot Time
   u32 time = *system_counter;

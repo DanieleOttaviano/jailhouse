@@ -1,11 +1,7 @@
 
 #include <stdint.h>
 
-#define DIM_MB 1
-#define SIZE_NO_BUFFER 82       // Dimension of the bin without the buffer the buffer
-#define SIZE_BIN 1024*DIM_MB    // Dimension of the bin file
-
-static volatile const char buffer[(SIZE_BIN-SIZE_NO_BUFFER)*1024]={0};
+volatile static uint32_t * const SHM = (uint32_t *)0x78FF0000;
 
 void main(void){
 	volatile uint32_t* system_counter = (uint32_t*)0xFF250000;
@@ -16,7 +12,14 @@ void main(void){
 
 	// Write boot time in shared memory
   	shared_memory[0] = time;
+
+	//DEBUG SHM
+	SHM[0] = 0xDEADBEEF;
+	SHM[1] = time;
 	
-	while(1);
+	while(1){
+		time = *system_counter;
+		shared_memory[0] = time;
+	}
 }
 
