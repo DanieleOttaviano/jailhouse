@@ -60,7 +60,7 @@ $(OBJ)%.o: src/%.c $(LIBARMR5_OBJ)
 clean:
 	-$(RM) $(DEMARMR5)/*.bin
 	-$(RM) $(DEMARMR5)/*.elf
-	-$(RM) $(OBJS)
+	-$(RM) $(OBJ)%.o
 	-$(RM) $(OBJ)*.d
 	-@echo ' '
 

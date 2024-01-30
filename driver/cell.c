@@ -83,7 +83,8 @@ retry:
 		    min((unsigned int)nr_cpumask_bits,
 		        cell_desc->rcpu_set_size * 8));
 
-	//pr_err("cpus->assigned %ld\nrcpus->assigned %ld\n",cell->cpus_assigned, cell->rcpus_assigned);
+	// DEBUG PRINT
+	// pr_err("cpus->assigned %ld\nrcpus->assigned %ld\n",cell->cpus_assigned, cell->rcpus_assigned);
 
 	cell->num_memory_regions = cell_desc->num_memory_regions;
 	cell->memory_regions = vmalloc(sizeof(struct jailhouse_memory) *
@@ -281,7 +282,7 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 
 	cell_register(cell);
 	// BOOT EXP
-	//pr_info("Created Jailhouse cell \"%s\"\n", config->name);
+	pr_info("Created Jailhouse cell \"%s\"\n", config->name);
 
 unlock_out:
 	mutex_unlock(&jailhouse_lock);
@@ -335,7 +336,6 @@ static int load_image(struct cell *cell,
 	u64 image_offset, phys_start;
 	void *image_mem;
 	int err = 0;
-	// unsigned long regs[5] = {0};
 
 	if (copy_from_user(&image, uimage, sizeof(image)))
 		return -EFAULT;
@@ -367,39 +367,6 @@ static int load_image(struct cell *cell,
 	}
 	if (regions == 0)
 		return -EINVAL;
-
-	// if(mem->flags & JAILHOUSE_MEM_TCM_A){ 		
-	// 	// Request TCM_0_A
-	// 	regs[0] = 0xc200000d;	
-	// 	regs[1] = 0x10000000f;
-	// 	regs[2] = 0x200000000;
-	// 	regs[3] = 0;
-	// 	regs[4] = 0;	
-	// 	regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);	
-	// 	// Request TCM_1_A
-	// 	regs[0] = 0xc200000d;	
-	// 	regs[1] = 0x100000011;
-	// 	regs[2] = 0x200000000;
-	// 	regs[3] = 0;
-	// 	regs[4] = 0;	
-	// 	regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);	
-	// }
-	// else if(mem->flags & JAILHOUSE_MEM_TCM_B){ 	
-	// 	// Request TCM_0_B
-	// 	regs[0] = 0xc200000d;	
-	// 	regs[1] = 0x100000010;
-	// 	regs[2] = 0x200000000;
-	// 	regs[3] = 0;
-	// 	regs[4] = 0;	
-	// 	regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);		
-	// 	// Request TCM_1_B
-	// 	regs[0] = 0xc200000d;	
-	// 	regs[1] = 0x100000012;
-	// 	regs[2] = 0x200000000;
-	// 	regs[3] = 0;
-	// 	regs[4] = 0;	
-	// 	regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);		
-	// }
 
 	if (mem->flags & JAILHOUSE_MEM_COLORED) {
 		/* Tweak the base address to request remapping of
@@ -482,13 +449,6 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 	struct jailhouse_cell_id cell_id;
 	struct cell *cell;
 	int err;
-	// unsigned long regs[5] 	 = {0};
-	// unsigned long PM_SIP_SCV = 0xC2000000;
-	// unsigned long PM_API_ID  = 0x0000000a; // Wake up
-	// unsigned long bootmem 	 = 1;
-	// unsigned long ipnode 	 = 0x00000007;
-	// unsigned long set_addr 	 = 1;
-	// unsigned long ack 		 = 1;
 
 	if (copy_from_user(&cell_id, arg, sizeof(cell_id)))
 		return -EFAULT;
@@ -497,32 +457,8 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 	if (err)
 		return err;
 
-	// Check if the start request is for rCPU 
-	//if(!cpumask_empty(&cell->rcpus_assigned)){	
-		// GET NODE STATUS to check that is not already on? 	
-		//regs[0] = 0xc2000003;	
-		//regs[1] = 0x7;
-		//regs[2] = 0;
-		//regs[3] = 0;
-		//regs[4] = 0;
-		//regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);	
-
-		// regs[0] = PM_SIP_SCV | PM_API_ID; 				//0xc200000a;	
-		// regs[1] = ((bootmem | set_addr)<<32) | ipnode;	//0x100000007;
-		// regs[2] = (ack << 32) | (bootmem<<32) ; 		//0x100000000;
-		// regs[3] = 0;
-		// regs[4] = 0;
-		// DEBUG PRINT
-		// pr_err("reg[0]:%lx",regs[0]);
-		// pr_err("reg[1]:%lx",regs[1]);
-		// pr_err("reg[2]:%lx",regs[2]);
-		// pr_err("reg[3]:%lx",regs[3]);
-		// pr_err("reg[4]:%lx",regs[4]);
-		// regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);	
-	// } 
-	//if(!cpumask_empty(&cell->cpus_assigned)){
 	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_START, cell->id);
-	//}
+	
 	mutex_unlock(&jailhouse_lock);
 
 	return err;
@@ -533,26 +469,7 @@ static int cell_destroy(struct cell *cell)
 	unsigned int cpu;
 	int err;
 	unsigned int rcpu;
-	// unsigned long regs[5] 	 = {0};
-	// unsigned long PM_SIP_SCV = 0xC2000000;
-	// unsigned long PM_API_ID  = 0x00000008; // Power Down
-	// unsigned long ipnode 	 = 0x00000007;
-	// unsigned long ack 		 = 2;
 
-	// if(!cpumask_empty(&cell->rcpus_assigned)){
-	// 	regs[0] = PM_SIP_SCV | PM_API_ID; 				//0xc2000008;	
-	// 	regs[1] = (ack<<32) | ipnode;					//0x200000007;
-	// 	regs[2] = 0; 		
-	// 	regs[3] = 0;
-	// 	regs[4] = 0;
-	// 	// DEBUG PRINT
-	// 	// pr_err("reg[0]:%lx",regs[0]);
-	// 	// pr_err("reg[1]:%lx",regs[1]);
-	// 	// pr_err("reg[2]:%lx",regs[2]);
-	// 	// pr_err("reg[3]:%lx",regs[3]);
-	// 	// pr_err("reg[4]:%lx",regs[4]);
-	// 	regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);	
-	// }
 	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_DESTROY, cell->id);
 	if (err)
 		return err;
@@ -574,7 +491,7 @@ static int cell_destroy(struct cell *cell)
 	                             JAILHOUSE_PCI_ACTION_RELEASE);
 
 	// BOOT EXP
-	//pr_info("Destroyed Jailhouse cell \"%s\"\n", cell->name);
+	pr_info("Destroyed Jailhouse cell \"%s\"\n", cell->name);
 
 	cell_delete(cell);
 

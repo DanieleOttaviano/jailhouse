@@ -41,9 +41,11 @@ modules clean:
 
 remote:
 	$(Q)$(MAKE) -C inmates/demos/armr5
+	$(Q)$(MAKE) -C inmates/demos/riscv
 
 clean-remote:
 	$(Q)$(MAKE) -C inmates/demos/armr5 clean
+	$(Q)$(MAKE) -C inmates/demos/riscv clean
 
 # documentation, build needs to be triggered explicitly
 docs:

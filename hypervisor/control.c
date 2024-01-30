@@ -448,6 +448,12 @@ static void cell_destroy_internal(struct cell *cell)
 		else if(cpu == 1){
 			zynqmp_r5_stop(NODE_RPU_1);
 		}
+		else if (cpu == 2){
+			// The page is already being mapped during the startup of the rCPU
+			volatile u32* riscv_start = (u32*)0x80000000;
+			// Reset state UP
+			riscv_start[0] = 1;
+		}
 		else{
 			printk("rCPU doesn't exist\r\n");
 		}
@@ -643,7 +649,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 	cell_reconfig_completed();
 
 	// BOOT EXP
-	//printk("Created cell \"%s\"\n", cell->config->name);
+	printk("Created cell \"%s\"\n", cell->config->name);
 
 	paging_dump_stats("after cell creation");
 
@@ -768,10 +774,30 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	for_each_cpu(cpu, cell->rcpu_set) {
 		// to do ... call platform and architectueral specific arch_reset_rcpu
 		if(cpu == 0){
+			// DEBUG PRINT
+			//printk("Starting RPU-0 Core ...\r\n");
 			zynqmp_r5_start(NODE_RPU_0,(u32)0x03ed0000);
 		}
 		else if(cpu == 1){
+			// DEBUG PRINT
+			//printk("Starting RPU-1 Core ...\r\n");
 			zynqmp_r5_start(NODE_RPU_1,(u32)0x03ed0000);
+		}
+		else if(cpu == 2){ // to do ... add other riscv cores
+			// DEBUG PRINT
+			//printk("Starting RISC-V Core ...\r\n");
+			// Mapping of the page where the configuration port is located
+			err = paging_create(&hv_paging_structs, 0x80000000, PAGE_SIZE,
+				0x80000000, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
+			if (err){
+				printk("paging_create for fpga configuration port failed\r\n");
+			}
+			else{
+				// Reset the core
+				volatile u32* riscv_start = (u32*)0x80000000;
+				riscv_start[0] = 1;
+				riscv_start[0] = 0;
+			}
 		}
 		else{
 			printk("rCPU doesn't exist\r\n");
@@ -780,7 +806,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	}	
 
 	// BOOT EXP
-	//printk("Started cell \"%s\"\n", cell->config->name);
+	printk("Started cell \"%s\"\n", cell->config->name);
 
 out_resume:
 	cell_resume(&root_cell);
@@ -837,7 +863,7 @@ static int cell_set_loadable(struct per_cpu *cpu_data, unsigned long id)
 	config_commit(NULL);
 
 	// BOOT EXP
-	//printk("Cell \"%s\" can be loaded\n", cell->config->name);
+	printk("Cell \"%s\" can be loaded\n", cell->config->name);
 
 out_resume:
 	cell_resume(&root_cell);
@@ -855,7 +881,7 @@ static int cell_destroy(struct per_cpu *cpu_data, unsigned long id)
 		return err;
 
 	// BOOT EXP
-	//printk("Closing cell \"%s\"\n", cell->config->name);
+	printk("Closing cell \"%s\"\n", cell->config->name);
 
 	cell_destroy_internal(cell);
 
