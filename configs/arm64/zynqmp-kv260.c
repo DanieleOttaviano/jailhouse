@@ -21,6 +21,7 @@
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
+	__u64 rcpus[1];
 	struct jailhouse_memory mem_regions[24];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
@@ -97,6 +98,7 @@ struct {
 			.name = "ZynqMP-KV260",
 
 			.cpu_set_size = sizeof(config.cpus),
+			.rcpu_set_size = sizeof(config.rcpus), 
 			.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 			.num_irqchips = ARRAY_SIZE(config.irqchips),
 			.num_pci_devices = ARRAY_SIZE(config.pci_devices),
@@ -111,11 +113,22 @@ struct {
 		0xf,
 	},
 
+	.rcpus = {
+		0x7, //0x3
+	},
+
 	.mem_regions = {
 		/* IVSHMEM shared memory region for 0001:00:00.0 */
 		JAILHOUSE_SHMEM_NET_REGIONS(0x060000000, 0),
 		/* IVSHMEM shared memory region for 0001:00:01.0 */
 		JAILHOUSE_SHMEM_NET_REGIONS(0x060100000, 0),
+		/* FPGA configuration ports */ {
+			.phys_start = 0x80000000,
+			.virt_start = 0x80000000,
+			.size = 0x00100000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_IO,
+		},
 		/* MMIO (permissive) */ {
 			.phys_start = 0xfd000000,
 			.virt_start = 0xfd000000,
@@ -195,6 +208,8 @@ struct {
 	},
 
 	.qos_devices = {
+
+		/* Peripherials in LPD with QoS Support */
 		{
 			.name = "rpu0",
 			.flags = (FLAGS_HAS_REGUL),
@@ -214,10 +229,114 @@ struct {
 		},
 
 		{
+			.name = "afifm6",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM6_BASE,
+		},
+
+		{
+			.name = "dap",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_DAP_BASE,
+		},
+
+		{
+			.name = "usb0",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_USB0_BASE,
+		},
+
+		{
+			.name = "usb1",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_USB1_BASE,
+		},
+
+		{
+			.name = "intiou",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTIOU_BASE,
+		},
+
+		{
+			.name = "intcsupmu",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTCSUPMU_BASE,
+		},
+
+		{
+			.name = "intlpdinbound",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTLPDINBOUND_BASE,
+		},
+
+		{
+			.name = "intlpdocm",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTLPDOCM_BASE,
+		},
+
+		{
+			.name = "ib5",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB5_BASE,
+		},
+
+		{
+			.name = "ib6",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB6_BASE,
+		},
+		
+		{
+			.name = "ib8",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB8_BASE,
+		},
+
+		{
+			.name = "ib0",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB0_BASE,
+		},
+
+		{
+			.name = "ib11",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB5_BASE,
+		},
+
+		{
+			.name = "ib12",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_IB5_BASE,
+		},
+		
+		/* Peripherials in FPD with QoS Support */	
+		{
+			.name = "intfpdcci",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTFPDCCI_BASE,
+		},
+
+		{
+			.name = "intfpdsmmutbu3",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTFPDSMMUTBU3_BASE,
+		},
+
+		{
+			.name = "intfpdsmmutbu4",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INTFPDSMMUTBU4_BASE,
+		},
+
+		{
 			.name = "afifm0",
 			.flags = (FLAGS_HAS_REGUL),
 			.base = M_AFIFM0_BASE,
 		},
+
 		{
 			.name = "afifm1",
 			.flags = (FLAGS_HAS_REGUL),
@@ -231,7 +350,7 @@ struct {
 		},
 
 		{
-			.name = "smmutbu5",
+			.name = "intfpdsmmutbu5",
 			.flags = (FLAGS_HAS_REGUL),
 			.base = M_INITFPDSMMUTBU5_BASE,
 		},
@@ -295,6 +414,7 @@ struct {
 			.flags = (FLAGS_HAS_REGUL),
 			.base = ISS_IB2_BASE,
 		},
+		
 		{
 			.name = "issib6",
 			.flags = (FLAGS_HAS_REGUL),

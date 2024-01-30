@@ -30,9 +30,6 @@ obj/$(OUTPUT_NAME).o: $(SOURCE)
 $(OUTPUT_NAME).elf: obj/$(OUTPUT_NAME).o
 	$(CC) $(CROSSLDFLAGS) -T $(LINKER) -o $@   ./asm/Reset_Handler.S  $< ./asm/muldi3.S ./asm/div.S 
 	
-# $(OUTPUT_NAME).hex: $(OUTPUT_NAME).elf
-# 	$(OBJCOPY) -O verilog $< /dev/stdout > $@
-
 $(OUTPUT_NAME).bin: $(OUTPUT_NAME).elf
 	$(OBJCOPY) -O binary $^ $@
 
