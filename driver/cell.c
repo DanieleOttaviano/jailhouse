@@ -282,7 +282,7 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 
 	cell_register(cell);
 	// BOOT EXP
-	pr_info("Created Jailhouse cell \"%s\"\n", config->name);
+	// pr_info("Created Jailhouse cell \"%s\"\n", config->name);
 
 unlock_out:
 	mutex_unlock(&jailhouse_lock);
@@ -491,7 +491,7 @@ static int cell_destroy(struct cell *cell)
 	                             JAILHOUSE_PCI_ACTION_RELEASE);
 
 	// BOOT EXP
-	pr_info("Destroyed Jailhouse cell \"%s\"\n", cell->name);
+	// pr_info("Destroyed Jailhouse cell \"%s\"\n", cell->name);
 
 	cell_delete(cell);
 

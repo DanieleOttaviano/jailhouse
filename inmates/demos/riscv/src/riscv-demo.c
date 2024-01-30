@@ -1,7 +1,7 @@
 
 #include <stdint.h>
 
-#define DIM_MB 1
+#define DIM_MB 90
 #define SIZE_NO_BUFFER 82       // Dimension of the bin without the buffer the buffer
 #define SIZE_BIN 1024*DIM_MB    // Dimension of the bin file
 
