@@ -179,7 +179,7 @@ void print_xmpu_status_regs(u32 xmpu_base){
   //xmpu_print("IEN:         0x%08x\n\r", xmpu_read32((void *)(XMPU_IEN_REGISTER(xmpu_base))));
   //xmpu_print("IDS:         0x%08x\n\r", xmpu_read32((void *)(XMPU_IDS_REGISTER(xmpu_base))));
   //xmpu_print("LOCK:        0x%08x\n\r", xmpu_read32((void *)(XMPU_LOCK_REGISTER(xmpu_base))));
-  #//xmpu_print("\n\r");
+  //xmpu_print("\n\r");
 }
 
 // Print the XMPU region registers
@@ -209,35 +209,53 @@ static void arm_xmpu_cell_exit(struct cell *cell){
   u32 region_base = 0;
   u32 xmpu_base = 0;
   xmpu_channel *xmpu_chnl;
-
+  unsigned int cpu;
   //xmpu_print("Shutting down XMPU for cell %d\n\r", cell->config->id);
 
   // todo ... Take from cell configuration and do it for all the subordinates (DDR, FPD, OCM)
-  xmpu_base = XMPU_DDR_BASE_ADDR; 
-  xmpu_channel_n = 0; 
-  xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
+  xmpu_base = XMPU_DDR_BASE_ADDR;
 
-  if(cell->config->rcpu_set_size != 0){
-    for(i = 0; i<NR_XMPU_REGIONS; i++){
-      if(xmpu_chnl->region[i].id == cell->config->id){ 
-        // Clean regions used by the cell
-        valid_reg_n = i;
-        region_base = valid_reg_n * XMPU_REGION_OFFSET;
+  for_each_cpu(cpu, cell->rcpu_set) {
+    if(cpu == 0){           // RPU 0
+      xmpu_channel_n = 0;
+    }
+    else if(cpu == 1){      // RPU 1
+      xmpu_channel_n = 0;
+    }
+    else if (cpu == 2){     // RISCV 0
+      xmpu_channel_n = 3; 
+    }
+    else{
+      xmpu_print("Error: rCPU doesn't exist\r\n");
+    }
+    // DEBUG
+    xmpu_print("rCPU %d\n\r", cpu);
+  
+    //xmpu_channel_n = 0; 
+    xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
 
-        //DEBUG
-        //xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
-        //xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
-        //xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-        //xmpu_print("XMPU region: %d\n\r", valid_reg_n);
+    if(cell->config->rcpu_set_size != 0){
+      for(i = 0; i<NR_XMPU_REGIONS; i++){
+        if(xmpu_chnl->region[i].id == cell->config->id){ 
+          // Clean regions used by the cell
+          valid_reg_n = i;
+          region_base = valid_reg_n * XMPU_REGION_OFFSET;
 
-        set_xmpu_region_default(xmpu_base, region_base);
-        xmpu_chnl->region[valid_reg_n].id = 0;
-        xmpu_chnl->region[valid_reg_n].used = 0;
+          //DEBUG
+          xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
+          xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
+          xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+          xmpu_print("XMPU region: %d\n\r", valid_reg_n);
+
+          set_xmpu_region_default(xmpu_base, region_base);
+          xmpu_chnl->region[valid_reg_n].id = 0;
+          xmpu_chnl->region[valid_reg_n].used = 0;
+        }
       }
     }
-  }
-  else{
-    //xmpu_print("No rCPUs in this cell\n\r"); 
+    else{
+      //xmpu_print("No rCPUs in this cell\n\r"); 
+    }
   }
 }
 
@@ -245,7 +263,7 @@ static void arm_xmpu_cell_exit(struct cell *cell){
 static int arm_xmpu_cell_init(struct cell *cell){
   u32 xmpu_base = 0;
   u32 region_base = 0; 
-  u32 addr_start, addr_end;
+  u64 addr_start, addr_end;
   u8 i = 0;
   u8 valid_reg_n = 0;
   u8 xmpu_channel_n = 0;
@@ -264,15 +282,18 @@ static int arm_xmpu_cell_init(struct cell *cell){
     for_each_cpu(cpu, cell->rcpu_set) {
 		  if(cpu == 0){           // RPU 0
         xmpu_channel_n = 0;
+        // RPU (0000, 00, AXI ID[3:0])
         cell_master_id = 0x0000;    // 0000 00(00 0000 0000)  to do: take from cell configuration
-        cell_master_mask = 0x03E0;  // 0000 00(11 1110 0000)  to do: take from cell configuration 
+        cell_master_mask = 0x03F0;  // 0000 00(11 1110 0000)  to do: take from cell configuration 
       }
 		  else if(cpu == 1){      // RPU 1
         xmpu_channel_n = 0;
+        // RPU (0000, 01, AXI ID[3:0])
         cell_master_id = 0x0010;    // 0000 00(00 0001 0000)  to do: take from cell configuration
         cell_master_mask = 0x03F0;  // 0000 00(11 1111 0000)  to do: take from cell configuration 
       }
 		  else if (cpu == 2){     // RISCV 0
+        // S_AXI_HP0_FPD (HP0) (1010, AXI ID[5:0]) DOESN'T WORK ...
         xmpu_channel_n = 3; 
         cell_master_id = 0x0280;    // 0000 00(10 1000 0000)  to do: take from cell configuration
         cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration 
@@ -280,6 +301,7 @@ static int arm_xmpu_cell_init(struct cell *cell){
 		  else{
 			  xmpu_print("Error: rCPU doesn't exist\r\n");
 		  }
+      // DEBUG
 	  	xmpu_print("rCPU %d\n\r", cpu);
       for_each_mem_region(mem, cell->config, n){
         // If in DDR memory
@@ -310,13 +332,14 @@ static int arm_xmpu_cell_init(struct cell *cell){
         region_base = valid_reg_n * XMPU_REGION_OFFSET;
 
         //DEBUG
-        xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
+        xmpu_print("Allowed memory region: 0x%08llx - 0x%08llx\n\r", addr_start, addr_end);
         xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
         xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-        xmpu_print("XMPU region: %d\n\r", valid_reg_n); 
+        xmpu_print("XMPU region: %d\n\r", valid_reg_n);
+        xmpu_print("Master ID:    0x%04llx\n\r", cell_master_id);
+        xmpu_print("Master Mask:  0x%04llx\n\r", cell_master_mask);
         
         // Configure region
-        // RPU (0000, 00, AXI ID[3:0])
         xmpu_chnl->region[valid_reg_n].addr_start =     addr_start;
         xmpu_chnl->region[valid_reg_n].addr_end =       addr_end;
         xmpu_chnl->region[valid_reg_n].master_id =      cell_master_id; 
@@ -485,6 +508,13 @@ static void xmpu_ddr_init(void){
   for(i=0 ; i<NR_XMPU_DDR; i++){
     xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET);  
     xmpu_channel_n = i;   
+
+    // to remove ...
+    if (xmpu_channel_n == 3)
+    {
+      continue;
+    }
+    
 
     ddr_xmpu_device[xmpu_channel_n].status.poison =        1;
     ddr_xmpu_device[xmpu_channel_n].status.align =         1; //1Mb

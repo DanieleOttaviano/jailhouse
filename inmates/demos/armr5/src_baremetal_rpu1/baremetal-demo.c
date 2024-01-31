@@ -14,7 +14,7 @@
 
 void test_memory_protection(){
   //Pointer to RPU memory
-  unsigned int* ptr_rpu_mem = (unsigned int*)0x3ed01000;
+  unsigned int* ptr_rpu_mem = (unsigned int*)0x3ad01000;
   //Pointer to APU memory
   unsigned int* ptr_apu_mem = (unsigned int*)0x75609000;  
   //Pointer to XMPU memory
@@ -61,7 +61,7 @@ void test_memory_protection(){
 
 int main()
 {
-  u32 *mem_array = (u32 *)0x3EE00000;
+  u32 *mem_array = (u32 *)0x3EB00000;
   u32 *shared_memory = (u32 *)0x46d00000;
   XTime start, end, diff;
   u32 readsum = 0;
