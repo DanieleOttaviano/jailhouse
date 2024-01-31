@@ -249,62 +249,87 @@ static int arm_xmpu_cell_init(struct cell *cell){
   u8 i = 0;
   u8 valid_reg_n = 0;
   u8 xmpu_channel_n = 0;
+  u64 cell_master_id = 0;
+  u64 cell_master_mask = 0;
   xmpu_channel *xmpu_chnl;
   const struct jailhouse_memory *mem;
-	unsigned int n;
+	unsigned int cpu, n;
 
   //xmpu_print("Initializing XMPU for cell %d\n\r", cell->config->id);
   
   // If there is at least one rCPU in the configuration give the requested accesses
+  // For each rCPU in the cell configuration Set the XMPU reguiom registers
   if(cell->config->rcpu_set_size != 0){
-    for_each_mem_region(mem, cell->config, n){
-      // If in DDR memory
-      if((mem->virt_start <= DDR_LOW_END - mem->size) || 
-        ((mem->virt_start >= DDR_HIGH_START) && (mem->virt_start <= DDR_HIGH_END - mem->size ))){ 
-        xmpu_base = XMPU_DDR_BASE_ADDR;
-        xmpu_channel_n = 0; // IF RPU. To do: take from cell configuration
-        xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
+    // To do: take from cell configuration
+    for_each_cpu(cpu, cell->rcpu_set) {
+		  if(cpu == 0){           // RPU 0
+        xmpu_channel_n = 0;
+        cell_master_id = 0x0000;    // 0000 00(00 0000 0000)  to do: take from cell configuration
+        cell_master_mask = 0x03E0;  // 0000 00(11 1110 0000)  to do: take from cell configuration 
       }
-      else{
-        continue;
+		  else if(cpu == 1){      // RPU 1
+        xmpu_channel_n = 0;
+        cell_master_id = 0x0010;    // 0000 00(00 0001 0000)  to do: take from cell configuration
+        cell_master_mask = 0x03F0;  // 0000 00(11 1111 0000)  to do: take from cell configuration 
       }
-
-      addr_start = mem->phys_start;
-      addr_end =  mem->phys_start + mem->size - 1;
-      
-      // Check for free region in the channel
-      for(i = 0; i<NR_XMPU_REGIONS; i++){
-        if(xmpu_chnl->region[i].used == 0){
-          valid_reg_n = i; 
-          break;
+		  else if (cpu == 2){     // RISCV 0
+        xmpu_channel_n = 3; 
+        cell_master_id = 0x0280;    // 0000 00(10 1000 0000)  to do: take from cell configuration
+        cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration 
+      }
+		  else{
+			  xmpu_print("Error: rCPU doesn't exist\r\n");
+		  }
+	  	xmpu_print("rCPU %d\n\r", cpu);
+      for_each_mem_region(mem, cell->config, n){
+        // If in DDR memory
+        if((mem->virt_start <= DDR_LOW_END - mem->size) || 
+          ((mem->virt_start >= DDR_HIGH_START) && (mem->virt_start <= DDR_HIGH_END - mem->size ))){ 
+          xmpu_base = XMPU_DDR_BASE_ADDR;
+          //xmpu_channel_n = 0; // IF RPU. To do: take from cell configuration
+          xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
         }
-      }
-      if (i == NR_XMPU_REGIONS){
-        //xmpu_print("ERROR: no free region\n\r");
-        return -1;
-      }
-      region_base = valid_reg_n * XMPU_REGION_OFFSET;
+        else{
+          continue;
+        }
 
-      //DEBUG
-      //xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
-      //xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
-      //xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-      //xmpu_print("XMPU region: %d\n\r", valid_reg_n); 
-      
-      // Configure region
-      // RPU (0000, 00, AXI ID[3:0])
-      xmpu_chnl->region[valid_reg_n].addr_start =     addr_start;
-      xmpu_chnl->region[valid_reg_n].addr_end =       addr_end;
-      xmpu_chnl->region[valid_reg_n].master_id =      0x0000; // 0000 0000 0000 0000  to do: take from cell configuration
-      xmpu_chnl->region[valid_reg_n].master_mask =    0x03E0; // 0000 0011 1110 0000  to do: take from cell configuration
-      xmpu_chnl->region[valid_reg_n].ns_checktype =   0;
-      xmpu_chnl->region[valid_reg_n].region_ns =      0;
-      xmpu_chnl->region[valid_reg_n].wrallowed =      (mem->flags & JAILHOUSE_MEM_WRITE) ? 1 : 0;
-      xmpu_chnl->region[valid_reg_n].rdallowed =      (mem->flags & JAILHOUSE_MEM_READ) ? 1 : 0;
-      xmpu_chnl->region[valid_reg_n].enable =         1;
-      xmpu_chnl->region[valid_reg_n].id =             cell->config->id;
-      xmpu_chnl->region[valid_reg_n].used =           1;
-      set_xmpu_region(xmpu_base, region_base, &xmpu_chnl->region[valid_reg_n]);  
+        addr_start = mem->phys_start;
+        addr_end =  mem->phys_start + mem->size - 1;
+        
+        // Check for free region in the channel
+        for(i = 0; i<NR_XMPU_REGIONS; i++){
+          if(xmpu_chnl->region[i].used == 0){
+            valid_reg_n = i; 
+            break;
+          }
+        }
+        if (i == NR_XMPU_REGIONS){
+          //xmpu_print("ERROR: no free region\n\r");
+          return -1;
+        }
+        region_base = valid_reg_n * XMPU_REGION_OFFSET;
+
+        //DEBUG
+        xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
+        xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
+        xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+        xmpu_print("XMPU region: %d\n\r", valid_reg_n); 
+        
+        // Configure region
+        // RPU (0000, 00, AXI ID[3:0])
+        xmpu_chnl->region[valid_reg_n].addr_start =     addr_start;
+        xmpu_chnl->region[valid_reg_n].addr_end =       addr_end;
+        xmpu_chnl->region[valid_reg_n].master_id =      cell_master_id; 
+        xmpu_chnl->region[valid_reg_n].master_mask =    cell_master_mask;
+        xmpu_chnl->region[valid_reg_n].ns_checktype =   0;
+        xmpu_chnl->region[valid_reg_n].region_ns =      0;
+        xmpu_chnl->region[valid_reg_n].wrallowed =      (mem->flags & JAILHOUSE_MEM_WRITE) ? 1 : 0;
+        xmpu_chnl->region[valid_reg_n].rdallowed =      (mem->flags & JAILHOUSE_MEM_READ) ? 1 : 0;
+        xmpu_chnl->region[valid_reg_n].enable =         1;
+        xmpu_chnl->region[valid_reg_n].id =             cell->config->id;
+        xmpu_chnl->region[valid_reg_n].used =           1;
+        set_xmpu_region(xmpu_base, region_base, &xmpu_chnl->region[valid_reg_n]);  
+      }
     }
   }
   else{
@@ -536,7 +561,7 @@ static int arm_xmpu_init(void){
   // u8 i,j = 0;
   // u8 xmpu_channel_n = 0;
   // u32 xmpu_base = 0;
-  //xmpu_print("Initializing XMPU devices ...\n\r");
+  // xmpu_print("Initializing XMPU devices\n\r");
 
   /* DDR */
   xmpu_ddr_init();
