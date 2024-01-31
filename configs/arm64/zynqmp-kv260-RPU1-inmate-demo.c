@@ -26,7 +26,7 @@ struct {
 	.cell = {
 		.signature = JAILHOUSE_CELL_DESC_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
-		.name = "inmate-demo-RPU",
+		.name = "inmate-demo-RPU1",
 		.flags = JAILHOUSE_CELL_PASSIVE_COMMREG,
 
 		.cpu_set_size = sizeof(config.cpus),
@@ -49,7 +49,7 @@ struct {
 	},
 
 	.rcpus = {
-		0x1,
+		0x2,
 	},
 
 	.mem_regions = {
@@ -60,26 +60,26 @@ struct {
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO | JAILHOUSE_MEM_ROOTSHARED,
 		},
-		/* TCM 0-A */ {
-			.phys_start = 0xffe00000,
-			.virt_start = 0xffe00000,
+		/* TCM 1-A */ {
+			.phys_start = 0xffe90000,
+			.virt_start = 0xffe90000,
 			.size = 0x00010000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE | 
 				JAILHOUSE_MEM_TCM_A,
 		},
-		/* TCM 0-B */ {
-			.phys_start = 0xffe20000,
-			.virt_start = 0xffe20000,
+		/* TCM 1-B */ {
+			.phys_start = 0xffeb0000,
+			.virt_start = 0xffeb0000,
 			.size = 0x00010000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE |
 				JAILHOUSE_MEM_TCM_B,
 		},	
 		/* RAM */ {
-			.phys_start = 0x3ed00000,
+			.phys_start = 0x3ad00000,
 			.virt_start = 0,
-			.size = 0x8000000,
+			.size = 0x4000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE,
 		},
