@@ -263,7 +263,7 @@ static void arm_xmpu_cell_exit(struct cell *cell){
 static int arm_xmpu_cell_init(struct cell *cell){
   u32 xmpu_base = 0;
   u32 region_base = 0; 
-  u64 addr_start, addr_end;
+  u32 addr_start, addr_end;
   u8 i = 0;
   u8 valid_reg_n = 0;
   u8 xmpu_channel_n = 0;
@@ -282,12 +282,14 @@ static int arm_xmpu_cell_init(struct cell *cell){
     for_each_cpu(cpu, cell->rcpu_set) {
 		  if(cpu == 0){           // RPU 0
         xmpu_channel_n = 0;
+        xmpu_base = XMPU_DDR_BASE_ADDR;
         // RPU (0000, 00, AXI ID[3:0])
         cell_master_id = 0x0000;    // 0000 00(00 0000 0000)  to do: take from cell configuration
         cell_master_mask = 0x03F0;  // 0000 00(11 1110 0000)  to do: take from cell configuration 
       }
 		  else if(cpu == 1){      // RPU 1
         xmpu_channel_n = 0;
+        xmpu_base = XMPU_DDR_BASE_ADDR;
         // RPU (0000, 01, AXI ID[3:0])
         cell_master_id = 0x0010;    // 0000 00(00 0001 0000)  to do: take from cell configuration
         cell_master_mask = 0x03F0;  // 0000 00(11 1111 0000)  to do: take from cell configuration 
@@ -295,6 +297,7 @@ static int arm_xmpu_cell_init(struct cell *cell){
 		  else if (cpu == 2){     // RISCV 0
         // S_AXI_HP0_FPD (HP0) (1010, AXI ID[5:0]) DOESN'T WORK ...
         xmpu_channel_n = 3; 
+        xmpu_base = XMPU_DDR_3_BASE_ADDR;
         cell_master_id = 0x0280;    // 0000 00(10 1000 0000)  to do: take from cell configuration
         cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration 
       }
@@ -307,8 +310,6 @@ static int arm_xmpu_cell_init(struct cell *cell){
         // If in DDR memory
         if((mem->virt_start <= DDR_LOW_END - mem->size) || 
           ((mem->virt_start >= DDR_HIGH_START) && (mem->virt_start <= DDR_HIGH_END - mem->size ))){ 
-          xmpu_base = XMPU_DDR_BASE_ADDR;
-          //xmpu_channel_n = 0; // IF RPU. To do: take from cell configuration
           xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
         }
         else{
@@ -326,13 +327,13 @@ static int arm_xmpu_cell_init(struct cell *cell){
           }
         }
         if (i == NR_XMPU_REGIONS){
-          //xmpu_print("ERROR: no free region\n\r");
+          xmpu_print("ERROR: No XMPU free region, impossible to create the VM\n\r");
           return -1;
         }
         region_base = valid_reg_n * XMPU_REGION_OFFSET;
 
         //DEBUG
-        xmpu_print("Allowed memory region: 0x%08llx - 0x%08llx\n\r", addr_start, addr_end);
+        xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
         xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
         xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
         xmpu_print("XMPU region: %d\n\r", valid_reg_n);
@@ -508,14 +509,7 @@ static void xmpu_ddr_init(void){
   for(i=0 ; i<NR_XMPU_DDR; i++){
     xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET);  
     xmpu_channel_n = i;   
-
-    // to remove ...
-    if (xmpu_channel_n == 3)
-    {
-      continue;
-    }
     
-
     ddr_xmpu_device[xmpu_channel_n].status.poison =        1;
     ddr_xmpu_device[xmpu_channel_n].status.align =         1; //1Mb
     ddr_xmpu_device[xmpu_channel_n].status.def_wr_allowed =0;
