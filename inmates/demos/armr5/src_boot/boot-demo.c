@@ -31,6 +31,7 @@ int main()
   //xil_printf("boot_time hex: 0x%08X\n\r", time);  
   //xil_printf("boot_time shm: 0x%08X\n\r", shared_memory[0]);
 
+  while (1);
   // Cleanup the Platform
   cleanup_platform();
   return 0;

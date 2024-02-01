@@ -34,7 +34,7 @@ OBJCOPY = $(COMPILER_PREFIX)objcopy
 RM = rm -rf 					# Remove recursively command
 
 # All Target
-all: $(patsubst %,%_tcm.bin,$(INMATES)) $(patsubst %,%.bin,$(INMATES)) #baremetal-demo_tcm.bin baremetal-demo.bin 
+all: $(patsubst %,%_tcm.bin,$(INMATES)) $(patsubst %,%.bin,$(INMATES)) $(patsubst %,%.elf,$(INMATES)) #baremetal-demo_tcm.bin baremetal-demo.bin 
 
 # Each subdirectory must supply rules for building sources it contributes
  $(LIBARMR5_OBJ): $(shell find $(LIBARMR5)/libsrc -type f -name '*.{c,h}')

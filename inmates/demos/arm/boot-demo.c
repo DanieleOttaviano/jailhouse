@@ -1,6 +1,6 @@
 #include <inmate.h>
 
-#define DIM_MB 90
+#define DIM_MB 50
 #define SIZE_NO_BUFFER 39       // Dimension of the bin without the buffer the buffer
 #define SIZE_BIN 1024*DIM_MB    // Dimension of the bin file
 
