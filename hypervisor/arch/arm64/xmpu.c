@@ -229,7 +229,7 @@ static void arm_xmpu_cell_exit(struct cell *cell){
       xmpu_print("Error: rCPU doesn't exist\r\n");
     }
     // DEBUG
-    xmpu_print("rCPU %d\n\r", cpu);
+    //xmpu_print("rCPU %d\n\r", cpu);
   
     //xmpu_channel_n = 0; 
     xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
@@ -242,10 +242,10 @@ static void arm_xmpu_cell_exit(struct cell *cell){
           region_base = valid_reg_n * XMPU_REGION_OFFSET;
 
           //DEBUG
-          xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
-          xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
-          xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-          xmpu_print("XMPU region: %d\n\r", valid_reg_n);
+          // xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
+          // xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
+          // xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+          // xmpu_print("XMPU region: %d\n\r", valid_reg_n);
 
           set_xmpu_region_default(xmpu_base, region_base);
           xmpu_chnl->region[valid_reg_n].id = 0;
@@ -305,7 +305,7 @@ static int arm_xmpu_cell_init(struct cell *cell){
 			  xmpu_print("Error: rCPU doesn't exist\r\n");
 		  }
       // DEBUG
-	  	xmpu_print("rCPU %d\n\r", cpu);
+	  	// xmpu_print("rCPU %d\n\r", cpu);
       for_each_mem_region(mem, cell->config, n){
         // If in DDR memory
         if((mem->virt_start <= DDR_LOW_END - mem->size) || 
@@ -333,12 +333,12 @@ static int arm_xmpu_cell_init(struct cell *cell){
         region_base = valid_reg_n * XMPU_REGION_OFFSET;
 
         //DEBUG
-        xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
-        xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
-        xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-        xmpu_print("XMPU region: %d\n\r", valid_reg_n);
-        xmpu_print("Master ID:    0x%04llx\n\r", cell_master_id);
-        xmpu_print("Master Mask:  0x%04llx\n\r", cell_master_mask);
+        // xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
+        // xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
+        // xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+        // xmpu_print("XMPU region: %d\n\r", valid_reg_n);
+        // xmpu_print("Master ID:    0x%04llx\n\r", cell_master_id);
+        // xmpu_print("Master Mask:  0x%04llx\n\r", cell_master_mask);
         
         // Configure region
         xmpu_chnl->region[valid_reg_n].addr_start =     addr_start;

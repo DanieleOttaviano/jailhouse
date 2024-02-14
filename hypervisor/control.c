@@ -781,7 +781,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 		else if(cpu == 1){
 			// DEBUG PRINT
 			//printk("Starting RPU-1 Core ...\r\n");
-			zynqmp_r5_start(NODE_RPU_1,(u32)0x03ed0000);
+			zynqmp_r5_start(NODE_RPU_1,(u32)0x03ad0000);
 		}
 		else if(cpu == 2){ // to do ... add other riscv cores
 			// DEBUG PRINT
