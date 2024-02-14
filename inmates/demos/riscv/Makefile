@@ -21,7 +21,7 @@ ABI = ilp32
 
 # Flags
 CFLAGS = -O0 -Wno-int-conversion -march=$(CONFIG) -mabi=$(ABI) -ffreestanding -nostdlib  
-LDFLAGS = -march=$(CONFIG) -mabi=$(ABI) -ffreestanding -nostdlib  -Wl,-M -Wl,-T -Wl,$(LD_SRCS)
+LDFLAGS = -march=$(CONFIG) -mabi=$(ABI) -ffreestanding -nostdlib  -Wl,-M
 LIBS = -Wl,-lgcc
 
 # Toolchain
@@ -43,7 +43,7 @@ $(OBJ)%.o: src/%.c
 	$(CC) -c -o $@ $< $(INC) $(CFLAGS)
 	
 $(OUTPUT_NAME).elf: $(OBJS)
-	$(CC) -o $@ $^ $(ASMS) $(LDFLAGS) $(LIBS)
+	$(CC) $(LDFLAGS) -T $(LD_SRCS) -o $@  ./asm/Reset_Handler.S  $^ ./asm/muldi3.S ./asm/div.S 
 	
 $(OUTPUT_NAME).bin: $(OUTPUT_NAME).elf
 	$(OBJCOPY) -O binary $^ $@
