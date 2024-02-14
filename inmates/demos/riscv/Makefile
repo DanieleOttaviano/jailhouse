@@ -1,16 +1,28 @@
 # TO do ... (add multiple inmates to compile)
 INMATES := riscv-demo
 
-SOURCE	= ./src/riscv-demo.c
+# Directories
+DEMRISCV := .
+ASMS = $(wildcard $(DEMRISCV)/asm/*.S)  
+SRCS = $(wildcard $(DEMRISCV)/src/*.c) $(wildcard $(DEMRISCV)/src/bench/$(BENCH)/*.c)
+OBJ = $(DEMRISCV)/obj/
+OBJS = 	$(addprefix $(OBJ), $(notdir $(SRCS:.c=.o)))
+LD_SRCS = $(DEMRISCV)/src/firmware.ld
 OUTPUT_NAME = riscv-demo
+
+# Include
+INC = -Iinc
+INC += -I$(DEMRISCV)/src/bench/$(BENCH)
+INC += -DBENCHNAME=$(BENCH)
+
+# Architecture
 CONFIG = rv32i
 ABI = ilp32
-LINKER = ./src/firmware.ld
-#CROSS = /opt/rv32/bin/riscv32-unknown-elf-
 
 # Flags
-CROSSCFLAGS = -O0 -Wno-int-conversion -march=$(CONFIG) -mabi=$(ABI) -ffreestanding -nostdlib  
-CROSSLDFLAGS = -march=$(CONFIG) -mabi=$(ABI) -ffreestanding -nostdlib  -Wl,-M 
+CFLAGS = -O0 -Wno-int-conversion -march=$(CONFIG) -mabi=$(ABI) -ffreestanding -nostdlib  
+LDFLAGS = -march=$(CONFIG) -mabi=$(ABI) -ffreestanding -nostdlib  -Wl,-M -Wl,-T -Wl,$(LD_SRCS)
+LIBS = -Wl,-lgcc
 
 # Toolchain
 COMPILER_PREFIX = /opt/rv32/bin/riscv32-unknown-elf-
@@ -24,11 +36,14 @@ OBJCOPY = $(COMPILER_PREFIX)objcopy
 .PHONY: all
 all:	$(OUTPUT_NAME).bin
 
-obj/$(OUTPUT_NAME).o: $(SOURCE)
-	$(CC) $(CROSSCFLAGS) -c -o $@  $< -lgcc
+$(OBJ)%.o: src/bench/$(BENCH)/%.c
+	$(CC) -c -o $@ $< $(INC) $(CFLAGS)
+
+$(OBJ)%.o: src/%.c
+	$(CC) -c -o $@ $< $(INC) $(CFLAGS)
 	
-$(OUTPUT_NAME).elf: obj/$(OUTPUT_NAME).o
-	$(CC) $(CROSSLDFLAGS) -T $(LINKER) -o $@   ./asm/Reset_Handler.S  $< ./asm/muldi3.S ./asm/div.S 
+$(OUTPUT_NAME).elf: $(OBJS)
+	$(CC) -o $@ $^ $(ASMS) $(LDFLAGS) $(LIBS)
 	
 $(OUTPUT_NAME).bin: $(OUTPUT_NAME).elf
 	$(OBJCOPY) -O binary $^ $@

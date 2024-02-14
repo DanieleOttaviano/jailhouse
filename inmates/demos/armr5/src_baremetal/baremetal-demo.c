@@ -72,13 +72,15 @@ int main()
   init_platform();  
   Xil_DCacheDisable();
   Xil_ICacheDisable();
-  xil_printf("Start!\n\r");
-  xil_printf("The Test will last %d s\n\r", (PERIOD*REP_TIME)/1000000);
-  xil_printf("Repetitions: %d\n\r", REP_TIME);
-  xil_printf("Task Period: %d us\n\r", PERIOD);
-  xil_printf("Timer Frequency: %d MHz\n\r", FREQUENCY);
+  
+  // DEBUG
+  //xil_printf("Start!\n\r");
+  //xil_printf("The Test will last %d s\n\r", (PERIOD*REP_TIME)/1000000);
+  //xil_printf("Repetitions: %d\n\r", REP_TIME);
+  //xil_printf("Task Period: %d us\n\r", PERIOD);
+  //xil_printf("Timer Frequency: %d MHz\n\r", FREQUENCY);
 
-  //DEBUG
+  // DEBUG
   // test_memory_protection();
   // cleanup_platform();
   // return 0;
@@ -106,8 +108,9 @@ int main()
     time_us = diff / FREQUENCY;
     
     shared_memory[k] = time_us;
-    // xil_printf("time(us): ");
-    xil_printf("%llu\n\r", time_us);
+    
+    // DEBUG
+    // xil_printf("%llu\n\r", time_us);
     
     // wait until the end of the period
     while (time_us < PERIOD){
@@ -117,8 +120,8 @@ int main()
     }
   }
 
-
-  xil_printf("Successfully ran the application\n\r");
+  // DEBUG
+  // xil_printf("Successfully ran the application\n\r");
 
   cleanup_platform();
   return 0;
