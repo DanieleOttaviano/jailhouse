@@ -1,7 +1,7 @@
 #include <stdint.h>
 
-#define REP_TIME 1
 #define FREQUENCY 100  // 100 MHz
+#define I_FREQUENCY 1/FREQUENCY  // 100 MHz
 
 #define CALL(NAME, FUN) CONCAT(NAME, FUN)
 #define CONCAT(NAME, FUN)  NAME ## _ ## FUN()
@@ -13,33 +13,31 @@
 
 #include INCLUDE_FILE(BENCHNAME)
 
-void main(void){
-	volatile uint32_t* system_counter = (uint32_t*)0xFF250000;
-	volatile uint32_t* shared_memory = (uint32_t *)0x46d00000;
- 	uint32_t start, end, diff;
-	uint32_t time_us = 0;
-	int i;
+void main(void) {
 
-	//SHM Array initialization
-	for (i = 0; i < REP_TIME; i++) {
-		shared_memory[i] = 0;
-	}
+	volatile uint64_t* system_counter = (uint64_t*)0xFF250000;
+	volatile uint64_t* shared_memory = (uint64_t *)0x46d00000;
+ 	uint64_t start, end, diff;
 
-	for(i = 0; i < REP_TIME; i++ ){ 
-		/* Actual access */
-		start = *system_counter;
-		// Exec the Benchmark 
-		CALL(BENCHNAME, init);
-		CALL(BENCHNAME, main);
+	shared_memory[0] = 0;
+	shared_memory[1] = 0;
 
-		end = *system_counter;
+	/* Actual access */
+	start = *system_counter;
 
-		// Calculate time in us    
-		diff = end - start;
-		time_us = diff / FREQUENCY;
+	// Exec the Benchmark 
+	CALL(BENCHNAME, init);
+	CALL(BENCHNAME, main);
 
-		shared_memory[i] = time_us;
-	}
+	end = *system_counter;
+
+	// Calculate time in us    
+	diff = end - start;
+
+	// time_us = diff * I_FREQUENCY;
+
+	shared_memory[0] = diff;
+	shared_memory[1] = FREQUENCY;
 
 	while(1);
 }

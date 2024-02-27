@@ -21,8 +21,8 @@ ABI = ilp32
 
 # Flags
 CFLAGS = -O0 -Wno-int-conversion -march=$(CONFIG) -mabi=$(ABI) -ffreestanding -nostdlib  
-LDFLAGS = -march=$(CONFIG) -mabi=$(ABI) -ffreestanding -nostdlib  -Wl,-M
-LIBS = -Wl,-lgcc
+LDFLAGS = -march=$(CONFIG) -mabi=$(ABI) -ffreestanding -nostdlib  -Wl,-M 
+LIBS = -Wl,-lgcc -static-libgcc
 
 # Toolchain
 COMPILER_PREFIX = /opt/rv32/bin/riscv32-unknown-elf-
@@ -43,7 +43,7 @@ $(OBJ)%.o: src/%.c
 	$(CC) -c -o $@ $< $(INC) $(CFLAGS)
 	
 $(OUTPUT_NAME).elf: $(OBJS)
-	$(CC) $(LDFLAGS) -T $(LD_SRCS) -o $@  ./asm/Reset_Handler.S  $^ ./asm/muldi3.S ./asm/div.S 
+	$(CC) $(LDFLAGS) -T $(LD_SRCS) -o $@  ./asm/Reset_Handler.S  $^ ./asm/muldi3.S ./asm/div.S $(LIBS)
 	
 $(OUTPUT_NAME).bin: $(OUTPUT_NAME).elf
 	$(OBJCOPY) -O binary $^ $@
