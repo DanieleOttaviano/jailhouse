@@ -39,12 +39,20 @@ endif
 modules clean:
 	$(Q)$(MAKE) $(kbuild)
 
-remote:
+remote: remote_armr5 remote_riscv32
+
+clean-remote: clean-remote_armr5 clean-remote_riscv32
+
+remote_armr5:
 	$(Q)$(MAKE) -C inmates/demos/armr5
+
+clean-remote_armr5:
+	$(Q)$(MAKE) -C inmates/demos/armr5 clean
+	
+remote_riscv32:	
 	$(Q)$(MAKE) -C inmates/demos/riscv
 
-clean-remote:
-	$(Q)$(MAKE) -C inmates/demos/armr5 clean
+clean-remote_riscv32:
 	$(Q)$(MAKE) -C inmates/demos/riscv clean
 
 # documentation, build needs to be triggered explicitly
