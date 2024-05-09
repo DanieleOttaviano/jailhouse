@@ -1,7 +1,19 @@
 JAILHOUSE
 =========
 
-About this Repository
+The Omnivisor-Enhanced Jailhouse Hypervisor
+---------------------
+The Omnivisor is a specialized partitioning hypervisor that extends 
+the capabilities of the original Jailhouse hypervisor to allow 
+virtual machines (VMs) to run on processors with different Instruction 
+Set Architectures (ISAs) within the same Multi-Processor System-on-Chip (MPSoC). 
+By leveraging the Omnivisor model, this repository enables fine-grained resource
+allocation and isolation for mixed-criticality systems.
+
+Specifically this repository is a fork of the Jailhouse maintained by 
+[Minerva Systems](https://www.minervasys.tech).
+
+About Minerva Repository
 ---------------------
 This repository is an unofficial fork of the Jailhouse partitioning hypervisor.
 It contains a series of experimental extensions to improve memory-related
