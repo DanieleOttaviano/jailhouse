@@ -44,7 +44,7 @@ struct {
 		.debug_console = {
 			.address = 0x401c8000,
 			.size = 0x3000,
-			.type = JAILHOUSE_CON_TYPE_LINFLEXUART,
+			.type = JAILHOUSE_CON_TYPE_LINFLEX,
 			.flags = JAILHOUSE_CON_ACCESS_MMIO |
 				 JAILHOUSE_CON_REGDIST_4,
 		},
