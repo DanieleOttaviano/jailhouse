@@ -67,6 +67,22 @@ struct {
 				.gicr_base = 0x50880000,
 				.maintenance_irq = 25,
 			},
+			.memguard = {
+				/* For this SoC we have:
+				   - 32 SGIs and PPIs
+				   - 8 SPIs
+				   - 24 on-platform vectors
+				   - 138 off-platform vectors
+				   ------ Total = 202
+				   */
+				.num_irqs = 202,
+				.hv_timer = 26,
+				.num_pmu_irq = 4,
+				/* One PMU irq per CPU */
+				.pmu_cpu_irq = {
+					23, 23, 23, 23,
+				},
+			},
 		},
 		.root_cell = {
 			.name = "S32G2",
@@ -75,7 +91,7 @@ struct {
 			.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 			.num_irqchips = ARRAY_SIZE(config.irqchips),
 			.num_pci_devices = ARRAY_SIZE(config.pci_devices),
-			
+
 			.vpci_irq_base = 128 - 32,
 		},
 	},
