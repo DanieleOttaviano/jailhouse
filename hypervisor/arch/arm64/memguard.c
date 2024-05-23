@@ -30,6 +30,8 @@
 
 //#define MG_VERBOSE_DEBUG
 
+#define MAX_CPUS 255
+
 /*
  * Protocol to interact with the pmu/timer:
  * - here only do enable/disable
@@ -74,7 +76,7 @@ static inline void memguard_dump_timer_regs(void)
 static void memguard_isr_debug_print(const char* name)
 {
 #if 0
-	static u32 print_cnt[4] = {0, 0, 0, 0};
+	static u32 print_cnt[MAX_CPUS] = {0};
 	static u32 count = 0;
 
 	u64 now = timer_get_ticks();
