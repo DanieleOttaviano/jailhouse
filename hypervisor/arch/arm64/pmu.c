@@ -19,6 +19,7 @@
 #include <jailhouse/assert.h>
 #include <jailhouse/panic.h>
 #include <asm/gic_v2.h>
+#include <asm/gic_v3.h>
 #include <asm/pmu.h>
 
 static u32 pmu_first_cnt = 0;
@@ -48,10 +49,15 @@ void pmu_cpu_init(void)
 	assert(this_cpu_id() < mconf->num_pmu_irq);
 	irq = mconf->pmu_cpu_irq[this_cpu_id()];
 
-	/* NOTE: targets is a bitmap */
-	gicv2_set_targets(irq, (1U << this_cpu_id()));
-	pmu_print("irq %u, cpu %u, t 0x%x\n", irq, this_cpu_id(), gicv2_get_targets(irq));
-	gicv2_enable_irq(irq);
+	if (system_config->platform_info.arm.gic_version == 3) {
+		pmu_print("irq %u, cpu %u\n", irq, this_cpu_id());
+		gicv3_enable_irq(irq);
+	} else {
+		/* NOTE: targets is a bitmap */
+		gicv2_set_targets(irq, (1U << this_cpu_id()));
+		pmu_print("irq %u, cpu %u, t 0x%x\n", irq, this_cpu_id(), gicv2_get_targets(irq));
+		gicv2_enable_irq(irq);
+	}
 	pmu_int_enable(pmu_first_cnt);
 
 	/* Enable PMCCNTR_EL0 */
@@ -68,7 +74,10 @@ void pmu_cpu_shutdown(void)
 	pmu_disable_all();
 	pmu_disable(pmu_first_cnt);
 	pmu_int_disable(pmu_first_cnt);
-	gicv2_disable_irq(mconf->pmu_cpu_irq[this_cpu_id()]);
+	if (system_config->platform_info.arm.gic_version == 3)
+		gicv3_disable_irq(mconf->pmu_cpu_irq[this_cpu_id()]);
+	else
+		gicv2_disable_irq(mconf->pmu_cpu_irq[this_cpu_id()]);
 
 	if (ACCESS_ONCE(_pmu_isr_handler) != NULL) {
 		_pmu_isr_handler = NULL;

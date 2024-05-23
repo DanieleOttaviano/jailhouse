@@ -144,7 +144,11 @@ static inline void pmu_cpu_reset(void)
 
 	mconf = &system_config->platform_info.memguard;
 	irq = mconf->pmu_cpu_irq[this_cpu_id()];
-	gicv2_enable_irq(irq);
+
+	if (system_config->platform_info.arm.gic_version == 3)
+		gicv3_enable_irq(irq);
+	else
+		gicv2_enable_irq(irq);
 }
 
 
