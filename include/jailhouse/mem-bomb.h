@@ -13,6 +13,7 @@
  *  Andrea Bastoni <andrea.bastoni@tum.de>
  *  Mirko Cangiano <mirko.cangiano@minervasys.tech>
  *  Fabio Spanò <fabio.spano@minervasys.tech>
+ *  Filippo Fontana <filippo.fontana@minervasys.tech>
  */
 #include "config.h"
 
@@ -27,7 +28,8 @@
 /*NOTE: Choose on which architecture you are running membomb to use the correct memory addresses*/
 //#define CONFIG_ZCU102
 //#define CONFIG_MACH_NXP_S32
-#define CONFIG_ZCU104
+#define CONFIG_MACH_NXP_S32g2
+//#define CONFIG_ZCU104
 
 /**
  * NOTE: Hacky but effective way of configure different parameters
@@ -49,6 +51,10 @@
 //#define MAIN_PHYS_BASE		0x90000000
 #define MAIN_PHYS_BASE		0xc0000000
 //#define COMM_PHYS_BASE		0xc0000000 // move comm in the high DDR
+#endif
+#ifdef CONFIG_MACH_NXP_S32g2
+#define MAIN_PHYS_BASE		0x884000000
+#define COMM_PHYS_BASE		0x8A0000000
 #endif
 #ifdef CONFIG_ZCU104
 #define COMM_PHYS_BASE		0x50020000
