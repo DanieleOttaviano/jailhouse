@@ -1,46 +1,52 @@
 #include <stdint.h>
 
-#define REP_TIME 1
+#define NPAGES 1024
+#define DIM 12 * NPAGES // 123*32(size fo int)=4096 bytes= 4KB(size of one page)
+#define REP 1 // 10 
+#define REP_TIME 100
 #define FREQUENCY 100  // 100 MHz
-
-#define CALL(NAME, FUN) CONCAT(NAME, FUN)
-#define CONCAT(NAME, FUN)  NAME ## _ ## FUN()
-
-#define _STRINGIFY(s) #s
-#define STRINGIFY(s) _STRINGIFY(s)
-
-#define INCLUDE_FILE(name) _STRINGIFY(name.h)
-
-#include INCLUDE_FILE(BENCHNAME)
+#define PERIOD 200000 // 200 ms
 
 void main(void){
 	volatile uint32_t* system_counter = (uint32_t*)0xFF250000;
-	volatile uint32_t* shared_memory = (uint32_t *)0x46d00000;
- 	uint32_t start, end, diff;
-	uint32_t time_us = 0;
-	int i;
+	volatile uint32_t *shared_memory = (uint32_t *)0x46d00000;
+	uint32_t *mem_array = (uint32_t *)0x78FF0000;
+	uint32_t start, end, diff;
+	uint32_t readsum = 0;
+  	uint32_t time_us = 0;
+  	int i, j, k;
 
+	// Mem Array Initialization
+	for (i = 0; i < DIM; i++) {
+		mem_array[i] = i;
+	}
 	//SHM Array initialization
 	for (i = 0; i < REP_TIME; i++) {
 		shared_memory[i] = 0;
 	}
 
-	for(i = 0; i < REP_TIME; i++ ){ 
+	for(k = 0; k < REP_TIME; k++ ){ 
 		/* Actual access */
 		start = *system_counter;
-		// Exec the Benchmark 
-		CALL(BENCHNAME, init);
-		CALL(BENCHNAME, main);
-
+		for (j = 0; j < REP; j++) {
+			for (i = 0; i < DIM; i++) {
+				readsum += mem_array[i]; // READ
+			}
+		}
 		end = *system_counter;
-
-		// Calculate time in us    
+		// Calculate time in us
 		diff = end - start;
 		time_us = diff / FREQUENCY;
 
-		shared_memory[i] = time_us;
-	}
+		shared_memory[k] = time_us;
 
+		// wait until the end of the period
+		while (time_us < PERIOD){
+			end = *system_counter;
+			diff = end - start;
+			time_us = diff / FREQUENCY;
+		}
+	}
+	
 	while(1);
 }
-
