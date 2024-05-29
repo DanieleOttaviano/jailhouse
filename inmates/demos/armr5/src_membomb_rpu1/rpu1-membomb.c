@@ -56,59 +56,59 @@
 #define FREQUENCY 8  	// 8 MHz
 #define PERIOD 	  30 	// 30 us
 
-static u8* base_address = (u8*)0x3ED00000;	// RPU0 memory
-static u8* RPU0_base_address = (u8*)0x3ED00000;	// RPU0 memory
+static u32* base_address = (u32*)0x3ED00000;	// RPU0 memory
+static u32* RPU0_base_address = (u32*)0x3ED00000;	// RPU0 memory
 static u32 memory_size = 4 * 1024 * 1024; 		// 4Mb
 
 
-void bit_flip(){
-	XTime start, end, diff;
-	u32 time_us = 0;
-	u32 offset = 0;
-	u32 bit_position = 0;
+// void bit_flip(){
+// 	XTime start, end, diff;
+// 	u32 time_us = 0;
+// 	u32 offset = 0;
+// 	u32 bit_position = 0;
 	
-	xil_printf("[RPU1] base address: 0x%x\n\r", RPU0_base_address);
-	xil_printf("[RPU1] memory size: %d\n\r", memory_size);
+// 	xil_printf("[RPU1] base address: 0x%x\n\r", RPU0_base_address);
+// 	xil_printf("[RPU1] memory size: %d\n\r", memory_size);
 
-	for(int i = 0; i < REP_TIME; i++ ){
+// 	for(int i = 0; i < REP_TIME; i++ ){
 
-		XTime_GetTime(&start);
+// 		XTime_GetTime(&start);
 
-		// Write all the memory
-		// RPU0_base_address[i] = 0xFF;
+// 		// Write all the memory
+// 		// RPU0_base_address[i] = 0xFF;
 
-		// Generate a random offset within the memory region
-		offset = (u32)start % memory_size;
-		// Generate a random bit position within the selected byte
-		bit_position = (u32)start % 8;
-		// Toggle the randomly chosen bit at the specified offset
-		RPU0_base_address[offset] ^= (1 << bit_position);
-		xil_printf("accessing offset: %d, bit position:%d\r\n",offset, bit_position);
+// 		// Generate a random offset within the memory region
+// 		offset = (u32)start % memory_size;
+// 		// Generate a random bit position within the selected byte
+// 		bit_position = (u32)start % 8;
+// 		// Toggle the randomly chosen bit at the specified offset
+// 		RPU0_base_address[offset] ^= (1 << bit_position);
+// 		xil_printf("accessing offset: %d, bit position:%d\r\n",offset, bit_position);
 
-		XTime_GetTime(&end);
-		// Calculate time in us
-		diff = end - start;
-		time_us = diff / FREQUENCY;
+// 		XTime_GetTime(&end);
+// 		// Calculate time in us
+// 		diff = end - start;
+// 		time_us = diff / FREQUENCY;
 
-		//xil_printf("time(us):%llu\n\r", time_us);
-		// wait until the end of the period
-		while (time_us < PERIOD){
-			XTime_GetTime(&end);
-			diff = end - start;
-			time_us = diff / FREQUENCY;
-		}
-	}
-}
+// 		//xil_printf("time(us):%llu\n\r", time_us);
+// 		// wait until the end of the period
+// 		while (time_us < PERIOD){
+// 			XTime_GetTime(&end);
+// 			diff = end - start;
+// 			time_us = diff / FREQUENCY;
+// 		}
+// 	}
+//}
 
 void membomb(){
 	XTime start, end, diff;
 	u32 time_us = 0;
 	while(1){
-    	for(int i = 0 ; i < memory_size ; i=i+16){
+    	for(int i = 0 ; i < memory_size ; i=i+4){
 
 			XTime_GetTime(&start);
     		
-			base_address[i] = 0xFF;
+			base_address[i] = 0xFFFFFFFF;
 			//asm_clean_inval_dc_line_mva_poc((u32)&base_address[i]);
 			//Xil_DCacheStoreLine((u32)&base_address[i]);
 			
