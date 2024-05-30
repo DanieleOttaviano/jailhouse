@@ -3,6 +3,6 @@
 #include <jailhouse/cell-config.h>
 
 #define BOMB_ID	0
-#define BOMB_COLORS 0xf000
+#define BOMB_COLORS 0xf0
 #include <jailhouse/mem-bomb.h>
 #include <s32g2-bomb-col-template.h>
