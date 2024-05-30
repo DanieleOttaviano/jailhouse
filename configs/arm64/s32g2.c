@@ -29,7 +29,7 @@
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[16];
+	struct jailhouse_memory mem_regions[18];
 	struct jailhouse_irqchip irqchips[2];
 	struct jailhouse_pci_device pci_devices[1];
 } __attribute__((packed)) config = {
@@ -113,7 +113,21 @@ struct {
 				JAILHOUSE_MEM_EXECUTE,
 		},
 
-		/* pfebufs in between - access never seen */
+		/* PFE-reserved-dma */ {
+			.phys_start = 0x83200000,
+			.virt_start = 0x83200000,
+			.size = 0x3e0000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_IO,
+		},
+
+		/* PFE-reserved-bdr */ {
+			.phys_start = 0x835e0000,
+			.virt_start = 0x835e0000,
+			.size = 0x20000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE,
+		},
 
 		/* RAM */ {
 			.phys_start = 0x83600000,
@@ -123,7 +137,13 @@ struct {
 				JAILHOUSE_MEM_EXECUTE,
 		},
 
-		/* 0x84000000: s32cc-hse-rmem - access never seen */
+		/* s32cc-hse-rmem */ {
+			.phys_start = 0x84000000,
+			.virt_start = 0x84000000,
+			.size = 0x400000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_IO,
+		},
 
 		/* RAM */ {
 			.phys_start = 0x84400000,
@@ -144,15 +164,15 @@ struct {
 		/* SCMI SHMEM */ {
 			.phys_start = 0xd0000000,
 			.virt_start = 0xd0000000,
-			.size =	      0x400000,
+			.size =	      0x1000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
 		},
 
 		/* RAM */ {
-			.phys_start = 0xd0400000,
-			.virt_start = 0xd0400000,
-			.size = 0x100000000 - 0xd0400000,
+			.phys_start = 0xd0001000,
+			.virt_start = 0xd0001000,
+			.size = 0x100000000 - 0xd0001000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
