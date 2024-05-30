@@ -57,7 +57,7 @@ struct {
 			.pci_domain = -1,
 			.color = {
 				/* autodetected if not specified */
-				/* .way_size = 0x10000, */
+				.way_size = 0x8000,
 				.root_map_offset = 0x0C000000000,
 			},
 			.arm = {
@@ -77,6 +77,13 @@ struct {
 				   */
 				.num_irqs = 202,
 				.hv_timer = 26,
+				// TODO: UNDERSTAND THESE VALUES -> they are not relevant for us...
+				/* All levels are implemented */
+				// .irq_prio_min = 0xff,
+				// .irq_prio_max = 0x00,
+				// /* secure = NS */
+				// .irq_prio_step = 0x01,
+				// .irq_prio_threshold = 0x10,
 				.num_pmu_irq = 4,
 				/* One PMU irq per CPU */
 				.pmu_cpu_irq = {
