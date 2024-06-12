@@ -2,9 +2,11 @@
  * i.MX8MQ Target
  *
  * Copyright 2017-2020 NXP
+ * Copyright 2024 Minerva Systems
  *
  * Authors:
  *  Peng Fan <peng.fan@nxp.com>
+ *  Filippo Fontana <filippo.fontana@minervasys.tech>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
@@ -49,6 +51,16 @@ struct {
 				.gicd_base = 0x38800000,
 				.gicr_base = 0x38880000,
 				.maintenance_irq = 25,
+			},
+			.memguard = {
+				/* Retrieved by the GIC initalization below */
+				.num_irqs = 416,
+				.hv_timer = 26,
+				.num_pmu_irq = 4,
+				/* One PMU irq per CPU */
+				.pmu_cpu_irq = {
+					23, 23, 23, 23,
+				},
 			},
 		},
 		.root_cell = {
