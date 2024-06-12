@@ -134,8 +134,9 @@ static inline bool irq_is_pmu(u32 irqno)
 }
 
 /** Re-enable the PMU interrupts on this CPU on restart.
- *  NOTE: Unused helper function: currently neither JH nor linux
- *  touch the SPIs, and they're not de-activated across CPU resets.
+ *  NOTE: This function is required only for PMU interrupts which are
+ *  mapped as PPIs, it's not necessary for SPIs since neither JH nor
+ *  linux touch them, and they're not de-activated across CPU resets.
  */
 static inline void pmu_cpu_reset(void)
 {

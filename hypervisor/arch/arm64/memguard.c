@@ -232,10 +232,8 @@ void memguard_cpu_reset(void)
 	struct memguard *memguard = &this_cpu_public()->memguard;
 	memguard->block |= MG_RESET;
 
-	/* Jailhouse and Linux only play with SGI and PPIs. SPIs are
-	 * untouched, and we don't need to expliclty restart the PMU
-	 */
 	timer_cpu_reset();
+	pmu_cpu_reset();
 }
 
 /** Setup budget time + memory for this CPU. */
