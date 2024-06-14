@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if (time != 0 && mem != 0) {
+	if (time != 0 && memory != 0) {
 		cmd |= CMD_MEMGUARD;
 	}
 
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 		off = (cpu - 1) * COMM_SINGLE_SIZE;
 		ctrl = (volatile struct control *)(mem + off);
 
-		if (time != 0 && mem != 0) {
+		if (time != 0 && memory != 0) {
 			ctrl->time = time;
 			ctrl->memory = memory;
 			ctrl->type = 0;
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 		printf("CMD: 0x%x, CPU = %d, Size = %u, BT = %u, BM = %u\n",
 				cmd, cpu, size, time, memory);
 
-		if (time != 0 && mem != 0) {
+		if (time != 0 && memory != 0) {
 			ctrl->time = time;
 			ctrl->memory = memory;
 			ctrl->type = 0;
