@@ -28,7 +28,8 @@
 /*NOTE: Choose on which architecture you are running membomb to use the correct memory addresses*/
 //#define CONFIG_ZCU102
 //#define CONFIG_MACH_NXP_S32
-#define CONFIG_MACH_NXP_S32g2
+// #define CONFIG_MACH_NXP_S32g2
+#define CONFIG_MACH_NXP_IMX8MQ
 //#define CONFIG_ZCU104
 
 /**
@@ -55,6 +56,10 @@
 #ifdef CONFIG_MACH_NXP_S32g2
 #define MAIN_PHYS_BASE		0x884000000
 #define COMM_PHYS_BASE		0x8A0000000
+#endif
+#ifdef CONFIG_MACH_NXP_IMX8MQ
+#define MAIN_PHYS_BASE		0xC0010000
+#define COMM_PHYS_BASE		0xF0000000
 #endif
 #ifdef CONFIG_ZCU104
 #define COMM_PHYS_BASE		0x50020000
