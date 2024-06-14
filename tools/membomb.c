@@ -62,7 +62,7 @@ static void usage(char *name)
 			"\t-c\t cpu (from 1, CPU0 is for root cell)\n"
 			"\t-r\t only read\n"
 			"\t-w\t only writes\n"
-			"\t-s\t write size\n"
+			"\t-s\t read and/or write size\n"
 			"\t-e\t enable\n"
 			"\t\t default: all cpu, r+w, 64\n",
 			name);
