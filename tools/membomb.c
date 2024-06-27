@@ -28,6 +28,8 @@ struct control {
 	unsigned int time;
 	unsigned int memory;
 	unsigned int type;
+	unsigned int dram_col;
+	unsigned int dram_row;
 };
 
 static unsigned int get_mem_size(char * mem_str)
