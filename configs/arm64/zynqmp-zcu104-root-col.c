@@ -54,7 +54,7 @@ struct {
 			.pci_is_virtual = 1,
 			.pci_domain = -1,
 			.color = {
-				//.way_size = 0x10000,
+				.way_size = 0x10000,
 				.root_map_offset = 0x0C000000000,
 			},
 			.iommu_units = {
