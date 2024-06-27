@@ -32,6 +32,7 @@ struct {
 	struct jailhouse_qos_device qos_devices[35];
 } __attribute__((packed)) config = {
 	.header = {
+		.architecture = JAILHOUSE_ARM64,
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
 		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,

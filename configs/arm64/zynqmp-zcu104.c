@@ -37,6 +37,7 @@ struct {
 	.header = {
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
+		.architecture = JAILHOUSE_ARM64,
 		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,
 		.hypervisor_memory = {
 			.phys_start = 0x7f000000,
@@ -57,7 +58,7 @@ struct {
 			.color = {
 				/* in debug mode, the way_size is autodetected
 				 * if it is not specified */
-				/* .way_size = 0x10000, */
+				.way_size = 0x10000,
 				.root_map_offset = 0x0C000000000,
 			},
 			.memguard = {
