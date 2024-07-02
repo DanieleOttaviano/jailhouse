@@ -23,11 +23,13 @@
 #include <asm/control.h>
 #include <asm/spinlock.h>
 #include <asm/coloring.h>
-#include <asm/zynqmp-r5.h>
 #ifdef __aarch64__
 /* QoS Support only provided on arm64 */
 #include <asm/qos.h>
 #endif
+#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
+#include <asm/zynqmp-r5.h>
+#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 
 enum msg_type {MSG_REQUEST, MSG_INFORMATION};
 enum failure_mode {ABORT_ON_ERROR, WARN_ON_ERROR};
@@ -261,12 +263,16 @@ int cell_init(struct cell *cell)
 {
 	const unsigned long *config_cpu_set =
 		jailhouse_cell_cpu_set(cell->config);
+	unsigned long cpu_set_size = cell->config->cpu_set_size;
+	struct cpu_set *cpu_set;
+
+#if defined(CONFIG_OMNIVISOR)
 	const unsigned long *config_rcpu_set =
 		jailhouse_cell_rcpu_set(cell->config);
-	unsigned long cpu_set_size = cell->config->cpu_set_size;
 	unsigned long rcpu_set_size = cell->config->rcpu_set_size;
-	struct cpu_set *cpu_set;
 	struct cpu_set *rcpu_set;
+#endif /* CONFIG_OMNIVISOR  */
+
 	int err;
 
 	if (cpu_set_size > PAGE_SIZE)
@@ -283,6 +289,11 @@ int cell_init(struct cell *cell)
 
 	cell->cpu_set = cpu_set;
 
+	err = mmio_cell_init(cell);
+	if (err && cell->cpu_set != &cell->small_cpu_set)
+		page_free(&mem_pool, cell->cpu_set, 1);
+
+#if defined(CONFIG_OMNIVISOR)
 	// DEBUG PRINT
 	// printk("small_cpu_set->bitmap = %ld\r\n", cell->small_cpu_set.bitmap[0]);
 	if (rcpu_set_size > PAGE_SIZE)
@@ -301,11 +312,10 @@ int cell_init(struct cell *cell)
 	// DEBUG PRINT
 	// printk("small_rcpu_set->bitmap = %ld\r\n", cell->small_rcpu_set.bitmap[0]);
 
-	err = mmio_cell_init(cell);
-	if (err && cell->cpu_set != &cell->small_cpu_set)
-		page_free(&mem_pool, cell->cpu_set, 1);
 	if (err && cell->rcpu_set != &cell->small_rcpu_set)
 		page_free(&mem_pool, cell->rcpu_set, 1);
+
+#endif /* CONFIG_OMNIVISOR */
 
 	return err;
 }
@@ -439,9 +449,12 @@ static void cell_destroy_internal(struct cell *cell)
 		       sizeof(public_per_cpu(cpu)->stats));
 	}
 
+#if defined(CONFIG_OMNIVISOR)	
 	// For each rCPU, power them off
 	for_each_cpu(cpu, cell->rcpu_set) {
 		// to do ... call platform and architectueral specific arch_park_rcpu and modify public_per_rcpu stats
+#if defined(CONFIG_MACH_ZYNQMP_ZCU102)
+		printk("Stopping rCPU %d\r\n", cpu);
 		if(cpu == 0){
 			zynqmp_r5_stop(NODE_RPU_0);
 		}
@@ -457,8 +470,10 @@ static void cell_destroy_internal(struct cell *cell)
 		else{
 			printk("rCPU doesn't exist\r\n");
 		}
+#endif /* CONFIG_MACH_ZYNQMP_ZCU102 */
 		set_bit(cpu, root_cell.rcpu_set->bitmap);
 	}	
+#endif /* CONFIG_OMNIVISOR */
 	
 	for_each_mem_region(mem, cell->config, n) {
 		if (!JAILHOUSE_MEMORY_IS_SUBPAGE(mem))
@@ -569,12 +584,14 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			goto err_cell_exit;
 		}
 
+#if defined(CONFIG_OMNIVISOR)
 	/* the root cell's rCPU set must be super-set of new cell's set */
 	for_each_cpu(cpu, cell->rcpu_set)
 		if (!cell_owns_rcpu(&root_cell, cpu)) {
 			err = trace_error(-EBUSY);
 			goto err_cell_exit;
 		}
+#endif /* CONFIG_OMNIVISOR */
 
 	err = arch_cell_create(cell);
 	if (err)
@@ -602,6 +619,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		       sizeof(public_per_cpu(cpu)->stats));
 	}
 
+#if defined(CONFIG_OMNIVISOR)
 	// to do ... public per rcpu managment	
 	for_each_cpu(cpu, cell->rcpu_set) {
 		//arch_park_cpu(cpu);
@@ -610,6 +628,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		//memset(public_per_cpu(cpu)->stats, 0,
 		//       sizeof(public_per_cpu(cpu)->stats));
 	}
+#endif /* CONFIG_OMNIVISOR */
 
 	/*
 	 * Unmap the cell's memory regions from the root cell and map them to
@@ -648,8 +667,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 
 	cell_reconfig_completed();
 
-	// BOOT EXP
-	// printk("Created cell \"%s\"\n", cell->config->name);
+	printk("Created cell \"%s\"\n", cell->config->name);
 
 	paging_dump_stats("after cell creation");
 
@@ -770,22 +788,19 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 		arch_reset_cpu(cpu);
 	}
 
+#if defined(CONFIG_OMNIVISOR)
 	// For each rCPU
 	for_each_cpu(cpu, cell->rcpu_set) {
+#if defined(CONFIG_MACH_ZYNQMP_ZCU102)	
 		// to do ... call platform and architectueral specific arch_reset_rcpu
+		printk("Starting rCPU %d\r\n", cpu);
 		if(cpu == 0){
-			// DEBUG PRINT
-			//printk("Starting RPU-0 Core ...\r\n");
 			zynqmp_r5_start(NODE_RPU_0,(u32)0x03ed0000);
 		}
 		else if(cpu == 1){
-			// DEBUG PRINT
-			//printk("Starting RPU-1 Core ...\r\n");
 			zynqmp_r5_start(NODE_RPU_1,(u32)0x03ad0000);
 		}
 		else if(cpu == 2){ // to do ... add other riscv cores
-			// DEBUG PRINT
-			//printk("Starting RISC-V Core ...\r\n");
 			// Mapping of the page where the configuration port is located
 			err = paging_create(&hv_paging_structs, 0x80000000, PAGE_SIZE,
 				0x80000000, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
@@ -803,10 +818,11 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 			printk("rCPU doesn't exist\r\n");
 			return -1;
 		}
+#endif /* CONFIG_MACH_ZYNQMP_ZCU102 */
 	}	
+#endif /* CONFIG_OMNIVISOR */
 
-	// BOOT EXP
-	// printk("Started cell \"%s\"\n", cell->config->name);
+	printk("Started cell \"%s\"\n", cell->config->name);
 
 out_resume:
 	cell_resume(&root_cell);
@@ -851,19 +867,20 @@ static int cell_set_loadable(struct per_cpu *cpu_data, unsigned long id)
 			if (err)
 				goto out_resume;
 		}
-		// to do ... call sram request function (platform specific)	
+#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
+		// to do ... call sram request function (platform specific)
 		if(mem->flags & JAILHOUSE_MEM_TCM_A){
 			zynqmp_r5_tcm_request(ZYNQMP_R5_TCMA_ID);
 		}
 		if(mem->flags & JAILHOUSE_MEM_TCM_B){
 			zynqmp_r5_tcm_request(ZYNQMP_R5_TCMB_ID);
 		}
+#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 	}
 
 	config_commit(NULL);
 
-	// BOOT EXP
-	// printk("Cell \"%s\" can be loaded\n", cell->config->name);
+	printk("Cell \"%s\" can be loaded\n", cell->config->name);
 
 out_resume:
 	cell_resume(&root_cell);
@@ -880,8 +897,7 @@ static int cell_destroy(struct per_cpu *cpu_data, unsigned long id)
 	if (err)
 		return err;
 
-	// BOOT EXP
-	// printk("Closing cell \"%s\"\n", cell->config->name);
+	printk("Closing cell \"%s\"\n", cell->config->name);
 
 	cell_destroy_internal(cell);
 
@@ -954,6 +970,7 @@ void shutdown(void)
 		if (root_mem->flags & JAILHOUSE_MEM_COLORED) {
 			arch_unmap_memory_region(&root_cell, root_mem);
 		}
+#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 		// to do ... call sram release function (platform specific)
 		if(root_mem->flags & JAILHOUSE_MEM_TCM_A){
 			zynqmp_r5_tcm_release(ZYNQMP_R5_TCMA_ID);
@@ -961,6 +978,7 @@ void shutdown(void)
 		if(root_mem->flags & JAILHOUSE_MEM_TCM_B){
 			zynqmp_r5_tcm_release(ZYNQMP_R5_TCMB_ID);
 		}
+#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 	}
 
 	/* copy back the root cell into a non-colored phys range */

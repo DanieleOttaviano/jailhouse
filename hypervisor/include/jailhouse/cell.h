@@ -46,10 +46,12 @@ struct cell {
 	/** Stores the cell's CPU set if small enough. */
 	struct cpu_set small_cpu_set;
 
+#if defined(CONFIG_OMNIVISOR)
 	/** Pointer to cell's rCPU set. */
 	struct cpu_set *rcpu_set;	
 	/** Stores the cell's rCPU set if small enough. */
 	struct cpu_set small_rcpu_set;
+#endif /* CONFIG_OMNIVISOR */
 
 	/** True while the cell can be loaded by the root cell. */
 	bool loadable;

@@ -26,6 +26,7 @@ lib-y += smmu.o
 lib-y += coloring.o
 lib-y += timer.o pmu.o memguard.o
 lib-y += qos.o
+# Omnivisor specific for ZYNQMP
 lib-y += xmpu.o
 lib-y += zynqmp-pm.o
 lib-y += zynqmp-r5.o

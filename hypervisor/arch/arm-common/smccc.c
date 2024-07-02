@@ -127,12 +127,6 @@ enum trap_return handle_smc(struct trap_context *ctx)
 	enum trap_return ret = TRAP_HANDLED;
 	u32 *stats = this_cpu_public()->stats;
 
-	// DEBUG PRINT
-	// panic_printk("reg[0]:%lx\n",regs[0]);
-	// panic_printk("reg[1]:%lx\n",regs[1]);
-	// panic_printk("reg[2]:%lx\n",regs[2]);
-	// panic_printk("reg[3]:%lx\n",regs[3]);
-	// panic_printk("reg[4]:%lx\n",regs[4]);
 
 	switch (SMCCC_GET_OWNER(regs[0])) {
 	case ARM_SMCCC_OWNER_ARCH:
