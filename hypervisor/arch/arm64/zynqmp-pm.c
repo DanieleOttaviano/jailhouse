@@ -14,6 +14,8 @@
 #include <asm/smc.h>
 #include <asm/zynqmp-pm.h>
 
+#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
+
 /**
  * upper_32_bits - return bits 32-63 of a number
  * @n: the number we're accessing
@@ -846,3 +848,5 @@ int zynqmp_pm_fpga_get_feature_list(u32 *value)
 	// Not implemeted yet ...
     return -1;
 }
+
+#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */

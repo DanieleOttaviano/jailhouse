@@ -18,7 +18,9 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <asm/cacheflush.h>
+#if defined(CONFIG_OMNIVISOR)	
 #include <asm/smc.h>
+#endif /* CONFIG_OMNIVISOR */
 
 #include "cell.h"
 #include "main.h"
@@ -78,13 +80,14 @@ retry:
 		    min((unsigned int)nr_cpumask_bits,
 		        cell_desc->cpu_set_size * 8));
 
+#if defined(CONFIG_OMNIVISOR)	
 	bitmap_copy(cpumask_bits(&cell->rcpus_assigned),
 		    jailhouse_cell_rcpu_set(cell_desc),
 		    min((unsigned int)nr_cpumask_bits,
 		        cell_desc->rcpu_set_size * 8));
-
 	// DEBUG PRINT
 	// pr_err("cpus->assigned %ld\nrcpus->assigned %ld\n",cell->cpus_assigned, cell->rcpus_assigned);
+#endif /* CONFIG_OMNIVISOR */
 
 	cell->num_memory_regions = cell_desc->num_memory_regions;
 	cell->memory_regions = vmalloc(sizeof(struct jailhouse_memory) *
@@ -168,7 +171,9 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 	void __user *user_config;
 	struct cell *cell;
 	unsigned int cpu;
+#if defined(CONFIG_OMNIVISOR)
 	unsigned int rcpu;
+#endif /* CONFIG_OMNIVISOR */
 	int err = 0;
 
 	if (copy_from_user(&cell_params, arg, sizeof(cell_params)))
@@ -237,10 +242,12 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 		goto error_cell_delete;
 	}
 
+#if defined(CONFIG_OMNIVISOR)
 	if (!cpumask_subset(&cell->rcpus_assigned, &root_cell->rcpus_assigned)) {
 		err = -EBUSY;
 		goto error_cell_delete;
 	}
+#endif /* CONFIG_OMNIVISOR */
 
 	/* Off-line each CPU assigned to the new cell and remove it from the
 	 * root cell's set. */
@@ -267,11 +274,13 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 		cpumask_clear_cpu(cpu, &root_cell->cpus_assigned);
 	}
 
+#if defined(CONFIG_OMNIVISOR)	
 	// For each rCPUs check if they are online and shutdown them (to do ...)
 	// remove it from root_cell 
 	for_each_cpu(rcpu, &cell->rcpus_assigned) {
 		cpumask_clear_cpu(rcpu, &root_cell->rcpus_assigned);	
 	}
+#endif /* CONFIG_OMNIVISOR */
 
 	jailhouse_pci_do_all_devices(cell, JAILHOUSE_PCI_TYPE_DEVICE,
 	                             JAILHOUSE_PCI_ACTION_CLAIM);
@@ -281,8 +290,8 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 		goto error_cpu_online;
 
 	cell_register(cell);
-	// BOOT EXP
-	// pr_info("Created Jailhouse cell \"%s\"\n", config->name);
+
+	pr_info("Created Jailhouse cell \"%s\"\n", config->name);
 
 unlock_out:
 	mutex_unlock(&jailhouse_lock);
@@ -468,15 +477,19 @@ static int cell_destroy(struct cell *cell)
 {
 	unsigned int cpu;
 	int err;
+#if defined(CONFIG_OMNIVISOR)
 	unsigned int rcpu;
+#endif /* CONFIG_OMNIVISOR */
 
 	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_DESTROY, cell->id);
 	if (err)
 		return err;
 
+#if defined(CONFIG_OMNIVISOR)
 	for_each_cpu(rcpu, &cell->rcpus_assigned) {
 		cpumask_set_cpu(rcpu, &root_cell->rcpus_assigned);
 	}
+#endif /* CONFIG_OMNIVISOR */
 	for_each_cpu(cpu, &cell->cpus_assigned) {
 		if (cpumask_test_cpu(cpu, &offlined_cpus)) {
 			if (add_cpu(cpu) != 0)
@@ -490,8 +503,7 @@ static int cell_destroy(struct cell *cell)
 	jailhouse_pci_do_all_devices(cell, JAILHOUSE_PCI_TYPE_DEVICE,
 	                             JAILHOUSE_PCI_ACTION_RELEASE);
 
-	// BOOT EXP
-	// pr_info("Destroyed Jailhouse cell \"%s\"\n", cell->name);
+	pr_info("Destroyed Jailhouse cell \"%s\"\n", cell->name);
 
 	cell_delete(cell);
 

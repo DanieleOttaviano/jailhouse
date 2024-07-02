@@ -333,6 +333,7 @@ static ssize_t cpus_failed_list_show(struct kobject *kobj,
 	return print_failed_cpus(buf, PAGE_SIZE, cell, true);
 }
 
+#if defined(CONFIG_OMNIVISOR)
 static ssize_t rcpus_assigned_show(struct kobject *kobj,
 				  struct kobj_attribute *attr, char *buf)
 {
@@ -348,6 +349,7 @@ static ssize_t rcpus_assigned_list_show(struct kobject *kobj,
 
 	return print_cpumask(buf, PAGE_SIZE, &cell->rcpus_assigned, true);
 }
+#endif /* CONFIG_OMNIVISOR */
 
 static struct kobj_attribute cell_name_attr = __ATTR_RO(name);
 static struct kobj_attribute cell_state_attr = __ATTR_RO(state);
@@ -358,10 +360,12 @@ static struct kobj_attribute cell_cpus_assigned_list_attr =
 static struct kobj_attribute cell_cpus_failed_attr = __ATTR_RO(cpus_failed);
 static struct kobj_attribute cell_cpus_failed_list_attr =
 	__ATTR_RO(cpus_failed_list);
+#if defined(CONFIG_OMNIVISOR)
 static struct kobj_attribute cell_rcpus_assigned_attr =
 	__ATTR_RO(rcpus_assigned);
 static struct kobj_attribute cell_rcpus_assigned_list_attr =
 	__ATTR_RO(rcpus_assigned_list);
+#endif /* CONFIG_OMNIVISOR */
 
 static struct attribute *cell_attrs[] = {
 	&cell_name_attr.attr,
@@ -370,8 +374,10 @@ static struct attribute *cell_attrs[] = {
 	&cell_cpus_assigned_list_attr.attr,
 	&cell_cpus_failed_attr.attr,
 	&cell_cpus_failed_list_attr.attr,
+#if defined(CONFIG_OMNIVISOR)
 	&cell_rcpus_assigned_attr.attr,
 	&cell_rcpus_assigned_list_attr.attr,
+#endif /* CONFIG_OMNIVISOR */
 	NULL,
 };
 COMPAT_ATTRIBUTE_GROUPS(cell);

@@ -3,6 +3,9 @@
 #include <asm/zynqmp-pm.h>
 #include <asm/zynqmp-r5.h>
 
+
+#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
+
 /*
  * zynqmp_r5_0_start
  *
@@ -112,3 +115,5 @@ int zynqmp_r5_tcm_release(int tcm_id){
 	
 	return ret1 || ret2;
 }
+
+#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */

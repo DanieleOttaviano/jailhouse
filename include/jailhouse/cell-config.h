@@ -42,6 +42,7 @@
 #include <jailhouse/console.h>
 #include <jailhouse/pci_defs.h>
 #include <jailhouse/qos-common.h>
+#include <jailhouse/config.h>
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
@@ -101,7 +102,9 @@ struct jailhouse_cell_desc {
 	__u32 flags;
 
 	__u32 cpu_set_size;
+#if defined(CONFIG_OMNIVISOR)
 	__u32 rcpu_set_size;
+#endif /* CONFIG_OMNIVISOR */
 	__u32 num_memory_regions;
 	__u32 num_cache_regions;
 	__u32 num_irqchips;
@@ -132,9 +135,11 @@ struct jailhouse_cell_desc {
 #define JAILHOUSE_MEM_COLORED_NO_COPY	0x0400
 /* Set internally for remap_to/unmap_from root ops */
 #define JAILHOUSE_MEM_TMP_ROOT_REMAP	0x0800
+#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 #define JAILHOUSE_MEM_RPU		12 /* uses bits 12..13*/	// to do ... change to be generic
 #define JAILHOUSE_MEM_TCM_A		(1 << JAILHOUSE_MEM_RPU)
 #define JAILHOUSE_MEM_TCM_B		(2 << JAILHOUSE_MEM_RPU)
+#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 #define JAILHOUSE_MEM_IO_UNALIGNED	0x8000
 #define JAILHOUSE_MEM_IO_WIDTH_SHIFT	16 /* uses bits 16..19 */
 #define JAILHOUSE_MEM_IO_8		(1 << JAILHOUSE_MEM_IO_WIDTH_SHIFT)
@@ -441,7 +446,9 @@ jailhouse_cell_config_size(struct jailhouse_cell_desc *cell)
 {
 	return sizeof(struct jailhouse_cell_desc) +
 		cell->cpu_set_size +
+#if defined(CONFIG_OMNIVISOR)
 		cell->rcpu_set_size +
+#endif /* CONFIG_OMNIVISOR */
 		cell->num_memory_regions * sizeof(struct jailhouse_memory) +
 		cell->num_cache_regions * sizeof(struct jailhouse_cache) +
 		cell->num_irqchips * sizeof(struct jailhouse_irqchip) +
@@ -466,18 +473,24 @@ jailhouse_cell_cpu_set(const struct jailhouse_cell_desc *cell)
 		sizeof(struct jailhouse_cell_desc));
 }
 
+#if defined(CONFIG_OMNIVISOR)
 static inline const unsigned long *
 jailhouse_cell_rcpu_set(const struct jailhouse_cell_desc *cell)
 {
 	return (const unsigned long *) 
 		((void *)jailhouse_cell_cpu_set(cell) + cell->cpu_set_size);
 }
+#endif /* CONFIG_OMNIVISOR */
 
 static inline const struct jailhouse_memory *
 jailhouse_cell_mem_regions(const struct jailhouse_cell_desc *cell)
 {
+#if defined(CONFIG_OMNIVISOR)
 	return (const struct jailhouse_memory *)
 		((void *)jailhouse_cell_rcpu_set(cell) + cell->rcpu_set_size);
+#endif /* CONFIG_OMNIVISOR */
+	return (const struct jailhouse_memory *)
+		((void *)jailhouse_cell_cpu_set(cell) + cell->cpu_set_size);
 }
 
 static inline const struct jailhouse_cache *
