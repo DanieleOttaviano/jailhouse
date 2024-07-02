@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 
 #include <jailhouse.h>
+#include <jailhouse/config.h>
 
 #define JAILHOUSE_EXEC_DIR	LIBEXECDIR "/jailhouse"
 #define JAILHOUSE_DEVICE	"/dev/jailhouse"
@@ -40,7 +41,9 @@ struct jailhouse_cell_info {
 	struct jailhouse_cell_id id;
 	char *state;
 	char *cpus_assigned_list;
+#if defined(CONFIG_OMNIVISOR)
 	char *rcpus_assigned_list;
+#endif /* CONFIG_OMNIVISOR */
 	char *cpus_failed_list;
 	// to do ... add rcpus failed list
 };
@@ -324,9 +327,11 @@ static struct jailhouse_cell_info *get_cell_info(const unsigned int id)
 	cinfo->cpus_assigned_list =
 		read_sysfs_cell_string(id, "cpus_assigned_list");
 
+#if defined(CONFIG_OMNIVISOR)
 	/* get assigned rcpu list */
 	cinfo->rcpus_assigned_list =
 		read_sysfs_cell_string(id, "rcpus_assigned_list");
+#endif /* CONFIG_OMNIVISOR */
 
 	/* get failed cpu list */
 	cinfo->cpus_failed_list = read_sysfs_cell_string(id, "cpus_failed_list");
@@ -338,7 +343,9 @@ static void cell_info_free(struct jailhouse_cell_info *cinfo)
 {
 	free(cinfo->state);
 	free(cinfo->cpus_assigned_list);
+#if defined(CONFIG_OMNIVISOR)
 	free(cinfo->rcpus_assigned_list);
+#endif /* CONFIG_OMNIVISOR */
 	free(cinfo->cpus_failed_list);
 	free(cinfo);
 }
@@ -369,15 +376,26 @@ static int cell_list(int argc, char *argv[])
 		return -1;
 	}
 
-	if (num_entries > 0)
+	if (num_entries > 0){
+#if defined(CONFIG_OMNIVISOR)
 		printf("%-8s%-24s%-18s%-24s%-24s%-24s\n",
 		       "ID", "Name", "State", "Assigned CPUs", "Assigned rCPUs", "Failed CPUs");
+#else
+		printf("%-8s%-24s%-18s%-24s%-24s\n",
+		       "ID", "Name", "State", "Assigned CPUs", "Failed CPUs");
+#endif /* CONFIG_OMNIVISOR */
+	}
 	for (i = 0; i < num_entries; i++) {
 		id = (unsigned int)strtoul(namelist[i]->d_name, NULL, 10);
 
 		cinfo = get_cell_info(id);
+#if defined(CONFIG_OMNIVISOR)		
 		printf("%-8d%-24s%-18s%-24s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
 		       cinfo->state, cinfo->cpus_assigned_list, cinfo->rcpus_assigned_list, cinfo->cpus_failed_list);
+#else
+		printf("%-8d%-24s%-18s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
+		       cinfo->state, cinfo->cpus_assigned_list, cinfo->cpus_failed_list);
+#endif /* CONFIG_OMNIVISOR */
 		cell_info_free(cinfo);
 		free(namelist[i]);
 	}

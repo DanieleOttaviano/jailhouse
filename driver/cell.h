@@ -20,6 +20,7 @@
 
 #include "jailhouse.h"
 
+#include <jailhouse/config.h>
 #include <jailhouse/cell-config.h>
 
 struct cell {
@@ -30,7 +31,9 @@ struct cell {
 	unsigned int id;
 	char name[JAILHOUSE_CELL_ID_NAMELEN+1];
 	cpumask_t cpus_assigned;
+#if defined(CONFIG_OMNIVISOR)	
 	cpumask_t rcpus_assigned;
+#endif /* CONFIG_OMNIVISOR */
 	u32 num_memory_regions;
 	struct jailhouse_memory *memory_regions;
 	u64 color_root_map_offset;

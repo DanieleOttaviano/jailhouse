@@ -57,6 +57,7 @@
 #include "pci.h"
 #include "sysfs.h"
 
+#include <jailhouse/config.h>
 #include <jailhouse/header.h>
 #include <jailhouse/hypercall.h>
 #include <generated/version.h>
@@ -230,6 +231,7 @@ static long get_max_cpus(u32 cpu_set_size,
 	return -EINVAL;
 }
 
+#if defined(CONFIG_OMNIVISOR)
 static long get_max_rcpus(u32 rcpu_set_size,
 			 const struct jailhouse_system __user *system_config)
 {
@@ -252,6 +254,7 @@ static long get_max_rcpus(u32 rcpu_set_size,
 	}
 	return -EINVAL;
 }
+#endif /* CONFIG_OMNIVISOR */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
 #define __get_vm_area(size, flags, start, end)			\
@@ -451,7 +454,9 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	unsigned int clock_gates;
 	const char *fw_name;
 	long max_cpus;
+#if defined(CONFIG_OMNIVISOR)
 	long max_rcpus;
+#endif /* CONFIG_OMNIVISOR */
 	int err;
 
 	fw_name = jailhouse_get_fw_name();
@@ -481,6 +486,7 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	if (max_cpus > UINT_MAX)
 		return -EINVAL;
 	
+#if defined(CONFIG_OMNIVISOR)	
 	max_rcpus = get_max_rcpus(config_header.root_cell.rcpu_set_size, arg);
 	if (max_rcpus < 0)
 		return max_rcpus;
@@ -490,6 +496,7 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	// DEBUG PRINT
 	// pr_err("max_cpus : %ld\n",max_cpus);
 	// pr_err("max_rcpus : %ld\n",max_rcpus);
+#endif /* CONFIG_OMNIVISOR */
 
 	if (mutex_lock_interruptible(&jailhouse_lock) != 0)
 		return -EINTR;
