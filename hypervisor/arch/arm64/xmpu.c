@@ -7,7 +7,7 @@
 #include <asm/xmpu-board.h>
 #include <asm/xmpu.h>
 
-#if defined(CONFIG_XMPU_ACTIVE)
+#if defined(CONFIG_XMPU_ACTIVE) && defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 
 #ifdef CONFIG_DEBUG
 #define xmpu_print(fmt, ...)			\
@@ -612,4 +612,4 @@ static int arm_xmpu_init(void){
 
 DEFINE_UNIT_MMIO_COUNT_REGIONS_STUB(arm_xmpu);
 DEFINE_UNIT(arm_xmpu, "ARM XMPU");
-#endif /* CONFIG_XMPU */
+#endif /* CONFIG_XMPU && CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */ 

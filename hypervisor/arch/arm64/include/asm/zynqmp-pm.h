@@ -15,6 +15,8 @@
 
 #include <jailhouse/types.h>
 
+#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
+
 #define ZYNQMP_PM_VERSION_MAJOR	1
 #define ZYNQMP_PM_VERSION_MINOR	0
 
@@ -776,5 +778,7 @@ int zynqmp_pm_aie_operation(u32 node, u16 start_col, u16 num_col, u32 operation)
 int zynqmp_pm_fpga_get_version(u32 *value);
 int zynqmp_pm_fpga_get_feature_list(u32 *value);
 int zynqmp_pm_get_qos(u32 node, u32 *const def_qos, u32 *const qos);
+
+#endif /* CONFIG_OMNIVSIOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 
 #endif /* __FIRMWARE_ZYNQMP_H__ */

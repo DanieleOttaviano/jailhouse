@@ -5,6 +5,8 @@
 #include <jailhouse/types.h>
 #include <jailhouse/string.h>
 
+#if defined(CONFIG_XMPU_ACTIVE) && defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
+
 #define NR_XMPU_REGIONS 16
 #define NR_XMPU_DDR     6
 
@@ -93,5 +95,7 @@ typedef struct xmpu_channel{
 void print_xmpu_status_regs(u32 xmpu_base);
 void print_xmpu_region_regs(u32 xmpu_base, u32 region);
 void print_xmpu(u32 xmpu_base);
+
+#endif /* CONFIG_XMPU_ACTIVE && CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */ 
 
 #endif /* _JAILHOUSE_ASM_XMPU_H  */
