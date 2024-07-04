@@ -51,7 +51,7 @@ struct {
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
-	struct jailhouse_qos_device qos_devices[35];
+	struct jailhouse_qos_device qos_devices[18];
 } __attribute__((packed)) config = {
 	.header = {
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
@@ -291,6 +291,7 @@ struct {
 			.flags = (FLAGS_HAS_REGUL),
 			.base = M_AFIFM0_BASE,
 		},
+
 		{
 			.name = "afifm1",
 			.flags = (FLAGS_HAS_REGUL),
@@ -368,6 +369,7 @@ struct {
 			.flags = (FLAGS_HAS_REGUL),
 			.base = ISS_IB2_BASE,
 		},
+
 		{
 			.name = "issib6",
 			.flags = (FLAGS_HAS_REGUL),
