@@ -47,7 +47,7 @@
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[24];
+	struct jailhouse_memory mem_regions[18];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
@@ -142,15 +142,10 @@ struct {
 
 	.mem_regions = {
 		/* IVSHMEM shared memory region for 0001:00:00.0 */
-		JAILHOUSE_SHMEM_NET_REGIONS(0x60000000, 0),
+		JAILHOUSE_SHMEM_NET_REGIONS(0x50400000, 0),
 		/* IVSHMEM shared memory region for 0001:00:01.0 */
-		JAILHOUSE_SHMEM_NET_REGIONS(0x60010000, 0),
-		/* DSB */ {
-			.phys_start = 0x7d000000,
-			.virt_start = 0x7d000000,
-			.size =	      0x01000000,
-			.flags = JAILHOUSE_MEM_READ,
-		},
+		JAILHOUSE_SHMEM_NET_REGIONS(0x50500000, 0),
+
 		/* MMIO (permissive) */ {
 			.phys_start = 0xfd000000,
 			.virt_start = 0xfd000000,
@@ -167,10 +162,17 @@ struct {
 				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_COLORED,
 			.colors=0x000f,
 		},
-		/* RAM */ {
+		/* RAM (until SHMEM_NET regions) */ {
 			.phys_start = 0x10000000,
 			.virt_start = 0x10000000,
-			.size = 0x6e000000,
+			.size = 0x50400000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE,
+		},
+		/* RAM (until 0x7e000000) */ {
+			.phys_start = 0x50600000,
+			.virt_start = 0x50600000,
+			.size = 0x2db00000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
@@ -191,14 +193,14 @@ struct {
 		/* DDR 0 region for the R5 */ {
 			.phys_start = 0x3ed00000,
 			.virt_start = 0x3ed00000,
-			.size = 0x100000,
+			.size = 0x40000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
 		},
 
 		/* DDR 1 region for the R5 */ {
 			.phys_start = 0x3ed40000,
 			.virt_start = 0x3ed40000,
-			.size = 0x100000,
+			.size = 0x40000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
 		},
 
