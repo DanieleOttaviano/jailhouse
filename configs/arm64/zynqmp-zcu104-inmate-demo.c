@@ -52,33 +52,6 @@ struct {
 	},
 
 	.mem_regions = {
-		/* IVSHMEM shared memory regions */
-		{
-			.phys_start = 0x50400000,
-			.virt_start = 0x50400000,
-			.size = 0x1000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_ROOTSHARED,
-		},
-		{
-			.phys_start = 0x50401000,
-			.virt_start = 0x50401000,
-			.size = 0x1fb000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_ROOTSHARED,
-		},
-		{
-			.phys_start = 0x505fc000,
-			.virt_start = 0x505fc000,
-			.size = 0x2000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_ROOTSHARED,
-		},
-		{
-			.phys_start = 0x505fe000,
-			.virt_start = 0x505fe000,
-			.size = 0x2000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_ROOTSHARED,
-		},
 		/* UART */ {
 			.phys_start = 0xff010000,
 			.virt_start = 0xff010000,
