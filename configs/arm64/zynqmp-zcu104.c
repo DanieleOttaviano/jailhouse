@@ -11,18 +11,32 @@
  *   Carlo Nonato <carlo.nonato@minervasys.tech>
  *   Donato Ferraro <donato.ferraro@minervays.tech>
  *   Fabio Spanò <fabio.spano@minervasys.tech>
+ *   Filippo Fontana <filippo.fontana@minervasys.tech>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  *
- * Reservation via device tree: 0x50000000..0x503fffff
- * Reservation via device tree for ivshmem-regions: 0x40000000..0x4fffffff
- *	ivshmem@40000000 {
- *		no-map;
- *		reg =   <0x00 0x40000000 0x00 0x1000 0x00 0x40001000 0x00 0x1000
- *		 0x00 0x40002000 0x00 0x7fff000 0x00 0x48001000 0x00 0x7fff000>;
- *	};
+ * Reservation via device tree:
+ *       memory@0 {
+ *               device_type = "memory";
+ *               reg = <0x0 0x0 0x0 0x80000000>;
+ *       };
  *
+ *       reserved-memory {
+ *               #address-cells = <0x2>;
+ *               #size-cells = <0x2>;
+ *               ranges;
+ *
+ *               jailhouse@0x7e000000 {
+ *                       no-map;
+ *                       reg = <0x0 0x7e000000 0x0 0x2000000>;
+ *               };
+ *
+ *               inmates@0x25000000 {
+ *                       no-map;
+ *                       reg = <0x0 0x25000000 0x0 0x37000000>;
+ *               };
+ *       };
  */
 
 #include <jailhouse/types.h>
