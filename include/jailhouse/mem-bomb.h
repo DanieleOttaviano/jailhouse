@@ -29,8 +29,9 @@
 //#define CONFIG_ZCU102
 //#define CONFIG_MACH_NXP_S32
 // #define CONFIG_MACH_NXP_S32g2
-#define CONFIG_MACH_NXP_IMX8MQ
-//#define CONFIG_ZCU104
+// #define CONFIG_MACH_NXP_IMX8MQ
+// #define CONFIG_ZCU104
+#define CONFIG_ZCU106
 
 /**
  * NOTE: Hacky but effective way of configure different parameters
@@ -61,7 +62,7 @@
 #define MAIN_PHYS_BASE		0xC0010000
 #define COMM_PHYS_BASE		0xF0000000
 #endif
-#ifdef CONFIG_ZCU104
+#if defined(CONFIG_ZCU104) || defined(CONFIG_ZCU106)
 #define COMM_PHYS_BASE		0x50020000
 #define MAIN_PHYS_BASE		0x57c00000
 #endif
