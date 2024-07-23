@@ -48,6 +48,9 @@ int smccc_discover(void)
 	if (ret != ARM_SMCCC_SUCCESS)
 		return sdei_available ? trace_error(-EIO) : 0;
 
+#ifndef CONFIG_MACH_RK3588
+	sdei_available = false;
+#else
 #ifdef __aarch64__
 	/* Check if we have SDEI (ARMv8 only) */
 	ret = smc(SDEI_VERSION);
@@ -57,6 +60,7 @@ int smccc_discover(void)
 		sdei_available = true;
 	}
 	sdei_probed = true;
+#endif
 #endif
 
 	/* We need to have at least SMCCC v1.1 */
