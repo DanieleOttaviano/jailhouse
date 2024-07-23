@@ -20,19 +20,22 @@
 #define xstr(s) str(s)
 #define str(s) #s
 
-/* NOTE: This controls the settings in the template memory bombs inmates */
-#define NUM_CPU			4
-#define BOMB_CPU		1 << (BOMB_ID + 1)
-
-
 /*NOTE: Choose on which architecture you are running membomb to use the correct memory addresses*/
 //#define CONFIG_ZCU102
 //#define CONFIG_MACH_NXP_S32
 // #define CONFIG_MACH_NXP_S32g2
 // #define CONFIG_MACH_NXP_IMX8MQ
 // #define CONFIG_ZCU104
-#define CONFIG_ZCU106
+// #define CONFIG_ZCU106
+#define CONFIG_RK3588_ROCK5B
 
+/* NOTE: This controls the settings in the template memory bombs inmates */
+#ifdef CONFIG_RK3588_ROCK5B
+#define NUM_CPU			8
+#else
+#define NUM_CPU			4
+#endif
+#define BOMB_CPU		1 << (BOMB_ID + 1)
 /**
  * NOTE: Hacky but effective way of configure different parameters
  * for different DRAM layouts on ZCU104, ZCU102 and S32V.
@@ -72,6 +75,11 @@
 //#define MAIN_PHYS_BASE		0x020000000	// low dram
 #define COMM_PHYS_BASE		0x87c000000
 #endif
+#ifdef CONFIG_RK3588_ROCK5B
+#define MAIN_PHYS_BASE		0x20700000
+#define COMM_PHYS_BASE		0x2c800000
+#endif
+
 /* Main program */
 #define MAIN_SIZE		0x200000
 /* Memory Area for the experiments */
