@@ -22,7 +22,10 @@
 void arm_cpu_reset(unsigned long pc, bool aarch32)
 {
 	u64 hcr_el2;
+
+#ifndef CONFIG_MACH_RK3588
 	u64 fpexc32_el2;
+#endif
 
 	/* put the cpu in a reset state */
 	/* AARCH64_TODO: handle big endian support */
@@ -59,9 +62,11 @@ void arm_cpu_reset(unsigned long pc, bool aarch32)
 	arm_write_sysreg(TTBR1_EL1, 0);
 	arm_write_sysreg(VBAR_EL1, 0);
 
+#ifndef CONFIG_MACH_RK3588
 	arm_read_sysreg(FPEXC32_EL2, fpexc32_el2);
 	fpexc32_el2 |= FPEXC_EL2_EN_BIT;
 	arm_write_sysreg(FPEXC32_EL2, fpexc32_el2);
+#endif
 
 	/* wipe timer registers */
 	arm_write_sysreg(CNTP_CTL_EL0, 0);
