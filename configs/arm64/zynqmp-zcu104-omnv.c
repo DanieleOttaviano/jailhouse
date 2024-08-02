@@ -114,7 +114,7 @@ struct {
 	},
 
 	.rcpus = {
-		0x7, //0x3
+		0x1, // RPU
 	},
 
 	.mem_regions = {
