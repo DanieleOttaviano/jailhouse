@@ -12,8 +12,8 @@ The extensions contained in this repository implements cache partitioning
 via cache-coloring technique and memory bandwidth regulation using a
 performance-counter-based approach.
 The extensions target high-end SoCs based on Arm v8 Cortex-A cores, and have
-been tested on Xilinx Ultrascale+ ZCU 102, NVIDIA Jetson AGX Xavier, and NXP
-S32V.
+been tested on Xilinx Ultrascale+ ZCU 102, NVIDIA Jetson AGX Xavier, NXP
+S32V, NXP S32G2, i.MX8MQ (Coral).
 
 The repository is maintained by [Minerva Systems](https://www.minervasys.tech)
 and developed in collaboration with researchers from the following research
@@ -54,6 +54,13 @@ support for this code. Please, subscribe to the Jailhouse mailing list for
 updates on the mainlining effort and for any discussion about this fork
 and its development.
 
+Documentation
+-------------
+In addition to the standard how-to reported below in this file and to
+the documentation contained in the `Documentation` directory,
+patches, and working documentation for many of the boards supported
+are maintained in a separate repository:
+- https://github.com/Minervasys/jailhouse-documentation
 
 Introduction
 ------------
