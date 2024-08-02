@@ -1,3 +1,17 @@
+/*
+ * Jailhouse, a Linux-based partitioning hypervisor
+ *
+ * Omnivisor demo RPU
+ *
+ * Copyright (c) Universita' di Napoli Federico II, 2024
+ *
+ * Authors:
+ *   Daniele Ottaviano <daniele.ottaviano@unina.it>
+ *
+ * This work is licensed under the terms of the GNU GPL, version 2.  See
+ * the COPYING file in the top-level directory.
+ */
+
 #include <stdio.h>
 #include "platform.h"
 #include "xil_printf.h"

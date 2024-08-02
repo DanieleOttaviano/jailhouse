@@ -1,3 +1,16 @@
+/*
+ * Jailhouse, a Linux-based partitioning hypervisor
+ *
+ * Zynqmp RPUs and TCM management
+ *
+ * Copyright (c) Universita' di Napoli Federico II, 2024
+ *
+ * Authors:
+ *   Daniele Ottaviano <daniele.ottaviano@unina.it>
+ *
+ * This work is licensed under the terms of the GNU GPL, version 2.  See
+ * the COPYING file in the top-level directory.
+ */
 
 #include <jailhouse/printk.h>
 #include <asm/zynqmp-pm.h>
@@ -29,6 +42,7 @@ int zynqmp_r5_start(enum pm_node_id node_id, u32 bootaddr)
 	bootmem = (bootaddr & 0xF0000000) == 0xF0000000 ?
 		  PM_RPU_BOOTMEM_HIVEC : PM_RPU_BOOTMEM_LOVEC;
 
+	// BOOT EXP
 	printk("RPU boot from %s.\n",
 		bootmem == PM_RPU_BOOTMEM_HIVEC ? "OCM" : "TCM");
 

@@ -31,18 +31,17 @@
 ******************************************************************************/
 
 /*
- * helloworld.c: simple test application
+ * Jailhouse, a Linux-based partitioning hypervisor
  *
- * This application configures UART 16550 to baud rate 9600.
- * PS7 UART (Zynq) is not initialized by this application, since
- * bootrom/bsp configures it to baud rate 115200
+ * Omnivisor XMPU demo RPU
  *
- * ------------------------------------------------
- * | UART TYPE   BAUD RATE                        |
- * ------------------------------------------------
- *   uartns550   9600
- *   uartlite    Configurable only in HW design
- *   ps7_uart    115200 (configured by bootrom/bsp)
+ * Copyright (c) Universita' di Napoli Federico II, 2024
+ *
+ * Authors:
+ *   Daniele Ottaviano <daniele.ottaviano@unina.it>
+ *
+ * This work is licensed under the terms of the GNU GPL, version 2.  See
+ * the COPYING file in the top-level directory.
  */
 
 #include <stdio.h>

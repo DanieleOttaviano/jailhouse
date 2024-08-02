@@ -1,13 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
- * Xilinx Zynq MPSoC Firmware layer
+ * Jailhouse, a Linux-based partitioning hypervisor
  *
- *  Copyright (C) 2014-2021 Xilinx, Inc.
+ * Zynqmp Power Management API for remote processor control
  *
- *  Michal Simek <michal.simek@xilinx.com>
- *  Davorin Mista <davorin.mista@aggios.com>
- *  Jolly Shah <jollys@xilinx.com>
- *  Rajan Vaja <rajanv@xilinx.com>
+ * Copyright (c) Universita' di Napoli Federico II, 2024
+ *
+ * Authors:
+ *   Daniele Ottaviano <daniele.ottaviano@unina.it>
+ *
+ * This work is licensed under the terms of the GNU GPL, version 2.  See
+ * the COPYING file in the top-level directory.
  */
 
 #include <jailhouse/printk.h>

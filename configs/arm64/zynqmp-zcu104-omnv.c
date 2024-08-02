@@ -114,6 +114,10 @@ struct {
 		0xf,
 	},
 
+	.rcpus = {
+		0x1, // RPU
+	},
+
 	.mem_regions = {
 		JAILHOUSE_SHMEM_NET_REGIONS(0x50400000, 0),
 

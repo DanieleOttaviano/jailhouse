@@ -20,13 +20,13 @@ struct {
 	struct jailhouse_cell_desc cell;
 	__u64 cpus[1];
 	__u64 rcpus[1];
-	struct jailhouse_memory mem_regions[4];
+	struct jailhouse_memory mem_regions[6];
 	union jailhouse_stream_id stream_ids[2];
 } __attribute__((packed)) config = {
 	.cell = {
 		.signature = JAILHOUSE_CELL_DESC_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
-		.name = "inmate-demo-RISCV",
+		.name = "inmate-demo-RPU",
 		.flags = JAILHOUSE_CELL_PASSIVE_COMMREG,
 
 		.cpu_set_size = sizeof(config.cpus),
@@ -49,19 +49,35 @@ struct {
 	},
 
 	.rcpus = {
-		0x4,	//0x0100
+		0x1,
 	},
 
 	.mem_regions = {
-		/* UART not used yet*/ {
+		/* UART */ {
 			.phys_start = 0xff010000,
 			.virt_start = 0xff010000,
 			.size = 0x1000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO | JAILHOUSE_MEM_ROOTSHARED,
 		},
+		/* TCM 0-A */ {
+			.phys_start = 0xffe00000,
+			.virt_start = 0xffe00000,
+			.size = 0x00010000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE | 
+				JAILHOUSE_MEM_TCM_A,
+		},
+		/* TCM 0-B */ {
+			.phys_start = 0xffe20000,
+			.virt_start = 0xffe20000,
+			.size = 0x00010000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE |
+				JAILHOUSE_MEM_TCM_B,
+		},	
 		/* RAM */ {
-			.phys_start = 0x78000000,
+			.phys_start = 0x3ed00000,
 			.virt_start = 0,
 			.size = 0x8000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
@@ -81,17 +97,5 @@ struct {
 				JAILHOUSE_MEM_COMM_REGION,
 		},
 	},
-
-	//TO REMOVE
-  .stream_ids = {
-    {
-			.mmu500.id = 0x800,
-			.mmu500.mask_out = 0xf,
-		},
-		{
-			.mmu500.id = 0x810,
-			.mmu500.mask_out = 0xf,
-		},
-	}
 
 };
