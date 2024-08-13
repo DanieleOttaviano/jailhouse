@@ -1,61 +1,39 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for Xilinx ZynqMP ZCU104 eval board
+ * Configuration for Xilinx ZynqMP ZCU102 eval board
  *
- * Copyright (c) Minerva Systems, 2022
+ * Copyright (c) Siemens AG, 2016
  *
  * Authors:
- *   Mirko Cangiano <mirko.cangiano@minervasys.tech>
- *   Luca Palazzi <luca.palazzi@minervasys.tech>
- *   Carlo Nonato <carlo.nonato@minervasys.tech>
- *   Donato Ferraro <donato.ferraro@minervays.tech>
- *   Fabio Spanò <fabio.spano@minervasys.tech>
- *   Filippo Fontana <filippo.fontana@minervasys.tech>
+ *  Jan Kiszka <jan.kiszka@siemens.com>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  *
- * Reservation via device tree:
- *       memory@0 {
- *               device_type = "memory";
- *               reg = <0x0 0x0 0x0 0x80000000>;
- *       };
- *
- *       reserved-memory {
- *               #address-cells = <0x2>;
- *               #size-cells = <0x2>;
- *               ranges;
- *
- *               jailhouse@0x7e000000 {
- *                       no-map;
- *                       reg = <0x0 0x7e000000 0x0 0x2000000>;
- *               };
- *
- *               inmates@0x25000000 {
- *                       no-map;
- *                       reg = <0x0 0x25000000 0x0 0x37000000>;
- *               };
- *       };
+ * Reservation via device tree: 0x800000000..0x83fffffff
  */
-
 #include <jailhouse/types.h>
 #include <jailhouse/cell-config.h>
+#include <asm/qos-400.h>
+#include <zynqmp-qos-config.h>
 
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[8];
+	__u64 rcpus[1];
+	struct jailhouse_memory mem_regions[24];
 	struct jailhouse_irqchip irqchips[1];
-	struct jailhouse_pci_device pci_devices[1];
+	struct jailhouse_pci_device pci_devices[2];
+	union jailhouse_stream_id stream_ids[3];
+	struct jailhouse_qos_device qos_devices[35];
 } __attribute__((packed)) config = {
 	.header = {
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
-		.architecture = JAILHOUSE_ARM64,
 		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,
 		.hypervisor_memory = {
-			.phys_start = 0x7f000000,
+			.phys_start = 0x6f000000,
 			.size =       0x01000000,
 		},
 		.debug_console = {
@@ -68,8 +46,28 @@ struct {
 		.platform_info = {
 			.pci_mmconfig_base = 0xfc000000,
 			.pci_mmconfig_end_bus = 0,
+
 			.pci_is_virtual = 1,
 			.pci_domain = -1,
+			.color = {
+				.way_size = 0x10000,
+				.root_map_offset = 0x0C000000000,
+			},
+			.iommu_units = {
+				{
+					.type = JAILHOUSE_IOMMU_ARM_MMU500,
+					.base = 0xfd800000,
+					.size = 0x20000,
+				},
+			},
+			.arm = {
+				.gic_version = 2,
+				.gicd_base = 0xf9010000,
+				.gicc_base = 0xf902f000,
+				.gich_base = 0xf9040000,
+				.gicv_base = 0xf906f000,
+				.maintenance_irq = 25,
+			},
 			.memguard = {
 				/* For this SoC we have:
 				   - 32 SGIs and PPIs
@@ -89,22 +87,23 @@ struct {
 					175, 176, 177, 178,
 				},
 			},
-			.arm = {
-				.gic_version = 2,
-				.gicd_base = 0xf9010000,
-				.gicc_base = 0xf902f000,
-				.gich_base = 0xf9040000,
-				.gicv_base = 0xf906f000,
-				.maintenance_irq = 25,
+			.qos = {
+				.nic_base = 0xfd700000,
+				/* 1MiB Aperture */
+				.nic_size = 0x100000,
 			},
 		},
+
 		.root_cell = {
 			.name = "ZynqMP-ZCU104",
 
 			.cpu_set_size = sizeof(config.cpus),
+			.rcpu_set_size = sizeof(config.rcpus), 
 			.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 			.num_irqchips = ARRAY_SIZE(config.irqchips),
 			.num_pci_devices = ARRAY_SIZE(config.pci_devices),
+			.num_stream_ids = ARRAY_SIZE(config.stream_ids),
+			.num_qos_devices = ARRAY_SIZE(config.qos_devices),
 
 			.vpci_irq_base = 136-32,
 		},
@@ -119,8 +118,17 @@ struct {
 	},
 
 	.mem_regions = {
-		JAILHOUSE_SHMEM_NET_REGIONS(0x50400000, 0),
-
+		/* IVSHMEM shared memory region for 0001:00:00.0 */
+		JAILHOUSE_SHMEM_NET_REGIONS(0x060000000, 0),
+		/* IVSHMEM shared memory region for 0001:00:01.0 */
+		JAILHOUSE_SHMEM_NET_REGIONS(0x060100000, 0),
+		/* FPGA configuration ports */ {
+			.phys_start = 0x80000000,
+			.virt_start = 0x80000000,
+			.size = 0x00100000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_IO,
+		},
 		/* MMIO (permissive) */ {
 			.phys_start = 0xfd000000,
 			.virt_start = 0xfd000000,
@@ -128,23 +136,26 @@ struct {
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
 		},
-		/* RAM (until SHMEM_NET region) */ {
-			.phys_start = 0x0,
-			.virt_start = 0x0,
-			.size = 0x50400000,
+		/* RAM */ {
+			.phys_start = 0x00000000,
+			.virt_start = 0x00000000,
+			.size = 0x80000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
-		/* RAM (until 0x7e000000) */ {
-			.phys_start = 0x50500000,
-			.virt_start = 0x50500000,
-			.size = 0x2db00000,
+		/* RAM */ 
+		{
+			.phys_start = 0x800000000,
+			.virt_start = 0x800000000,
+			.size = 0x080000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
-		/* PCI host bridge */ {
-			.phys_start = 0x7e000000,
-			.virt_start = 0x7e000000,
+
+		/* PCI host bridge */
+		{
+			.phys_start = 0x8000000000,
+			.virt_start = 0x8000000000,
 			.size = 0x1000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
@@ -162,15 +173,148 @@ struct {
 	},
 
 	.pci_devices = {
-		{ /* IVSHMEM 0000:00:01.0 (networking) */
+		/* 0001:00:01.0 */ {
 			.type = JAILHOUSE_PCI_TYPE_IVSHMEM,
-			.domain = 0,
+			.domain = 1,
 			.bdf = 1 << 3,
 			.bar_mask = JAILHOUSE_IVSHMEM_BAR_MASK_INTX,
 			.shmem_regions_start = 0,
 			.shmem_dev_id = 0,
-			.shmem_peers = 1,
+			.shmem_peers = 2,
 			.shmem_protocol = JAILHOUSE_SHMEM_PROTO_VETH,
+		},
+		/* 0001:00:02.0 */ {
+			.type = JAILHOUSE_PCI_TYPE_IVSHMEM,
+			.domain = 1,
+			.bdf = 2 << 3,
+			.bar_mask = JAILHOUSE_IVSHMEM_BAR_MASK_INTX,
+			.shmem_regions_start = 4,
+			.shmem_dev_id = 0,
+			.shmem_peers = 2,
+			.shmem_protocol = JAILHOUSE_SHMEM_PROTO_VETH,
+		},
+	},
+
+	.stream_ids = {
+		{
+			.mmu500.id = 0x860,
+			.mmu500.mask_out = 0x0,
+		},
+		{
+			.mmu500.id = 0x861,
+			.mmu500.mask_out = 0x0,
+		},
+		{
+			.mmu500.id = 0x870,
+			.mmu500.mask_out = 0xf,
+		},
+	},
+
+	.qos_devices = {
+		{
+			.name = "rpu0",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_RPU0_BASE,
+		},
+
+		{
+			.name = "rpu1",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_RPU1_BASE,
+		},
+
+		{
+			.name = "adma",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_ADMA_BASE,
+		},
+
+		{
+			.name = "afifm0",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM0_BASE,
+		},
+		{
+			.name = "afifm1",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM1_BASE,
+		},
+
+		{
+			.name = "afifm2",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM2_BASE,
+		},
+
+		{
+			.name = "smmutbu5",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_INITFPDSMMUTBU5_BASE,
+		},
+
+		{
+			.name = "dp",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_DP_BASE,
+		},
+
+		{
+			.name = "afifm3",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM3_BASE,
+		},
+
+		{
+			.name = "afifm4",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM4_BASE,
+		},
+
+		{
+			.name = "afifm5",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_AFIFM5_BASE,
+		},
+
+		{
+			.name = "gpu",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_GPU_BASE,
+		},
+
+		{
+			.name = "pcie",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_PCIE_BASE,
+		},
+
+		{
+			.name = "gdma",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_GDMA_BASE,
+		},
+
+		{
+			.name = "sata",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_SATA_BASE,
+		},
+
+		{
+			.name = "coresight",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = M_CORESIGHT_BASE,
+		},
+
+		{
+			.name = "issib2",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = ISS_IB2_BASE,
+		},
+		{
+			.name = "issib6",
+			.flags = (FLAGS_HAS_REGUL),
+			.base = ISS_IB6_BASE,
 		},
 	},
 };

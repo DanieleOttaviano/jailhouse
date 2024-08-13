@@ -1,7 +1,7 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  * 
- * Omnivisor Patch for remote core virtualization 
+ * Omnivisor branch for remote core virtualization 
  * 
  * Copyright (c) Siemens AG, 2014-2020
  * Copyright (c) Daniele Ottaviano, 2024
