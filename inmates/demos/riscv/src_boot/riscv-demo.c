@@ -3,10 +3,10 @@
  *
  * Omnivisor demo RISC-V
  *
- * Copyright (c) Universita' di Napoli Federico II, 2024
+ * Copyright (c) Daniele Ottaviano, 2024
  *
  * Authors:
- *   Daniele Ottaviano <daniele.ottaviano@unina.it>
+ *   Daniele Ottaviano <danieleottaviano97@gmail.com>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.

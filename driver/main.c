@@ -5,12 +5,12 @@
  * 
  * Copyright (c) Siemens AG, 2013-2017
  * Copyright (c) Valentine Sinitsyn, 2014
- * Copyright (c) Universita' di Napoli Federico II, 2024
+ * Copyright (c) Daniele Ottaviano, 2024
  *
  * Authors:
  *  Jan Kiszka <jan.kiszka@siemens.com>
  *  Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
- *  Daniele Ottaviano <daniele.ottaviano@unina.it>
+ *  Daniele Ottaviano <danieleottaviano97@gmail.com>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
