@@ -22,15 +22,16 @@ struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
 	__u64 rcpus[1];
-	struct jailhouse_memory mem_regions[24];
+	struct jailhouse_memory mem_regions[13];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
-	struct jailhouse_qos_device qos_devices[35];
+	struct jailhouse_qos_device qos_devices[18];
 } __attribute__((packed)) config = {
 	.header = {
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
+		.architecture = JAILHOUSE_ARM64,
 		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,
 		.hypervisor_memory = {
 			.phys_start = 0x6f000000,
@@ -50,6 +51,8 @@ struct {
 			.pci_is_virtual = 1,
 			.pci_domain = -1,
 			.color = {
+				/* in debug mode, the way_size is autodetected
+				 * if it is not specified */
 				.way_size = 0x10000,
 				.root_map_offset = 0x0C000000000,
 			},
@@ -95,7 +98,7 @@ struct {
 		},
 
 		.root_cell = {
-			.name = "ZynqMP-ZCU104",
+			.name = "ZynqMP-ZCU104-Omnv",
 
 			.cpu_set_size = sizeof(config.cpus),
 			.rcpu_set_size = sizeof(config.rcpus), 

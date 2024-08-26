@@ -36,6 +36,9 @@ centers and universities:
    https://hipert.unimore.it/
  - Boston University (Cyber-Physical Systems Lab)
    https://cs-people.bu.edu/rmancuso/
+ - Università degli Studi di Napoli Federico II (DESSERT Lab)
+   https://dessert.unina.it/
+  
 
 The extensions have been evaluated in multiple academic publications such as:
 
@@ -58,6 +61,11 @@ The extensions have been evaluated in multiple academic publications such as:
 > Shahin Roozkhosh, Denis Hoornaert, Renato Mancuso,
 > "CAESAR: Coherence-Aided Elective and Seamless Alternative Routing via on-chip FPGA,"
 > 2022 IEEE Real-Time Systems Symposium (RTSS), 2022
+
+> Daniele Ottaviano, Francesco Ciraolo, Renato Mancuso, Marcello Cinque,
+> "The Omnivisor: A Real-Time Static Partitioning Hypervisor Extension for 
+> Heterogeneous Core Virtualization over MPSoCs,"
+> 2024 Euromicro Conference on Real-Time Systems (ECRTS), 2024 
 
 There is an ongoing effort to integrate some of the features of this
 repository in the mainline [Jailhouse project](https://github.com/siemens/jailhouse),
