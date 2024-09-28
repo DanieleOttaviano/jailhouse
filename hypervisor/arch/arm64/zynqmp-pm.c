@@ -60,7 +60,7 @@ static int zynqmp_pm_ret_code(u32 ret_status)
 	case XST_PM_INVALID_NODE:
 	case XST_PM_INVALID_CRC:
 	default:
-		return -1; //-EINVAL;
+		return -1; //--1; //EINVAL;
 	}
 }
 
@@ -367,8 +367,17 @@ int zynqmp_pm_fpga_load(const u64 address, const u32 size,
 
 int zynqmp_pm_fpga_get_status(u32 *value)
 {
-	// Not implemeted yet ...
-    return -1;
+	u32 ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	if (!value)
+		return -1; //EINVAL
+
+	ret = zynqmp_pm_invoke_fn(PM_FPGA_GET_STATUS, 0, 0, 0, 0, 0,
+				  ret_payload);
+	*value = ret_payload[1];
+
+	return ret;
 }
 
 int zynqmp_pm_write_ggs(u32 index, u32 value)
@@ -676,8 +685,19 @@ int zynqmp_pm_fpga_read(const u32 reg_numframes,
 				      const u64 phys_address, u32 readback_type,
 				      u32 *value)
 {
-	// Not implemeted yet ...
-    return -1;
+	u32 ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	if (!value)
+		return -1; //EINVAL;
+
+	ret = zynqmp_pm_invoke_fn(PM_FPGA_READ, reg_numframes,
+				  lower_32_bits(phys_address),
+				  upper_32_bits(phys_address), readback_type,
+				  0, ret_payload);
+	*value = ret_payload[1];
+
+	return ret;
 }
 
 int zynqmp_pm_write_aes_key(const u32 keylen, const u32 keysrc, const u64 keyaddr)
@@ -839,14 +859,32 @@ int zynqmp_pm_aie_operation(u32 node, u16 start_col,
 
 int zynqmp_pm_fpga_get_version(u32 *value)
 {
-	// Not implemeted yet ...
-    return -1;
+	u32 ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	if (!value)
+		return -1; //EINVAL;
+
+	ret = zynqmp_pm_invoke_fn(PM_FPGA_GET_VERSION, 0, 0, 0, 0, 0,
+				  ret_payload);
+	*value = ret_payload[1];
+
+	return ret;
 }
 
 int zynqmp_pm_fpga_get_feature_list(u32 *value)
 {
-	// Not implemeted yet ...
-    return -1;
+	u32 ret_payload[PAYLOAD_ARG_CNT];
+	int ret;
+
+	if (!value)
+		return -1; //EINVAL;
+
+	ret = zynqmp_pm_invoke_fn(PM_FPGA_GET_FEATURE_LIST, 0, 0, 0, 0, 0,
+				  ret_payload);
+	*value = ret_payload[1];
+
+	return ret;
 }
 
 #endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */

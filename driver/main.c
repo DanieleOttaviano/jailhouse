@@ -56,6 +56,7 @@
 #include "main.h"
 #include "pci.h"
 #include "sysfs.h"
+#include "fpga.h"
 
 #include <jailhouse/config.h>
 #include <jailhouse/header.h>
@@ -952,6 +953,31 @@ int jailhouse_cmd_qos(struct jailhouse_qos_args __user *arg)
 	return err;
 }
 
+int jailhouse_cmd_fpga_load(struct jailhouse_fpga_load __user *arg){
+	/* to do */
+
+	int err;
+	struct jailhouse_fpga_load fpga_load;
+	//fpga_load = (struct jailhouse_fpga_load*)kmalloc(sizeof(struct jailhouse_fpga_load),GFP_KERNEL);
+	if(copy_from_user(&fpga_load,arg,sizeof(struct jailhouse_fpga_load))){
+		return -EFAULT;
+	}
+	//questo fpga_load potrebbe essere passato all'hypervisor gia così com'è.
+	// QUINDI: in driver qualcosa per gestire i parametri e il fatto che è esclusivo
+	// poi qualcosa i  hypervisor. qui chiami solamente la funzione di driver
+	pr_info("Ioctl ricevuto:)\n\n");
+
+	err = jailhouse_fpga_load(&fpga_load);
+	/*settare i flag:
+	echo <flag> > /sys/class/fpga_manager/fpga0/flags*
+	caricamento del bitstream: Load the Bitstream 
+	mkdir -p /lib/firmware
+	cp percorso/del/bitstream /lib/firmware/
+	echo design_1_wrapper.bin > /sys/class/fpga_manager/fpga0/firmware*/
+
+	return err;
+}
+
 static long jailhouse_ioctl(struct file *file, unsigned int ioctl,
 			    unsigned long arg)
 {
@@ -987,6 +1013,10 @@ static long jailhouse_ioctl(struct file *file, unsigned int ioctl,
 		err = jailhouse_cmd_qos(
 				(struct jailhouse_qos_args __user *)arg);
 	    break;
+	case JAILHOUSE_FPGA_LOAD:
+		err = jailhouse_cmd_fpga_load(
+			(struct jailhouse_fpga_load __user *)arg);
+		break;
 	default:
 		err = -EINVAL;
 		break;

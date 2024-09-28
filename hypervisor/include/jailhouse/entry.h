@@ -29,6 +29,7 @@
 #define EINVAL		22
 #define ERANGE		34
 #define ENOSYS		38
+#define ENOTSUP     95
 
 struct per_cpu;
 struct cell;

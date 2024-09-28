@@ -23,6 +23,7 @@
 #include <asm/control.h>
 #include <asm/spinlock.h>
 #include <asm/coloring.h>
+#include <jailhouse/fpga-mgr.h>
 #ifdef __aarch64__
 /* QoS Support only provided on arm64 */
 #include <asm/qos.h>
@@ -1121,6 +1122,14 @@ static int cpu_get_info(struct per_cpu *cpu_data, unsigned long cpu_id,
 		return -EINVAL;
 }
 
+static int fpga_load(unsigned long info_address)
+{
+	printk("fpga LOAD <3\n");
+	//mappare info_address potrebbe essere leggermente più difficile.
+	return 0;
+
+}
+
 /**
  * Handle hypercall invoked by a cell.
  * @param code		Hypercall code.
@@ -1167,6 +1176,8 @@ long hypercall(unsigned long code, unsigned long arg1, unsigned long arg2)
 	case JAILHOUSE_HC_QOS:
 		return qos_call(arg1, arg2);
 #endif
+	case JAILHOUSE_HC_FPGA_LOAD:
+		return fpga_load(arg1);
 	default:
 		return -ENOSYS;
 	}

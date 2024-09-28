@@ -61,6 +61,7 @@ static const struct extension extensions[] = {
 	{ "config", "collect", "FILE.TAR" },
 	{ "config", "check", "[-h] SYSCONFIG [CELLCONFIG [CELLCONFIG ...]]" },
 	{ "hardware", "check", "" },
+	{ "fpga", "load","BITSTREAM FLAGS"},
 	{ NULL }
 };
 
@@ -638,6 +639,33 @@ exit_noalloc:
 	return -EINVAL;
 }
 
+static int fpga_load(int argc, char *argv[]){
+
+	int err,fd;
+
+	if(argc < 5)
+		help(argv[0],1);
+
+	struct jailhouse_fpga_load * fpga_load;
+	fpga_load = malloc(sizeof(struct jailhouse_fpga_load));
+	fpga_load->fpga_flags= atoi(argv[4]);
+	strncpy(fpga_load->fpga_name, argv[3], JAILHOUSE_BITSTREAM_NAME_LEN);
+
+	//DEBUG
+	printf("About to send ioctl. Arguments are: <bitstream>=%s, <flag>=%d\n\n",fpga_load->fpga_name,fpga_load->fpga_flags);
+
+	fd = open_dev();
+
+	err = ioctl(fd, JAILHOUSE_FPGA_LOAD, fpga_load);
+	if (err)
+		perror("JAILHOUSE_FPGA_LOAD");
+
+	close(fd);
+
+	return err;
+
+}
+
 static int cell_management(int argc, char *argv[])
 {
 	int err;
@@ -663,6 +691,24 @@ static int cell_management(int argc, char *argv[])
 	}
 
 	return err;
+}
+
+static int fpga_management(int argc, char *argv[])
+{
+	int err;
+	/* o è jailhouse fpga load <bitstream> <flags>
+	   o è jailhouse fpga get_state?? per ora 4 argomenti */
+	if(argc < 5)
+		help(argv[0],1);
+
+	if(strcmp(argv[2],"load")==0){
+		err = fpga_load(argc,argv);
+	} else {
+		/*call possible extensions script*/
+		help(argv[0],1);
+	}
+	return err;
+
 }
 
 static int memguard_cmd(int argc, char *argv[], unsigned int command)
@@ -765,6 +811,8 @@ int main(int argc, char *argv[])
 		help(argv[0], 1);
 	} else if (strcmp(argv[1], "qos") == 0) {
 		err = qos_cmd(argc, argv, JAILHOUSE_QOS);
+	} else if(strcmp(argv[1],"fpga") == 0){
+		err = fpga_management(argc,argv); 
 	} else if (strcmp(argv[1], "--version") == 0) {
 		printf("Jailhouse management tool %s\n", JAILHOUSE_VERSION);
 		return 0;

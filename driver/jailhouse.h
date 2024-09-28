@@ -45,6 +45,7 @@
 #include <jailhouse/memguard-common.h>
 
 #define JAILHOUSE_CELL_ID_NAMELEN	31
+#define JAILHOUSE_BITSTREAM_NAME_LEN 99
 
 struct jailhouse_cell_create {
 	__u64 config_address;
@@ -82,6 +83,11 @@ struct jailhouse_qos_args {
 	struct qos_setting settings[];
 };
 
+struct jailhouse_fpga_load {
+	__u32 fpga_flags;
+	char fpga_name[JAILHOUSE_BITSTREAM_NAME_LEN+1]; 
+};
+
 #define JAILHOUSE_CELL_ID_UNUSED	(-1)
 
 #define JAILHOUSE_ENABLE		_IOW(0, 0, void *)
@@ -93,4 +99,5 @@ struct jailhouse_qos_args {
 #define JAILHOUSE_MEMGUARD		_IOW(0, 6, struct jailhouse_memguard)
 #define JAILHOUSE_QOS			_IOW(0, 7, struct jailhouse_qos_args)
 
+#define JAILHOUSE_FPGA_LOAD		_IOW(0,8, struct jailhouse_fpga_load)
 #endif /* !_JAILHOUSE_DRIVER_H */

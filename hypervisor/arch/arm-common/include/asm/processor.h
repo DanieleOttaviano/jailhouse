@@ -13,6 +13,7 @@
 #define dmb(domain)	asm volatile("dmb " #domain ::: "memory")
 #define dsb(domain)	asm volatile("dsb " #domain ::: "memory")
 #define isb()		asm volatile("isb")
+#define wmb()		dsb(st)	/*funziona correttamente?*/
 
 #ifndef __ASSEMBLY__
 
