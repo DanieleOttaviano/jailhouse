@@ -85,43 +85,6 @@ struct fpga_compat_id {
 
 
 /**
- * struct fpga_manager_ops - ops for low level fpga manager drivers
- * @initial_header_size: minimum number of bytes that should be passed into
- *	parse_header and write_init.
- * @skip_header: bool flag to tell fpga-mgr core whether it should skip
- *	info->header_size part at the beginning of the image when invoking
- *	write callback.
- * @state: returns an enum value of the FPGA's state
- * @status: returns status of the FPGA, including reconfiguration error code
- * @parse_header: parse FPGA image header to set info->header_size and
- *	info->data_size. In case the input buffer is not large enough, set
- *	required size to info->header_size and return -EAGAIN.
- * @write_init: prepare the FPGA to receive configuration data
- * @write: write count bytes of configuration data to the FPGA
- * @write_sg: write the scatter list of configuration data to the FPGA
- * @write_complete: set FPGA to operating state after writing is done
- * @fpga_remove: optional: Set FPGA into a specific state during driver remove
- *
- * fpga_manager_ops are the low level functions implemented by a specific
- * fpga manager driver.  The optional ones are tested for NULL before being
- * called, so leaving them out is fine.
- */
-struct fpga_manager_ops {
-	size_t initial_header_size;
-	enum fpga_mgr_states (*state)(struct fpga_manager *mgr);
-	u64 (*status)(struct fpga_manager *mgr);
-	int (*write_init)(struct fpga_manager *mgr,
-			  struct fpga_image_info *info,
-			  const char *buf, size_t count);
-	int (*write)(struct fpga_manager *mgr, const char *buf, size_t count);
-	//int (*write_sg)(struct fpga_manager *mgr, struct sg_table *sgt);
-	int (*write_complete)(struct fpga_manager *mgr,
-			      struct fpga_image_info *info);
-	int (*read)(struct fpga_manager *mgr/* , struct seq_file *s */);
-	void (*fpga_remove)(struct fpga_manager *mgr);
-};
-
-/**
  * struct fpga_manager - fpga manager structure
  * @name: name of low level fpga manager
  * @flags: flags determines the type of Bitstream
@@ -141,13 +104,22 @@ struct fpga_manager {
 	//struct mutex ref_mutex; NIN MI SEVRE
 	enum fpga_mgr_states state;
 	struct fpga_compat_id *compat_id;
-	const struct fpga_manager_ops *mops;
+	//const struct fpga_manager_ops *mops;
 	void *priv;
 	int err;
 };
 
-
+/* 
 struct fpga_manager * fpga_mgr_create(const char *name,
-			 const struct fpga_manager_ops *mops, void *priv);
+			 const struct fpga_manager_ops *mops, void *priv); */
 
+int fpga_buf_load(struct fpga_image_info *info);
+int init_fpga(void);
+
+/*TODO
+enum fpga_mgr_states arch_fpga_state(struct fpga_manager* mgr);
+u64 arch_fpga_status(struct fpga_manager* mgr);
+arch_fpga_read(struct fpga_manager* mgr,char* buf);
+...read configuration registers??
+*/
 #endif /* _JAILHOUSE_FPGA_MGR_H*/

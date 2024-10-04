@@ -652,7 +652,7 @@ static int fpga_load(int argc, char *argv[]){
 	strncpy(fpga_load->fpga_name, argv[3], JAILHOUSE_BITSTREAM_NAME_LEN);
 
 	//DEBUG
-	printf("About to send ioctl. Arguments are: <bitstream>=%s, <flag>=%d\n\n",fpga_load->fpga_name,fpga_load->fpga_flags);
+	//printf("About to send ioctl. Arguments are: <bitstream>=%s, <flag>=%d\n\n",fpga_load->fpga_name,fpga_load->fpga_flags);
 
 	fd = open_dev();
 

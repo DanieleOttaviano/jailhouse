@@ -31,6 +31,7 @@
 #if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 #include <asm/zynqmp-r5.h>
 #endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
+#include <jailhouse/fpga-mgr.h>
 
 enum msg_type {MSG_REQUEST, MSG_INFORMATION};
 enum failure_mode {ABORT_ON_ERROR, WARN_ON_ERROR};
@@ -1125,8 +1126,62 @@ static int cpu_get_info(struct per_cpu *cpu_data, unsigned long cpu_id,
 static int fpga_load(unsigned long info_address)
 {
 	printk("fpga LOAD <3\n");
-	//mappare info_address potrebbe essere leggermente più difficile.
-	return 0;
+	unsigned long info_page_offs = info_address & PAGE_OFFS_MASK;
+	//unsigned long fw_page_offs;
+	unsigned int info_pages;//, fw_pages;
+	void* info_mapping;
+	//void* fw_mapping;
+	//unsigned long fw_address;
+	struct fpga_image_info *info;
+	int ret = 0;
+	//char * firmware;
+
+	info_pages = PAGES(info_page_offs + sizeof(struct fpga_image_info));
+	info_mapping = paging_get_guest_pages(NULL, info_address,
+						info_pages,
+						PAGE_READONLY_FLAGS | PAGING_HUGE) ; //ok?
+
+	if(!info_mapping)
+		return -ENOMEM;
+	
+
+	info = (struct fpga_image_info*)(info_mapping+info_page_offs);
+	/* fw_address= (unsigned long) info->buf;
+	fw_page_offs = fw_address & PAGE_OFFS_MASK;
+	fw_pages = PAGES(fw_page_offs+(info->count));
+	printk("fw_pages %u = %lu + %u\n",fw_pages,fw_page_offs,info->count);
+	fw_mapping = paging_get_guest_pages(NULL, fw_address,
+						fw_pages,
+						PAGE_READONLY_FLAGS | PAGING_HUGE) ;
+	if(!fw_mapping)
+		return -ENOMEM;
+
+	firmware = (char*)(fw_mapping+fw_page_offs);
+ */
+	//ti credo
+	printk("Firmware name is: %s\n",info->firmware_name);
+	//printk("Firmware address is: %p\n",firmware);
+	
+	//deve essere messo da qualche altra parte!!!
+	ret = init_fpga();
+	//struct fpga_manager * mgr = get_fpga_manager();
+	//info->flags = 0;
+	ret = fpga_buf_load(info);
+
+/*
+	fw_page_offs = info->firmware_address & PAGE_OFFS_MASK;
+	fw_pages = PAGES(fw_page_offs + info->count);
+	printk("Number of pages is %d",fw_pages);
+	fw_mapping = paging_get_guest_pages(NULL, info->firmware_address,
+						fw_pages,
+						PAGE_FLAG_DEVICE);
+
+	if(!fw_mapping)
+		return -ENOMEM;
+
+	firmware = (char*) (fw_mapping + fw_page_offs);
+	printk("First byte of firmware is: %02x\n", firmware[0]); */
+	return ret;
 
 }
 

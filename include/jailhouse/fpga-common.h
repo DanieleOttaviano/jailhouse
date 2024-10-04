@@ -1,7 +1,10 @@
-#ifndef _JAILHOUSE_FPGA_H
-#define _JAILHOUSE_FPGA_H
+#ifndef _JAILHOUSE_FPGA_COMMON_H
+#define _JAILHOUSE_FPGA_COMMON_H
+
+//#define BIT(nr)			(1 << (nr))
 
 #define ENCRYPTED_KEY_LEN	64 /* Bytes */
+#define FIRMWARE_NAME_MAX_LEN 256
 
 struct fpga_image_info {
     unsigned int flags;
@@ -9,9 +12,10 @@ struct fpga_image_info {
 	u32 disable_timeout_us;
 	u32 config_complete_timeout_us; servono ?*/ 
     char key[ENCRYPTED_KEY_LEN];
-    char *firmware_name;
-    const char *buf;
+    char firmware_name[FIRMWARE_NAME_MAX_LEN];
 	unsigned int count;
+    const char *buf;
+   // unsigned long firmware_address;
 	/*int region_id;serve?*/
 };
 
@@ -50,4 +54,4 @@ struct fpga_image_info {
 
 
 
-#endif /* _JAILHOUSE_FPGA_H*/
+#endif /* _JAILHOUSE_FPGA_COMMON_H*/

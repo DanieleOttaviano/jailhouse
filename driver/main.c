@@ -965,7 +965,7 @@ int jailhouse_cmd_fpga_load(struct jailhouse_fpga_load __user *arg){
 	//questo fpga_load potrebbe essere passato all'hypervisor gia così com'è.
 	// QUINDI: in driver qualcosa per gestire i parametri e il fatto che è esclusivo
 	// poi qualcosa i  hypervisor. qui chiami solamente la funzione di driver
-	pr_info("Ioctl ricevuto:)\n\n");
+	//pr_info("Ioctl ricevuto:)\n\n");
 
 	err = jailhouse_fpga_load(&fpga_load);
 	/*settare i flag:
@@ -1015,7 +1015,7 @@ static long jailhouse_ioctl(struct file *file, unsigned int ioctl,
 	    break;
 	case JAILHOUSE_FPGA_LOAD:
 		err = jailhouse_cmd_fpga_load(
-			(struct jailhouse_fpga_load __user *)arg);
+				(struct jailhouse_fpga_load __user *)arg);
 		break;
 	default:
 		err = -EINVAL;

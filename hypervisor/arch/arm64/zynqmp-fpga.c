@@ -1,14 +1,12 @@
-/* JAILHOUSE FPGA SUPPORT*/
-// SPDX-License-Identifier: GPL-2.0+
-/*
- * Copyright (C) 2019 Xilinx, Inc.
- */
 
-#include <jailhouse/fpga-mgr.h>
-#include <jailhouse/entry.h>
+#include <jailhouse/fpga-arch.h>
+#if defined(CONFIG_MACH_ZYNQMP)
 #include <asm/zynqmp-pm.h>
-#include <asm/processor.h>
+#include <jailhouse/paging.h>
 #include <jailhouse/fpga-common.h>
+#include <jailhouse/printk.h>
+
+#define BIT(nr)			(1 << (nr))
 
 /* Constant Definitions */
 #define IXR_FPGA_DONE_MASK	BIT(3)
@@ -42,38 +40,6 @@
 				 XILINX_ZYNQMP_PM_FPGA_ENCRYPTION_DEVKEY | \
 				 XILINX_ZYNQMP_PM_FPGA_READ_BACK | \
 				 XILINX_ZYNQMP_PM_FPGA_REG_READ_BACK)
-/**
- * struct zynqmp_configreg - Configuration register offsets
- * @reg:	Name of the configuration register.
- * @offset:	Register offset.
- */
-struct zynqmp_configreg {
-	char *reg;
-	u32 offset;
-};
-
-static struct zynqmp_configreg cfgreg[] = {
-	{.reg = "CRC",		.offset = 0},
-	{.reg = "FAR",		.offset = 1},
-	{.reg = "FDRI",		.offset = 2},
-	{.reg = "FDRO",		.offset = 3},
-	{.reg = "CMD",		.offset = 4},
-	{.reg = "CTRL0",	.offset = 5},
-	{.reg = "MASK",		.offset = 6},
-	{.reg = "STAT",		.offset = 7},
-	{.reg = "LOUT",		.offset = 8},
-	{.reg = "COR0",		.offset = 9},
-	{.reg = "MFWR",		.offset = 10},
-	{.reg = "CBC",		.offset = 11},
-	{.reg = "IDCODE",	.offset = 12},
-	{.reg = "AXSS",		.offset = 13},
-	{.reg = "COR1",		.offset = 14},
-	{.reg = "WBSTR",	.offset = 16},
-	{.reg = "TIMER",	.offset = 17},
-	{.reg = "BOOTSTS",	.offset = 22},
-	{.reg = "CTRL1",	.offset = 24},
-	{}
-};
 
 
 /**
@@ -93,30 +59,28 @@ struct zynqmp_fpga_priv {
 	u32 size;
 };
 
+int arch_fpga_init(struct fpga_manager* mgr){
 
-static enum fpga_mgr_states zynqmp_fpga_ops_state(struct fpga_manager *mgr)
-{
-	u32 status = 0;
+    struct zynqmp_fpga_priv * priv= page_alloc(&mem_pool,1);
+    if(!priv)
+        return -ENOMEM;
+    mgr->priv = priv;
 
-	zynqmp_pm_fpga_get_status(&status);
-	if (status & IXR_FPGA_DONE_MASK)
-		return FPGA_MGR_STATE_OPERATING;
+    if (!(zynqmp_pm_fpga_get_version(&priv->version))) {
+		if (zynqmp_pm_fpga_get_feature_list(&priv->feature_list))
+			priv->feature_list = DEFAULT_FEATURE_LIST;
+	} else {
+		priv->feature_list = DEFAULT_FEATURE_LIST;
+	} 
+    return 0;
 
-	return FPGA_MGR_STATE_UNKNOWN;
 }
 
-static struct fpga_manager *zynqmp_fpga_mgr = NULL;
-
-struct fpga_manager* get_fpga_manager(){
-	return zynqmp_fpga_mgr;
-}
-
-static int zynqmp_fpga_ops_write_init(struct fpga_manager *mgr,
-				      struct fpga_image_info *info,
-				      const char *buf, size_t size)
+int arch_fpga_write_init(struct fpga_manager* mgr, struct fpga_image_info *info,
+				    const char *buf, size_t size)
 {
-	struct zynqmp_fpga_priv *priv;
-	int  eemi_flags = 0;
+    struct zynqmp_fpga_priv *priv;
+	int eemi_flags = 0;
 
 	priv = mgr->priv;
 	priv->flags = info->flags; // capire
@@ -130,24 +94,28 @@ static int zynqmp_fpga_ops_write_init(struct fpga_manager *mgr,
 		eemi_flags |= XILINX_ZYNQMP_PM_FPGA_AUTHENTICATION_DDR;
 	else if (priv->flags & FPGA_MGR_SECURE_MEM_AUTH_BITSTREAM)
 		eemi_flags |= XILINX_ZYNQMP_PM_FPGA_AUTHENTICATION_OCM;
-	if (priv->flags & FPGA_MGR_PARTIAL_RECONFIG)
+	if (info->flags & FPGA_MGR_PARTIAL_RECONFIG)
 		eemi_flags |= XILINX_ZYNQMP_PM_FPGA_PARTIAL;
 
 	/* Validate user flgas with firmware feature list */
-	if ((priv->feature_list & eemi_flags) != eemi_flags)
+	if ((int)(priv->feature_list & eemi_flags) != eemi_flags)
 		return -EINVAL;
+
 
 	return 0;
 }
 
-static int zynqmp_fpga_ops_write(struct fpga_manager *mgr,
-				 const char *buf, size_t size)
-{
-	/*BISOGNO DEL DMA*/
+int arch_fpga_write_complete(struct fpga_manager* mgr, struct fpga_image_info *info){
+    //Nothing to be done
+    return 0;
+}
+
+int arch_fpga_write(struct fpga_manager *mgr, const char *buf, size_t size){
+
 	struct zynqmp_fpga_priv *priv;
 	int word_align, ret, index;
 	//dma_addr_t dma_addr = 0;
-	const u64 dma_addr=0;
+	//u64 dma_addr=0;
 	u32 eemi_flags = 0;
 	u16 dma_size;
 	u32 status;
@@ -167,13 +135,24 @@ static int zynqmp_fpga_ops_write(struct fpga_manager *mgr,
 		dma_size = size;
 
 	//kbuf = dma_alloc_coherent(priv->dev, dma_size, &dma_addr, GFP_KERNEL);
-	if (!kbuf)
-		return -ENOMEM;
-
+	printk("Sto mappando\n");
+	unsigned long phyiscal_address = 0x7f000000;
+	kbuf = paging_map_device(phyiscal_address,dma_size);
+	//kbuf = (char*) phyiscal_address;
+	if (!kbuf){
+		printk("Memory allocation failed\n");
+		return -ENOMEM;}
+	printk("Ho mappato\n");
+	
+	printk("kbuf è %p, &kbuf[word_align] è %p\n",kbuf,&kbuf[word_align]);
+	memmove(kbuf,&kbuf[word_align],size-word_align);
+	printk("ho fatto memmove\n");
 	for (index = 0; index < word_align; index++)
 		kbuf[index] = DUMMY_PAD_BYTE;
-
-	memcpy(&kbuf[index], buf, size - index);
+	printk("Ho scritto dummy, index era %d, wa era %d\n",index,word_align);
+	//dma_addr = (u64) buf;
+	/*memcpy(&kbuf[index], buf, size - index); //VORREI DIRETTAMENTE METTERE FW QUA :((((()))))
+	printk("Ho memcopiato\n");*/
 
 	if (priv->flags & FPGA_MGR_USERKEY_ENCRYPTED_BITSTREAM) {
 		eemi_flags |= XILINX_ZYNQMP_PM_FPGA_ENCRYPTION_USERKEY;
@@ -183,6 +162,8 @@ static int zynqmp_fpga_ops_write(struct fpga_manager *mgr,
 	}
 
 	wmb(); /* ensure all writes are done before initiate FW call */
+	//flush; coerenza non gestita dal dma.
+	//dma_addr = _paging_virt2phys)
 
 	if (priv->flags & FPGA_MGR_DDR_MEM_AUTH_BITSTREAM)
 		eemi_flags |= XILINX_ZYNQMP_PM_FPGA_AUTHENTICATION_DDR;
@@ -192,26 +173,47 @@ static int zynqmp_fpga_ops_write(struct fpga_manager *mgr,
 	if (priv->flags & FPGA_MGR_PARTIAL_RECONFIG)
 		eemi_flags |= XILINX_ZYNQMP_PM_FPGA_PARTIAL;
 
-	if (priv->flags & FPGA_MGR_USERKEY_ENCRYPTED_BITSTREAM)
+	/*  if (priv->flags & FPGA_MGR_USERKEY_ENCRYPTED_BITSTREAM)
 		ret = zynqmp_pm_fpga_load(dma_addr, dma_addr + size,
 					  eemi_flags, &status);
 	else
 		ret = zynqmp_pm_fpga_load(dma_addr, size,
-					  eemi_flags, &status);
-
+					  eemi_flags, &status); 
+ */
 	//dma_free_coherent(priv->dev, dma_size, kbuf, dma_addr);
+	//page_free(&mem_pool,kbuf,PAGES(dma_size));	
+	paging_unmap_device(phyiscal_address,kbuf,dma_size);
 
 	if (status)
 		return status;
 
 	return ret;
+
+
 }
 
 
-static u64 zynqmp_fpga_ops_status(struct fpga_manager *mgr)
+size_t arch_fpga_initial_header_size(){
+    //no need for this specific fpga
+    return 0;
+}
+
+
+/*TODO
+enum fpga_mgr_states arch_fpga_state(struct fpga_manager* mgr){
+    
+    u32 status = 0;
+
+	zynqmp_pm_fpga_get_status(&status);
+	if (status & IXR_FPGA_DONE_MASK)
+		return FPGA_MGR_STATE_OPERATING;
+
+	return FPGA_MGR_STATE_UNKNOWN;
+}
+
+u64 arch_fpga_status(struct fpga_manager* mgr)
 {
-	/*BISOGNO DEL DMA*/
-	unsigned int *buf, reg_val;
+	unsigned int *buf=NULL, reg_val;
 	//dma_addr_t dma_addr = 0;
 	u64 dma_addr = 0;
 	u64 status = 0;
@@ -245,50 +247,13 @@ static u64 zynqmp_fpga_ops_status(struct fpga_manager *mgr)
 free_dmabuf:
 	//dma_free_coherent(mgr->dev.parent, READ_DMA_SIZE, buf, dma_addr);
 
-	return status;
+	return status;}
+
+int arch_fpga_read(struct fpga_manager* mgr,char* buf){
+.....
 }
-
-static int zynqmp_fpga_ops_read(struct fpga_manager *mgr,/* struct seq_file *s*/)
-{
-	/* int ret;
-
-	if (readback_type)
-		ret = zynqmp_fpga_read_cfgdata(mgr, s);
-	else
-		ret = zynqmp_fpga_read_cfgreg(mgr, s);
-
-	return ret; */
-
-	//TO BE IMPLEMENTED
-	return -1;
-}
+...read configuration registers??
+*/
 
 
-static const struct fpga_manager_ops zynqmp_fpga_ops = {
-	.state = zynqmp_fpga_ops_state,
-	.status = zynqmp_fpga_ops_status,
-	.write_init = zynqmp_fpga_ops_write_init,
-	.write = zynqmp_fpga_ops_write,
-	//.write_sg = zynqmp_fpga_ops_write_sg, non crdo serva
-	.read = zynqmp_fpga_ops_read,
-};
-
-int zynqmp_fpga_init(){
-	
-	int ret=0;
-	struct zynqmp_fpga_priv *priv;
-
-	if (!(zynqmp_pm_fpga_get_version(&priv->version))) { //GET VERSION E GET FEATURE LIST SONO DEL DRIVER DI BASSO LIVELLO
-		if (zynqmp_pm_fpga_get_feature_list(&priv->feature_list))
-			priv->feature_list = DEFAULT_FEATURE_LIST;
-	} else {
-		priv->feature_list = DEFAULT_FEATURE_LIST;
-	}
-	zynqmp_fpga_mgr = fpga_mgr_create("Xilinx ZynqMP FPGA Manager (Jailhouse)",&zynqmp_fpga_ops,priv);
-	if(!zynqmp_fpga_mgr)
-		ret = -EINVAL;
-
-	return ret;
-
-
-}
+#endif /*CONFIG_MACH_ZYNQMP*/

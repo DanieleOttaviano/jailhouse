@@ -139,9 +139,16 @@ struct {
 		/* RAM */ {
 			.phys_start = 0x00000000,
 			.virt_start = 0x00000000,
-			.size = 0x80000000,
+			.size = 0x7f0000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
+		},
+		/*firmware memory*/
+		{
+			.phys_start = 0x7f000000,
+			.virt_start = 0x7f000000,
+			.size = 0x1000000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE,
 		},
 		/* RAM */ 
 		{
@@ -151,7 +158,6 @@ struct {
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
-
 		/* PCI host bridge */
 		{
 			.phys_start = 0x8000000000,
