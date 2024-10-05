@@ -117,9 +117,8 @@ int fpga_buf_load(struct fpga_image_info *info);
 int init_fpga(void);
 
 /*TODO
-enum fpga_mgr_states arch_fpga_state(struct fpga_manager* mgr);
-u64 arch_fpga_status(struct fpga_manager* mgr);
-arch_fpga_read(struct fpga_manager* mgr,char* buf);
+u64 fpga_status(struct fpga_manager* mgr);
+fpga_read(struct fpga_manager* mgr,char* buf);
 ...read configuration registers??
 */
 #endif /* _JAILHOUSE_FPGA_MGR_H*/

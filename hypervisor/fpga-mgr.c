@@ -5,6 +5,7 @@
 
 static struct fpga_manager* mgr = NULL;
 
+
 /*
  * Call the low level driver's write_init function.  This will do the
  * device-specific things to get the FPGA into the state where it is ready to
@@ -87,10 +88,12 @@ int fpga_buf_load(struct fpga_image_info *info){
 int init_fpga(){
 	
     mgr = page_alloc(&mem_pool, PAGES(sizeof(struct fpga_manager)));
-
+	//NE ABBIAMO BISOGNO???
     if(!mgr){
 		return -ENOMEM;
 	}    
-	
+	mgr->err =0;
+	mgr->state = arch_fpga_state();
+
 	return arch_fpga_init(mgr);
 }

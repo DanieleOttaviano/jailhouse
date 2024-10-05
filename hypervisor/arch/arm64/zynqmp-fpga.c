@@ -72,8 +72,21 @@ int arch_fpga_init(struct fpga_manager* mgr){
 	} else {
 		priv->feature_list = DEFAULT_FEATURE_LIST;
 	} 
+
+	mgr->name = "Xilinx ZynqMP FPGA Manager - Jailhouse";
+
     return 0;
 
+}
+
+enum fpga_mgr_states arch_fpga_state(){
+
+	u32 status = 0;
+
+	zynqmp_pm_fpga_get_status(&status);
+	if (status & IXR_FPGA_DONE_MASK)
+		return FPGA_MGR_STATE_OPERATING;
+	return FPGA_MGR_STATE_UNKNOWN;
 }
 
 int arch_fpga_write_init(struct fpga_manager* mgr, struct fpga_image_info *info,
@@ -120,14 +133,17 @@ int arch_fpga_write(struct fpga_manager *mgr, const char *buf, size_t size){
 	u16 dma_size;
 	u32 status;
 	char *kbuf;
+	
 
 	priv = mgr->priv;
 	word_align = size % FPGA_WORD_SIZE;
 	if (word_align)
 		word_align = FPGA_WORD_SIZE - word_align;
 
+	printk("bitstream size was %lu, word align is %d\n",size,word_align);
 	size = size + word_align;
 	priv->size = size;
+	printk("now size is %lu\n",size);
 
 	if (priv->flags & FPGA_MGR_USERKEY_ENCRYPTED_BITSTREAM)
 		dma_size = size + ENCRYPTED_KEY_LEN;
@@ -145,7 +161,18 @@ int arch_fpga_write(struct fpga_manager *mgr, const char *buf, size_t size){
 	printk("Ho mappato\n");
 	
 	printk("kbuf è %p, &kbuf[word_align] è %p\n",kbuf,&kbuf[word_align]);
-	memmove(kbuf,&kbuf[word_align],size-word_align);
+	//memmove(kbuf,&kbuf[word_align],size-word_align);
+/* 	for(index = size-2; index > 0; index--){
+		printk("Moving kbuf[%d] into kbuf[%d]\n",index,index+word_align);
+		kbuf[index+word_align] = kbuf[index];
+	} */
+/* size_t i;
+	for (i = 0; i < 1000; i++){
+		printk("kbuf[%ld]=%x\n",i+8000,kbuf[i+8000]);
+	}  */
+	printk("kbuf[%d]=%x, address is %p\n",80190,kbuf[8191],&kbuf[8191]);
+	printk("kbuf[%d]=%x, address is %p\n",80192,kbuf[8192],&kbuf[8192]);
+
 	printk("ho fatto memmove\n");
 	for (index = 0; index < word_align; index++)
 		kbuf[index] = DUMMY_PAD_BYTE;
