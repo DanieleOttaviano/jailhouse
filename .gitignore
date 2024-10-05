@@ -35,3 +35,10 @@ tools/jailhouse-enable.8
 tools/jailhouse-gcov-extract
 tools/jailhouse.8
 hypervisor/jailhouse.bin
+0001-Revert-Added-conditional-compilation-for-KERNEL-5.15.patch
+driver/main.c.orig
+driver/main.c.rej
+hypervisor/fpga-mgr.c.old
+hypervisor/arch/arm64/zynqmp-fpga.c.old
+hypervisor/arch/arm64/include/asm/zynqmp-fpga.h.old
+hypervisor/include/jailhouse/fpga-mgr.h.old
