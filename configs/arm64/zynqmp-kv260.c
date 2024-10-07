@@ -21,7 +21,6 @@
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	__u64 rcpus[1];
 	struct jailhouse_memory mem_regions[24];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
@@ -99,7 +98,6 @@ struct {
 			.name = "ZynqMP-KV260",
 
 			.cpu_set_size = sizeof(config.cpus),
-			.rcpu_set_size = sizeof(config.rcpus), 
 			.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 			.num_irqchips = ARRAY_SIZE(config.irqchips),
 			.num_pci_devices = ARRAY_SIZE(config.pci_devices),
@@ -114,22 +112,11 @@ struct {
 		0xf,
 	},
 
-	.rcpus = {
-		0x7, // RPU0, RPU1, RISC-C (soft-core)
-	},
-
 	.mem_regions = {
 		/* IVSHMEM shared memory region for 0001:00:00.0 */
 		JAILHOUSE_SHMEM_NET_REGIONS(0x060000000, 0),
 		/* IVSHMEM shared memory region for 0001:00:01.0 */
 		JAILHOUSE_SHMEM_NET_REGIONS(0x060100000, 0),
-		/* FPGA configuration ports */ {
-			.phys_start = 0x80000000,
-			.virt_start = 0x80000000,
-			.size = 0x00100000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_IO,
-		},
 		/* MMIO (permissive) */ {
 			.phys_start = 0xfd000000,
 			.virt_start = 0xfd000000,
