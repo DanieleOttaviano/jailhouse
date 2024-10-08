@@ -35,6 +35,17 @@ by appending these defines:
 #define CONFIG_XMPU_ACTIVE    1
 ```
 
+Specifically, for zynqmp platform this is the suggested configuration:
+
+```c
+#define CONFIG_MACH_ZYNQMP_ZCU102 1 
+#define CONFIG_TRACE_ERROR        1
+#define CONFIG_ARM_GIC_V2 	      1
+#define CONFIG_DEBUG              1
+#define CONFIG_OMNIVISOR          1
+#define CONFIG_XMPU_ACTIVE        1
+```
+
 - `CONFIG_OMNIVISOR`: Enables the Omnivisor capability to create, load, and 
                       start on remote CPUs, such as the RPUs in the ZynqMP 
                       platforms.
