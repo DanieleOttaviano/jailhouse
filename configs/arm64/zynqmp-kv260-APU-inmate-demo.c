@@ -19,7 +19,6 @@
 struct {
 	struct jailhouse_cell_desc cell;
 	__u64 cpus[1];
-	__u64 rcpus[1];
 	struct jailhouse_memory mem_regions[5];
 	struct jailhouse_irqchip irqchips[1];
 } __attribute__((packed)) config = {
@@ -31,7 +30,6 @@ struct {
 		.flags = JAILHOUSE_CELL_PASSIVE_COMMREG,
 
 		.cpu_set_size = sizeof(config.cpus),
-		.rcpu_set_size = sizeof(config.rcpus),
 		.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 		.num_irqchips = ARRAY_SIZE(config.irqchips),
 		.num_pci_devices = 0,
@@ -46,9 +44,6 @@ struct {
 
 	.cpus = {
 		0x1,
-	},
-	.rcpus = {
-		0x0,
 	},
 	.mem_regions = {
 		/* UART */ {

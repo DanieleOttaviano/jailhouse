@@ -454,28 +454,30 @@ static void cell_destroy_internal(struct cell *cell)
 
 #if defined(CONFIG_OMNIVISOR)	
 	// For each rCPU, power them off
-	for_each_cpu(cpu, cell->rcpu_set) {
-		// to do ... call platform and architectueral specific arch_park_rcpu and modify public_per_rcpu stats
+	if (cell->config->rcpu_set_size > 0) {
+		for_each_cpu(cpu, cell->rcpu_set) {
+			// to do ... call platform and architectueral specific arch_park_rcpu and modify public_per_rcpu stats
 #if defined(CONFIG_MACH_ZYNQMP_ZCU102)
-		printk("Stopping rCPU %d\r\n", cpu);
-		if(cpu == 0){
-			zynqmp_r5_stop(NODE_RPU_0);
-		}
-		else if(cpu == 1){
-			zynqmp_r5_stop(NODE_RPU_1);
-		}
-		else if (cpu == 2){
-			// The page is already being mapped during the startup of the rCPU
-			volatile u32* riscv_start = (u32*)0x80000000;
-			// Reset state UP
-			riscv_start[0] = 1;
-		}
-		else{
-			printk("rCPU doesn't exist\r\n");
-		}
+			printk("Stopping rCPU %d\r\n", cpu);
+			if(cpu == 0){
+				zynqmp_r5_stop(NODE_RPU_0);
+			}
+			else if(cpu == 1){
+				zynqmp_r5_stop(NODE_RPU_1);
+			}
+			else if (cpu == 2){
+				// The page is already being mapped during the startup of the rCPU
+				volatile u32* riscv_start = (u32*)0x80000000;
+				// Reset state UP
+				riscv_start[0] = 1;
+			}
+			else{
+				printk("rCPU doesn't exist\r\n");
+			}
 #endif /* CONFIG_MACH_ZYNQMP_ZCU102 */
-		set_bit(cpu, root_cell.rcpu_set->bitmap);
-	}	
+			set_bit(cpu, root_cell.rcpu_set->bitmap);
+		}	
+	}
 #endif /* CONFIG_OMNIVISOR */
 	
 	for_each_mem_region(mem, cell->config, n) {
@@ -589,11 +591,15 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 
 #if defined(CONFIG_OMNIVISOR)
 	/* the root cell's rCPU set must be super-set of new cell's set */
-	for_each_cpu(cpu, cell->rcpu_set)
-		if (!cell_owns_rcpu(&root_cell, cpu)) {
-			err = trace_error(-EBUSY);
-			goto err_cell_exit;
-		}
+	printk("Cell rCPU set size: %d\r\n", cell->config->rcpu_set_size);
+	if (cell->config->rcpu_set_size > 0) {
+		for_each_cpu(cpu, cell->rcpu_set)
+			if (!cell_owns_rcpu(&root_cell, cpu)) {
+				err = trace_error(-EBUSY);
+				goto err_cell_exit;
+			}
+	}
+	printk("Cell has rCPU set\r\n");
 #endif /* CONFIG_OMNIVISOR */
 
 	err = arch_cell_create(cell);
@@ -624,13 +630,16 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 
 #if defined(CONFIG_OMNIVISOR)
 	// to do ... public per rcpu managment	
-	for_each_cpu(cpu, cell->rcpu_set) {
-		//arch_park_cpu(cpu);
-		clear_bit(cpu, root_cell.rcpu_set->bitmap);
-		//public_per_cpu(cpu)->cell = cell;
-		//memset(public_per_cpu(cpu)->stats, 0,
-		//       sizeof(public_per_cpu(cpu)->stats));
+	if (cell->config->rcpu_set_size > 0) {
+		for_each_cpu(cpu, cell->rcpu_set) {
+			//arch_park_cpu(cpu);
+			clear_bit(cpu, root_cell.rcpu_set->bitmap);
+			//public_per_cpu(cpu)->cell = cell;
+			//memset(public_per_cpu(cpu)->stats, 0,
+			//       sizeof(public_per_cpu(cpu)->stats));
+		}
 	}
+	printk("Cell rCPU bitmap cleared\r\n");
 #endif /* CONFIG_OMNIVISOR */
 
 	/*
@@ -793,36 +802,38 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 
 #if defined(CONFIG_OMNIVISOR)
 	// For each rCPU
-	for_each_cpu(cpu, cell->rcpu_set) {
+	if (cell->config->rcpu_set_size > 0) {
+		for_each_cpu(cpu, cell->rcpu_set) {
 #if defined(CONFIG_MACH_ZYNQMP_ZCU102)	
-		// to do ... call platform and architectueral specific arch_reset_rcpu
-		printk("Starting rCPU %d\r\n", cpu);
-		if(cpu == 0){
-			zynqmp_r5_start(NODE_RPU_0,(u32)0x03ed0000);
-		}
-		else if(cpu == 1){
-			zynqmp_r5_start(NODE_RPU_1,(u32)0x03ad0000);
-		}
-		else if(cpu == 2){ // to do ... add other riscv cores
-			// Mapping of the page where the configuration port is located
-			err = paging_create(&hv_paging_structs, 0x80000000, PAGE_SIZE,
-				0x80000000, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
-			if (err){
-				printk("paging_create for fpga configuration port failed\r\n");
+			// to do ... call platform and architectueral specific arch_reset_rcpu
+			printk("Starting rCPU %d\r\n", cpu);
+			if(cpu == 0){
+				zynqmp_r5_start(NODE_RPU_0,(u32)0x03ed0000);
+			}
+			else if(cpu == 1){
+				zynqmp_r5_start(NODE_RPU_1,(u32)0x03ad0000);
+			}
+			else if(cpu == 2){ // to do ... add other riscv cores
+				// Mapping of the page where the configuration port is located
+				err = paging_create(&hv_paging_structs, 0x80000000, PAGE_SIZE,
+					0x80000000, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
+				if (err){
+					printk("paging_create for fpga configuration port failed\r\n");
+				}
+				else{
+					// Reset the core
+					volatile u32* riscv_start = (u32*)0x80000000;
+					riscv_start[0] = 1;
+					riscv_start[0] = 0;
+				}
 			}
 			else{
-				// Reset the core
-				volatile u32* riscv_start = (u32*)0x80000000;
-				riscv_start[0] = 1;
-				riscv_start[0] = 0;
+				printk("rCPU doesn't exist\r\n");
+				return -1;
 			}
-		}
-		else{
-			printk("rCPU doesn't exist\r\n");
-			return -1;
-		}
 #endif /* CONFIG_MACH_ZYNQMP_ZCU102 */
-	}	
+		}	
+	}
 #endif /* CONFIG_OMNIVISOR */
 
 	printk("Started cell \"%s\"\n", cell->config->name);
