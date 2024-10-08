@@ -5,15 +5,16 @@ Omnivisor Support
 Introduction
 ------------
 
-The Omnivisor is an experimental research project focused on enhancing the 
+The Omnivisor is an experimental research project aimed at enhancing the 
 capabilities of static partitioning hypervisors (SPH) to manage asymmetric 
 cores.
 
 ### Motivation
-There is a trend nowadays of building extreme heterogeneous MPSoCs with
-asymmetric cores on a single platform such as Cortex-A and Cortex-R/M. 
-The idea of Omnivisor is to extend the Jailhouse capability to manage
-such asymmetric cores and run isolated cells on these cores.
+With the increasing trend of building highly heterogeneous MPSoCs that feature
+asymmetric cores, such as Cortex-A and Cortex-R/M, there is a need for advanced
+management solutions. The Omnivisor project seeks to extend Jailhouse's capabilities
+to effectively manage these asymmetric cores, enabling the execution of isolated
+cells on them.
 
 Usage
 -----
@@ -41,7 +42,7 @@ between asymmetric cores by enabling the run-time configuration of the
 system-MPUs (XMPUs in Xilinx terminology)
 
 ### Test Omnivisor
-To test the Omnivisor first compile the hypervisor with the actual configuration
+To test the Omnivisor, compile the hypervisor with the actual configuration
 and load it in the platform. 
 
 ```sh
@@ -52,7 +53,7 @@ To compile also the remote CPUs inmates demos you should manually compile for
 the desired architecture. e.g. in case of the Cortex-R5: 
 
 ```sh
-REMOTE_COMPILE=arm-none-eabi-
+export REMOTE_COMPILE=arm-none-eabi-
 make -C "${jailhouse_dir}" remote_armr5 REMOTE_COMPILE="${REMOTE_COMPILE}" 
 ```
 
