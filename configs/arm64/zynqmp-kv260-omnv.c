@@ -115,7 +115,7 @@ struct {
 	},
 
 	.rcpus = {
-		0x7, // RPU0, RPU1, RISC-C (soft-core)
+		0x7, // RPU0, RPU1, RISC-V (soft-core)
 	},
 
 	.mem_regions = {

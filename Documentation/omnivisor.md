@@ -11,10 +11,10 @@ cores.
 
 ### Motivation
 With the increasing trend of building highly heterogeneous MPSoCs that feature
-asymmetric cores, such as Cortex-A and Cortex-R/M, there is a need for advanced
-management solutions. The Omnivisor project seeks to extend Jailhouse's capabilities
-to effectively manage these asymmetric cores, enabling the execution of isolated
-cells on them.
+asymmetric cores, such as Cortex-A and Cortex-R/M and soft-cores on FPGA, there 
+is a need for advanced management solutions. The Omnivisor project seeks to 
+extend Jailhouse's capabilities to effectively manage these asymmetric cores, 
+enabling the execution of isolated cells on them.
 
 Usage
 -----
@@ -27,45 +27,46 @@ Supported Boards:
 - [ ] ...
 
 ### Enable Omnivisor
-To enable the Omnivisor capability you need to modify the config file
-"include/jailhouse/config.h" adding two lines: 
+To enable the Omnivisor, modify the config file `include/jailhouse/config.h` 
+by appending these defines:
 
 ```c
 #define CONFIG_OMNIVISOR      1
 #define CONFIG_XMPU_ACTIVE    1
 ```
 
-the first line "CONFIG_OMNIVISOR" enable the Omnivisor capability to 
-create, load and start on remote CPUs, such as the RPUs in the zynqmp
-platforms. The "CONFIG_XMPU_ACTIVE" instead enable the spatial isolation
-between asymmetric cores by enabling the run-time configuration of the
-system-MPUs (XMPUs in Xilinx terminology)
+- `CONFIG_OMNIVISOR`: Enables the Omnivisor capability to create, load, and 
+                      start on remote CPUs, such as the RPUs in the ZynqMP 
+                      platforms.
+- `CONFIG_XMPU_ACTIVE`: Enables spatial isolation between asymmetric cores 
+                      by allowing the run-time configuration of the system-MPUs 
+                      (XMPUs in Xilinx terminology).
 
 ### Test Omnivisor
-To test the Omnivisor, compile the hypervisor with the actual configuration
-and load it in the platform. 
+To test the Omnivisor, compile the hypervisor with the current configuration 
+and load it onto the platform:
 
 ```sh
-make -C "${jailhouse_dir}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" KDIR="${linux_dir}" 
+make -C "${jailhouse_dir}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" KDIR="${linux_dir}"
 ```
 
-To compile also the remote CPUs inmates demos you should manually compile for
-the desired architecture. e.g. in case of the Cortex-R5: 
+To compile the remote CPUs inmates demos, manually compile for the desired 
+architecture. For example, for the Cortex-R5:
 
 ```sh
 export REMOTE_COMPILE=arm-none-eabi-
-make -C "${jailhouse_dir}" remote_armr5 REMOTE_COMPILE="${REMOTE_COMPILE}" 
+make -C "${jailhouse_dir}" remote_armr5 REMOTE_COMPILE="${REMOTE_COMPILE}"
 ```
 
-Then, in the platform, start the hypervisor using the root-cell configuration 
-related to the Omnivisor "\<platform\>-omnv.cell" (e.g. zynmqmp-kv260-omnv.c).
+Then, on the platform, start the hypervisor using the root-cell configuration 
+related to the Omnivisor (e.g., `zynqmp-kv260-omnv.cell`):
 
 ```sh
-jailhouse enable ${JAILHOUSE_DIR}/configs/arm64/zynmqmp-kv260-omnv.c
+jailhouse enable ${JAILHOUSE_DIR}/configs/arm64/zynqmp-kv260-omnv.cell
 ```
 
-Once enabled check the cell list to verify that the hypervisor can see both
-CPUs and remote CPUs (rCPUs): 
+Once enabled, check the cell list to verify that the hypervisor can see both 
+CPUs and remote CPUs (rCPUs):
 
 ```sh
 jailhouse cell list
@@ -74,8 +75,7 @@ ID      Name                    State             Assigned CPUs           Assign
 0       ZynqMP-KV260            running           0-3                     0-2   
 ```
 
-To test a cell on a remote core, you can use the traditional jailhouse command.
-In case of the Cortex-R you need to manually load part of the binary in the TCM:
+To test a cell on a remote core, use the traditional Jailhouse command. For the Cortex-R, manually load part of the binary into the TCM:
 
 ```sh
 jailhouse cell create ${JAILHOUSE_DIR}/configs/arm64/zynqmp-kv260-RPU-inmate-demo.cell

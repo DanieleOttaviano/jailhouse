@@ -69,7 +69,7 @@ The extensions have been evaluated in multiple academic publications such as:
 
 There is an ongoing effort to integrate some of the features of this
 repository in the mainline [Jailhouse project](https://github.com/siemens/jailhouse),
-but please note at at the moment, the Jailhouse project does not provide
+but please note at the moment, the Jailhouse project does not provide
 support for this code. Please, subscribe to the Jailhouse mailing list for
 updates on the mainlining effort and for any discussion about this fork
 and its development.
