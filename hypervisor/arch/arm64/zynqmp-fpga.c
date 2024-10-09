@@ -5,6 +5,7 @@
 #include <jailhouse/paging.h>
 #include <jailhouse/fpga-common.h>
 #include <jailhouse/printk.h>
+#include <asm/dcaches.h>
 
 #define BIT(nr)			(1 << (nr))
 
@@ -152,15 +153,15 @@ int arch_fpga_write(struct fpga_manager *mgr, const char *buf, size_t size){
 
 	//kbuf = dma_alloc_coherent(priv->dev, dma_size, &dma_addr, GFP_KERNEL);
 	printk("Sto mappando\n");
-	unsigned long phyiscal_address = 0x7f000000;
-	kbuf = paging_map_device(phyiscal_address,dma_size);
+	u64 dma_addr = 0x7f000000;
+	kbuf = paging_map_device(dma_addr,dma_size);
 	//kbuf = (char*) phyiscal_address;
-	if (!kbuf){
+	/* if (!kbuf){
 		printk("Memory allocation failed\n");
-		return -ENOMEM;}
+		return -ENOMEM;} */
 	printk("Ho mappato\n");
 	
-	printk("kbuf è %p, &kbuf[word_align] è %p\n",kbuf,&kbuf[word_align]);
+	//printk("kbuf è %p, &kbuf[word_align] è %p\n",kbuf,&kbuf[word_align]);
 	//memmove(kbuf,&kbuf[word_align],size-word_align);
 /* 	for(index = size-2; index > 0; index--){
 		printk("Moving kbuf[%d] into kbuf[%d]\n",index,index+word_align);
@@ -170,20 +171,20 @@ int arch_fpga_write(struct fpga_manager *mgr, const char *buf, size_t size){
 	for (i = 0; i < 1000; i++){
 		printk("kbuf[%ld]=%x\n",i+8000,kbuf[i+8000]);
 	}  */
-	printk("kbuf[%d]=%x, address is %p\n",80190,kbuf[8191],&kbuf[8191]);
-	printk("kbuf[%d]=%x, address is %p\n",80192,kbuf[8192],&kbuf[8192]);
+	
 
 	printk("ho fatto memmove\n");
-	for (index = 0; index < word_align; index++)
-		kbuf[index] = DUMMY_PAD_BYTE;
+	for (index = 0; index < word_align; index++);
+		//kbuf[index] = DUMMY_PAD_BYTE;
 	printk("Ho scritto dummy, index era %d, wa era %d\n",index,word_align);
 	//dma_addr = (u64) buf;
 	/*memcpy(&kbuf[index], buf, size - index); //VORREI DIRETTAMENTE METTERE FW QUA :((((()))))
 	printk("Ho memcopiato\n");*/
+	printk("eeemi flags = %d\n",eemi_flags);
 
 	if (priv->flags & FPGA_MGR_USERKEY_ENCRYPTED_BITSTREAM) {
 		eemi_flags |= XILINX_ZYNQMP_PM_FPGA_ENCRYPTION_USERKEY;
-		memcpy(kbuf + size, mgr->key, ENCRYPTED_KEY_LEN);
+		//memcpy(kbuf + size, mgr->key, ENCRYPTED_KEY_LEN);
 	} else if (priv->flags & FPGA_MGR_ENCRYPTED_BITSTREAM) {
 		eemi_flags |= XILINX_ZYNQMP_PM_FPGA_ENCRYPTION_DEVKEY;
 	}
@@ -191,6 +192,7 @@ int arch_fpga_write(struct fpga_manager *mgr, const char *buf, size_t size){
 	wmb(); /* ensure all writes are done before initiate FW call */
 	//flush; coerenza non gestita dal dma.
 	//dma_addr = _paging_virt2phys)
+	arm_dcaches_flush(kbuf,dma_size,DCACHE_INVALIDATE);
 
 	if (priv->flags & FPGA_MGR_DDR_MEM_AUTH_BITSTREAM)
 		eemi_flags |= XILINX_ZYNQMP_PM_FPGA_AUTHENTICATION_DDR;
@@ -200,20 +202,23 @@ int arch_fpga_write(struct fpga_manager *mgr, const char *buf, size_t size){
 	if (priv->flags & FPGA_MGR_PARTIAL_RECONFIG)
 		eemi_flags |= XILINX_ZYNQMP_PM_FPGA_PARTIAL;
 
-	/*  if (priv->flags & FPGA_MGR_USERKEY_ENCRYPTED_BITSTREAM)
+	  if (priv->flags & FPGA_MGR_USERKEY_ENCRYPTED_BITSTREAM){
 		ret = zynqmp_pm_fpga_load(dma_addr, dma_addr + size,
 					  eemi_flags, &status);
+	  }
 	else
-		ret = zynqmp_pm_fpga_load(dma_addr, size,
+		ret = zynqmp_pm_fpga_load(dma_addr, dma_size,
 					  eemi_flags, &status); 
- */
+ 
 	//dma_free_coherent(priv->dev, dma_size, kbuf, dma_addr);
 	//page_free(&mem_pool,kbuf,PAGES(dma_size));	
-	paging_unmap_device(phyiscal_address,kbuf,dma_size);
+	//paging_unmap_device(phyiscal_address,kbuf,dma_size);
 
-	if (status)
+	if (status){
+		printk("status is %u\n",(enum pm_ret_status) status);
 		return status;
-
+	}
+	printk("ret is %d\n",ret);
 	return ret;
 
 
@@ -225,19 +230,7 @@ size_t arch_fpga_initial_header_size(){
     return 0;
 }
 
-
-/*TODO
-enum fpga_mgr_states arch_fpga_state(struct fpga_manager* mgr){
-    
-    u32 status = 0;
-
-	zynqmp_pm_fpga_get_status(&status);
-	if (status & IXR_FPGA_DONE_MASK)
-		return FPGA_MGR_STATE_OPERATING;
-
-	return FPGA_MGR_STATE_UNKNOWN;
-}
-
+/*
 u64 arch_fpga_status(struct fpga_manager* mgr)
 {
 	unsigned int *buf=NULL, reg_val;
