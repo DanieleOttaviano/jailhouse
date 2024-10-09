@@ -70,6 +70,7 @@ static const struct sysfs_ops cell_sysfs_ops = {
 /* End of compatibility section - remove as version become obsolete */
 
 static struct kobject *cells_dir;
+static struct kobject *fpga_dir;
 
 struct cell_cpu {
 	struct kobject kobj;
@@ -398,6 +399,13 @@ static struct cell_cpu *find_cell_cpu(struct cell *cell, unsigned int cpu)
 
 	return NULL;
 }
+#if defined(CONFIG_FPGA)
+int jailhouse_sysfs_region_create(struct region *region)
+{
+	
+}
+#endif /* CONFIG_FPGA */
+
 
 int jailhouse_sysfs_cell_create(struct cell *cell)
 {
@@ -623,7 +631,14 @@ int jailhouse_sysfs_init(struct device *dev)
 		sysfs_remove_group(&dev->kobj, &jailhouse_attribute_group);
 		return -ENOMEM;
 	}
-
+	#if defined(CONFIG_FPGA)
+	/*for FPGA*/
+	fpga_dir = kobject_create_and_add("fpga_regions",&dev->kobj);
+	if (!cells_dir) {
+		sysfs_remove_group(&dev->kobj, &jailhouse_attribute_group);
+		return -ENOMEM;
+	}
+	#endif /* CONFIG_FPGA */
 	return 0;
 }
 

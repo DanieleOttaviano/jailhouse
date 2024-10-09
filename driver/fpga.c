@@ -1,72 +1,92 @@
-#include <jailhouse/fpga-common.h>
-#include "jailhouse.h"
-#include <linux/firmware.h>
-#include <linux/slab.h>
-#include <linux/io.h>
-#include <linux/vmalloc.h>
-#include <linux/mm.h>
-#include "main.h"
+#if defined(CONFIG_FPGA)
+#include <linux/fpga/fpga-mgr.h>
+#include <linux/fpga/fpga-region.h>
 
 #include <jailhouse/hypercall.h>
+#include "fpga.h"
 
 
-int jailhouse_fpga_load(struct jailhouse_fpga_load* fpga_load){
-
+int jailhouse_fpga_create(struct jailhouse_fpga_create* fpga_create_args)
+{
+    //argomenti per la create. Il nome, il numero della regione
     int ret;
-    const struct firmware *fw;
-    struct fpga_image_info * info;
-    char * buf;
-    void *mapped_addr;
-    phys_addr_t paddr = 0x7f000000;  // Indirizzo fisico riservato
-    int size = 0x10;
-    mapped_addr = ioremap_cache(paddr, size);
-    if (!mapped_addr) {
-    pr_err("Errore nella mappatura dell'indirizzo fisico (cache)\n");
-    ret = -ENOMEM;
-    goto end;
-    } else {
-    pr_info("Indirizzo fisico mappato a: %p\n", mapped_addr);
+    struct region *region;
+    region = (struct region*)kzalloc(sizeof(struct region), GFP_KERNEL);
+    region->id = regifpga_create_args->region_id;
+    strcpy(&region->name, &fpga_create_args->region_name, JAILHOUSE_CELL_ID_NAMELEN);
+    region->state = FPGA_MGR_STATE_UNKNOWN;
+    region->status = 0; 
+    jailhouse_sysfs_region_create(region);
+    ret = jailhouse_call_arg1(JAILHOUSE_HC_FPGA_CREATE, region_id);
+    if(!ret){
+        pr_err("Create for region %d failed\n",region_id);
+        kfree(region);
+        jailhouse_sysfs_region_destroy(region);
     }
 
 
-    ret = request_firmware(&fw, fpga_load->fpga_name, NULL);
-	if (ret) {
-        pr_err("Error requesting firmware");
-        goto unmap;
-	} 
-    memcpy(mapped_addr,fw->data,fw->size);
-    pr_info("memcpy\n");
-   /*  buf = (char*)kmalloc(fw->size,GFP_USER);
-    if(!buf){
-        ret = -ENOMEM;
-        goto free_buf;
-    } */
-
-    info = (struct fpga_image_info*)kmalloc(sizeof(struct fpga_image_info),GFP_KERNEL);
-    if(!info){
-        ret = -ENOMEM;
-        pr_err("Error allocating fpga_image_info");
-        goto free_fw;
-    }
-
-    info->flags = fpga_load->fpga_flags;
-    strcpy(info->firmware_name, fpga_load->fpga_name);
-    info->count = fw->size;
-    //pr_info("fw->size = %lu",fw->size);
-    info->buf = __pa(*(fw->data));
-    // -- dovrebbe rimuovere il device per il kernel linux.
-    pr_info("Jailhouse writing to FPGA\n");
-    /*hypercall to jailhouse. */
-    ret = jailhouse_call_arg1(JAILHOUSE_HC_FPGA_LOAD, __pa(info));
-   
-free:
-    kfree(info); 
-free_fw:
-    release_firmware(fw);
-unmap:
-    iounmap(mapped_addr);
-end:
-     return ret;
-   
+    return ret;
 
 }
+
+int jailhouse_fpga_load(struct jailhouse_fpga_load* fpga_load_args)
+{
+    int ret;
+    struct fpga_image_info* info;
+    struct fpga_region * fpga_region;
+    struct region *region;
+    char name[10];
+	char image_name[255];
+	unsigned int len;
+    unsigned int region_id = fpga_load_args->fpga_region;
+
+
+    sprintf(name,"region%d",0);
+    fpga_region = fpga_region_class_find(NULL,name,device_match_name);
+    if(!fpga_region){
+        pr_err("Region %d not found\n",region_id);
+        return -ENODEV;
+    }
+
+    /* CONTROLLARE CHE LA REGIONE ESISRA: */
+	info = fpga_image_info_alloc(&fpga_region->dev);
+	if (!info)
+		return -ENOMEM;
+
+	info->flags = fpga_load_args->fpga_flags;
+
+
+	info->firmware_name = devm_kstrdup(&fpga_region->dev, fpga_load_args->fpga_name,  GFP_KERNEL);
+	len = strlen(info->firmware_name);
+	if (info->firmware_name[len - 1] == '\n') //lose terminating '\n'
+		info->firmware_name[len - 1] = 0;
+
+	/* Add info to region and do the programming */
+	region->info = info;
+	ret = fpga_region_program_fpga(fpga_region);
+
+	/* Deallocate the image info if you're done with it */
+	fpga_region->info = NULL;
+	fpga_image_info_free(info);
+
+	
+    /* controlla se è tutto ok 
+        se si ritorna
+        se no chiamata all'hypervisor per restituire la regione alla root cell. 
+    */
+    if(fpga_region->mgr->state != FPGA_MGR_STATE_OPERATING || ret){
+        pr_err("Programming region %d failed\n",region_id);
+        jailhouse_call_arg1(JAILHOUSE_HC_FPGA_DESTROY, region_id);
+        return -ENODEV;
+    }
+
+   region = (struct region*)kzalloc(sizeof(struct region), GFP_KERNEL);
+   region->id = region_id
+   region->name = "Name!";
+   region->state = fpga_region->mgr->state;
+   region->status = 0; //get status!!!
+
+   return ret;
+}
+
+#endif /* CONFIG_FPGA */

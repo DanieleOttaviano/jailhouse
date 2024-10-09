@@ -95,6 +95,9 @@ struct jailhouse_cell_desc {
 #if defined(CONFIG_OMNIVISOR)
 	__u32 rcpu_set_size;
 #endif /* CONFIG_OMNIVISOR */
+#if defined (CONFIG_FPGA)
+	__u32 fpga_regions_size;
+#endif /* CONFIG_FPGA*/
 	__u32 num_memory_regions;
 	__u32 num_cache_regions;
 	__u32 num_irqchips;
@@ -437,6 +440,9 @@ jailhouse_cell_config_size(struct jailhouse_cell_desc *cell)
 #if defined(CONFIG_OMNIVISOR)
 		cell->rcpu_set_size +
 #endif /* CONFIG_OMNIVISOR */
+#if defined (CONFIG_FPGA)
+		cell->fpga_regions_size +
+#endif /* CONFIG_FPGA */
 		cell->num_memory_regions * sizeof(struct jailhouse_memory) +
 		cell->num_cache_regions * sizeof(struct jailhouse_cache) +
 		cell->num_irqchips * sizeof(struct jailhouse_irqchip) +
@@ -470,13 +476,30 @@ jailhouse_cell_rcpu_set(const struct jailhouse_cell_desc *cell)
 }
 #endif /* CONFIG_OMNIVISOR */
 
+#if defined (CONFIG_FPGA)
+static inline const unsigned long *
+jailhouse_cell_fpga_regions(const struct jailhouse_cell_desc *cell)
+{
+	#if defined(CONFIG_OMNIVISOR)
+	return (const unsigned long *) 
+		((void *)jailhouse_cell_rcpu_set(cell) + cell->rcpu_set_size);
+	#endif /* CONFIG_OMNIVISOR */
+	return (const unsigned long *)
+		((void *)jailhouse_cell_cpu_set(cell) + cell->cpu_set_size); 
+}
+#endif /* CONFIG_FPGA */
+
 static inline const struct jailhouse_memory *
 jailhouse_cell_mem_regions(const struct jailhouse_cell_desc *cell)
 {
-#if defined(CONFIG_OMNIVISOR)
+	#if defined (CONFIG_FPGA)
+	return (const struct jailhouse_memory *)
+		((void *)jailhouse_cell_fpga_regions(cell) + cell->fpga_regions_size);
+	#endif /* CONFIG_FPGA*/
+	#if defined(CONFIG_OMNIVISOR)
 	return (const struct jailhouse_memory *)
 		((void *)jailhouse_cell_rcpu_set(cell) + cell->rcpu_set_size);
-#endif /* CONFIG_OMNIVISOR */
+	#endif /* CONFIG_OMNIVISOR */
 	return (const struct jailhouse_memory *)
 		((void *)jailhouse_cell_cpu_set(cell) + cell->cpu_set_size);
 }

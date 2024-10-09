@@ -13,6 +13,7 @@
 /* For compatibility with older kernel versions */
 #include <linux/version.h>
 
+#include <linux/bitops.h>
 #include <linux/cpu.h>
 #include <linux/mm.h>
 #include <linux/slab.h>
@@ -88,7 +89,11 @@ retry:
 	// DEBUG PRINT
 	// pr_err("cpus->assigned %ld\nrcpus->assigned %ld\n",cell->cpus_assigned, cell->rcpus_assigned);
 #endif /* CONFIG_OMNIVISOR */
-
+#if defined(CONFIG_FPGA)
+	cell->fpga_regions_assigned = hweight32(*(jailhouse_cell_fpga_regions(cell_desc)));
+	// DEBUG PRINT
+	//pr_err("regions assigned %ld\n",cell->fpga_regions_assigned);
+#endif /* CONFIG_FPGA*/
 	cell->num_memory_regions = cell_desc->num_memory_regions;
 	cell->memory_regions = vmalloc(sizeof(struct jailhouse_memory) *
 				       cell->num_memory_regions);

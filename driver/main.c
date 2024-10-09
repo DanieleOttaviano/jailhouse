@@ -39,6 +39,9 @@
 #include <asm/smp.h>
 #include <asm/cacheflush.h>
 #include <asm/tlbflush.h>
+#ifdef CONFIG_FPGA
+#include <linux/fpga/fpga-mgr.h>
+#endif
 #ifdef CONFIG_ARM
 #include <asm/virt.h>
 #endif
@@ -56,7 +59,6 @@
 #include "main.h"
 #include "pci.h"
 #include "sysfs.h"
-#include "fpga.h"
 
 #include <jailhouse/config.h>
 #include <jailhouse/header.h>
@@ -166,6 +168,11 @@ static void init_hypercall(void)
 }
 #endif
 
+#if defined(CONFIG_FPGA)
+	static long max_fpga_regions; //to see if we have to do partial or full
+#endif /* CONFIG_FPGA */
+
+
 static unsigned long lookup_kallsyms_lookup_name(void) 
 {
     struct kprobe kp;
@@ -256,6 +263,31 @@ static long get_max_rcpus(u32 rcpu_set_size,
 	return -EINVAL;
 }
 #endif /* CONFIG_OMNIVISOR */
+
+#if defined (CONFIG_FPGA)
+static long get_max_fpga_regions(u32 fpga_regions_size,
+			const struct jailhouse_system __user *system_config)
+{
+	u8 __user *fpga_regions =
+		(u8 __user *)jailhouse_cell_fpga_regions(
+				(const struct jailhouse_cell_desc * __force)
+				&system_config->root_cell);
+	unsigned int pos = fpga_regions_size;
+	long max_region_id;
+	u8 bitmap;
+
+	// DEBUG PRINT
+	//pr_err("rcpu_set_size: %u\n",pos);
+	while (pos-- > 0) {
+		if (get_user(bitmap, fpga_regions + pos))
+			return -EFAULT;
+		max_region_id = fls(bitmap);
+		if (max_region_id > 0)
+			return pos * 8 + max_region_id;
+	}
+	return -EINVAL;
+}
+#endif /* CONFIG_FPGA */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
 #define __get_vm_area(size, flags, start, end)			\
@@ -499,6 +531,16 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	// pr_err("max_rcpus : %ld\n",max_rcpus);
 #endif /* CONFIG_OMNIVISOR */
 
+#if defined(CONFIG_FPGA)
+	max_fpga_regions = get_max_fpga_regions(config_header.root_cell.fpga_regions_size, arg);
+	if (max_fpga_regions < 0)
+		return max_fpga_regions;
+	if (max_fpga_regions > UINT_MAX)
+		return -EINVAL;
+	// DEBUG PRINT
+	//pr_err("max_fpga_regions : %ld\n",max_fpga_regions);
+#endif /* CONFIG_FPGA */
+	
 	if (mutex_lock_interruptible(&jailhouse_lock) != 0)
 		return -EINTR;
 
@@ -953,31 +995,32 @@ int jailhouse_cmd_qos(struct jailhouse_qos_args __user *arg)
 	return err;
 }
 
-int jailhouse_cmd_fpga_load(struct jailhouse_fpga_load __user *arg){
-	/* to do */
-
+#if defined(CONFIG_FPGA)
+int jailhouse_cmd_fpga_load(struct jailhouse_fpga_load __user *arg)
+{
 	int err;
-	struct jailhouse_fpga_load fpga_load;
-	//fpga_load = (struct jailhouse_fpga_load*)kmalloc(sizeof(struct jailhouse_fpga_load),GFP_KERNEL);
-	if(copy_from_user(&fpga_load,arg,sizeof(struct jailhouse_fpga_load))){
+	struct jailhouse_fpga_load* fpga_load_args;
+	fpga_load_args = (struct jailhouse_fpga_load*)kmalloc(sizeof(struct jailhouse_fpga_load),GFP_KERNEL);
+	if(copy_from_user(fpga_load_args,arg,sizeof(struct jailhouse_fpga_load))){
 		return -EFAULT;
 	}
-	//questo fpga_load potrebbe essere passato all'hypervisor gia così com'è.
-	// QUINDI: in driver qualcosa per gestire i parametri e il fatto che è esclusivo
-	// poi qualcosa i  hypervisor. qui chiami solamente la funzione di driver
-	//pr_info("Ioctl ricevuto:)\n\n");
+	/* if regions is >1, do partial reconfiguration */
+	if(max_fpga_regions > 1)
+		fpga_load_args->fpga_flags |= FPGA_MGR_PARTIAL_RECONFIG;
 
-	err = jailhouse_fpga_load(&fpga_load);
-	/*settare i flag:
-	echo <flag> > /sys/class/fpga_manager/fpga0/flags*
-	caricamento del bitstream: Load the Bitstream 
-	mkdir -p /lib/firmware
-	cp percorso/del/bitstream /lib/firmware/
-	echo design_1_wrapper.bin > /sys/class/fpga_manager/fpga0/firmware*/
-
+	/**	FLAGS TO PARSE 
+	 * compressed bitstream
+	 * encrypted by userkey
+	 * encrypted by device key
+	 * auth through DDR
+	 * auth through Secure Memory
+	*/
+	
+	/*.... use other flags for Intel FPGAs*/
+	err = jailhouse_fpga_load(fpga_load_args);
 	return err;
 }
-
+#endif /* CONFIG_FPGA */
 static long jailhouse_ioctl(struct file *file, unsigned int ioctl,
 			    unsigned long arg)
 {
@@ -1013,10 +1056,12 @@ static long jailhouse_ioctl(struct file *file, unsigned int ioctl,
 		err = jailhouse_cmd_qos(
 				(struct jailhouse_qos_args __user *)arg);
 	    break;
+	#if defined(CONFIG_FPGA)
 	case JAILHOUSE_FPGA_LOAD:
 		err = jailhouse_cmd_fpga_load(
 				(struct jailhouse_fpga_load __user *)arg);
 		break;
+	#endif /* CONFIG_FPGA */
 	default:
 		err = -EINVAL;
 		break;

@@ -641,6 +641,7 @@ exit_noalloc:
 
 static int fpga_load(int argc, char *argv[]){
 
+	/* jailhouse fpga load <bistream> <region> [flags]*/
 	int err,fd;
 
 	if(argc < 5)
@@ -648,11 +649,18 @@ static int fpga_load(int argc, char *argv[]){
 
 	struct jailhouse_fpga_load * fpga_load;
 	fpga_load = malloc(sizeof(struct jailhouse_fpga_load));
-	fpga_load->fpga_flags= atoi(argv[4]);
-	strncpy(fpga_load->fpga_name, argv[3], JAILHOUSE_BITSTREAM_NAME_LEN);
 
+	strncpy(fpga_load->fpga_name, argv[3], JAILHOUSE_BITSTREAM_NAME_LEN);
+	fpga_load->fpga_region = atoi(argv[4]);
+	if(argc < 6)
+		fpga_load->fpga_flags=0;
+	else
+		fpga_load->fpga_flags= atoi(argv[5]);
+
+	
 	//DEBUG
-	//printf("About to send ioctl. Arguments are: <bitstream>=%s, <flag>=%d\n\n",fpga_load->fpga_name,fpga_load->fpga_flags);
+	//printf("About to send ioctl\n");
+	//printf("Parameters are: <bitstream>=%s, <region>=%d, <flags>=%d, \n\n",fpga_load->fpga_name,fpga_load->fpga_region,fpga_load->fpga_flags);
 
 	fd = open_dev();
 

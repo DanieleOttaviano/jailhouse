@@ -30,7 +30,7 @@ lib-y += qos.o
 lib-y += xmpu.o
 lib-y += zynqmp-pm.o
 lib-y += zynqmp-r5.o
-lib-y += zynqmp-fpga.o
+#lib-y += zynqmp-fpga.o
 ifdef CONFIG_DEBUG
 lib-y += cache_layout.o
 endif

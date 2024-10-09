@@ -83,9 +83,16 @@ struct jailhouse_qos_args {
 	struct qos_setting settings[];
 };
 
+struct jailhouse_fpga_create {
+	__u32 region_id;
+	__u32 padding;
+	char region_name[JAILHOUSE_CELL_ID_NAMELEN + 1];
+};
+
 struct jailhouse_fpga_load {
 	__u32 fpga_flags;
-	char fpga_name[JAILHOUSE_BITSTREAM_NAME_LEN+1]; 
+	__u32 fpga_region;
+	char fpga_bitstream_name[JAILHOUSE_BITSTREAM_NAME_LEN+1]; 
 };
 
 #define JAILHOUSE_CELL_ID_UNUSED	(-1)

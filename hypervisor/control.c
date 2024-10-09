@@ -23,7 +23,6 @@
 #include <asm/control.h>
 #include <asm/spinlock.h>
 #include <asm/coloring.h>
-#include <jailhouse/fpga-mgr.h>
 #ifdef __aarch64__
 /* QoS Support only provided on arm64 */
 #include <asm/qos.h>
@@ -31,7 +30,7 @@
 #if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 #include <asm/zynqmp-r5.h>
 #endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
-#include <jailhouse/fpga-mgr.h>
+
 
 enum msg_type {MSG_REQUEST, MSG_INFORMATION};
 enum failure_mode {ABORT_ON_ERROR, WARN_ON_ERROR};
@@ -275,6 +274,12 @@ int cell_init(struct cell *cell)
 	struct cpu_set *rcpu_set;
 #endif /* CONFIG_OMNIVISOR  */
 
+#if defined(CONFIG_FPGA)
+	const unsigned long *config_fpga_regions = 
+		jailhouse_cell_fpga_regions(cell->config);
+		unsigned long fpga_regions_size = cell->config->fpga_regions_size;
+	struct fpga_region_set *fpga_region_set;
+#endif /* CONFIG_FPGA*/
 	int err;
 
 	if (cpu_set_size > PAGE_SIZE)
@@ -318,6 +323,27 @@ int cell_init(struct cell *cell)
 		page_free(&mem_pool, cell->rcpu_set, 1);
 
 #endif /* CONFIG_OMNIVISOR */
+
+#if defined(CONFIG_FPGA)
+	if(fpga_regions_size > PAGE_SIZE)
+		return trace_error(-EINVAL);
+	if (fpga_regions_size > sizeof(cell->small_fpga_regions.bitmap)) {
+		fpga_region_set = page_alloc(&mem_pool, 1);
+		if (!fpga_region_set)
+			return -ENOMEM;
+	} else {
+		fpga_region_set = &cell->small_fpga_regions;
+	}
+	fpga_region_set->max_region_id = fpga_regions_size * 8 - 1;
+	memcpy(fpga_region_set->bitmap, config_fpga_regions, fpga_regions_size);
+
+	cell->fpga_regions = fpga_region_set;
+	// DEBUG PRINT
+	// printk("small_rcpu_set->bitmap = %ld\r\n", cell->small_rcpu_set.bitmap[0]);
+
+	if (err && cell->fpga_regions != &cell->small_fpga_regions)
+		page_free(&mem_pool, cell->fpga_regions, 1);
+#endif /* CONFIG_FPGA */
 
 	return err;
 }
@@ -1123,68 +1149,25 @@ static int cpu_get_info(struct per_cpu *cpu_data, unsigned long cpu_id,
 		return -EINVAL;
 }
 
-static int fpga_load(unsigned long info_address)
+static int fpga_create(unsigned int region_id)
 {
-	printk("fpga LOAD <3\n");
-	unsigned long info_page_offs = info_address & PAGE_OFFS_MASK;
-	//unsigned long fw_page_offs;
-	unsigned int info_pages;//, fw_pages;
-	void* info_mapping;
-	//void* fw_mapping;
-	//unsigned long fw_address;
-	struct fpga_image_info *info;
 	int ret = 0;
-	//char * firmware;
-
-	info_pages = PAGES(info_page_offs + sizeof(struct fpga_image_info));
-	info_mapping = paging_get_guest_pages(NULL, info_address,
-						info_pages,
-						PAGE_READONLY_FLAGS | PAGING_HUGE) ; //ok?
-
-	if(!info_mapping)
-		return -ENOMEM;
-	
-
-	info = (struct fpga_image_info*)(info_mapping+info_page_offs);
-	/* fw_address= (unsigned long) info->buf;
-	fw_page_offs = fw_address & PAGE_OFFS_MASK;
-	fw_pages = PAGES(fw_page_offs+(info->count));
-	printk("fw_pages %u = %lu + %u\n",fw_pages,fw_page_offs,info->count);
-	fw_mapping = paging_get_guest_pages(NULL, fw_address,
-						fw_pages,
-						PAGE_READONLY_FLAGS | PAGING_HUGE) ;
-	if(!fw_mapping)
-		return -ENOMEM;
-
-	firmware = (char*)(fw_mapping+fw_page_offs);
- */
-	//ti credo
-	printk("Firmware name is: %s\n",info->firmware_name);
-	//printk("Firmware address is: %p\n",firmware);
-	
-	//deve essere messo da qualche altra parte!!!
-	ret = init_fpga();
-	//struct fpga_manager * mgr = get_fpga_manager();
-	//info->flags = 0;
-	ret = fpga_buf_load(info);
-
-/*
-	fw_page_offs = info->firmware_address & PAGE_OFFS_MASK;
-	fw_pages = PAGES(fw_page_offs + info->count);
-	printk("Number of pages is %d",fw_pages);
-	fw_mapping = paging_get_guest_pages(NULL, info->firmware_address,
-						fw_pages,
-						PAGE_FLAG_DEVICE);
-
-	if(!fw_mapping)
-		return -ENOMEM;
-
-	firmware = (char*) (fw_mapping + fw_page_offs);
-	printk("First byte of firmware is: %02x\n", firmware[0]); */
+	printk("create\n");
+	if(!cell_owns_fpga_region(&root_cell,region_id))
+		return trace_error(-EBUSY);
+	clear_bit(region_id,root_cell.fpga_regions->bitmap);
+	printk("FPGA region%d created\n",region_id);
 	return ret;
 
 }
 
+static int fpga_destroy(unsigned int region_id)
+{
+	set_bit(region_id,root_cell.fpga_regions->bitmap);
+	printk("FPGA region%d destroyed\n",region_id);
+	return 0;
+
+}
 /**
  * Handle hypercall invoked by a cell.
  * @param code		Hypercall code.
@@ -1231,8 +1214,10 @@ long hypercall(unsigned long code, unsigned long arg1, unsigned long arg2)
 	case JAILHOUSE_HC_QOS:
 		return qos_call(arg1, arg2);
 #endif
-	case JAILHOUSE_HC_FPGA_LOAD:
-		return fpga_load(arg1);
+	case JAILHOUSE_HC_FPGA_CREATE:
+		return fpga_create(arg1);
+	case JAILHOUSE_HC_FPGA_DESTROY:
+		return fpga_destroy(arg1);
 	default:
 		return -ENOSYS;
 	}

@@ -133,6 +133,21 @@ static inline bool cell_owns_rcpu(struct cell *cell, unsigned int rcpu_id)
 }
 #endif /* CONFIG_OMNIVISOR */
 
+#if defined (CONFIG_FPGA)
+/**
+ * Check if the region is assigned to the specified cell.
+ * @param cell		Cell the rCPU may belong to.
+ * @param region_id	ID of the rCPU.
+ *
+ * @return True if the CPU is assigned to the cell.
+ */
+static inline bool cell_owns_fpga_region(struct cell *cell, unsigned int fpga_region)
+{
+	return (fpga_region <= cell->fpga_regions->max_region_id &&
+		test_bit(fpga_region, cell->fpga_regions->bitmap));
+}
+
+#endif /* CONFIG_FPGA */
 bool cpu_id_valid(unsigned long cpu_id);
 
 int cell_init(struct cell *cell);
