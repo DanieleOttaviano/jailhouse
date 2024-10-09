@@ -1,17 +1,28 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for Xilinx ZynqMP ZCU102 eval board
+ * Configuration for Xilinx ZynqMP Kria KV260 board
  *
  * Copyright (c) Siemens AG, 2016
+ * Copyright (c) Daniele Ottaviano, 2024
  *
  * Authors:
  *  Jan Kiszka <jan.kiszka@siemens.com>
- *
+ *  Daniele Ottaviano <danieleottaviano97@gmail.com>
+ * 
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  *
- * Reservation via device tree: 0x800000000..0x83fffffff
+ * Reservation via device tree: 
+ * 	reserved-memory {
+ *		#address-cells = <2>;
+ *		#size-cells = <2>;
+ *		ranges;
+ *		jailhouse_reserved: jailhouse@7e000000 {
+ *			no-map;
+ *			reg = <0x0 0x7e000000 0x0 0x2000000>;
+ *		}; 
+ *	};
  */
 #include <jailhouse/types.h>
 #include <jailhouse/cell-config.h>
@@ -22,7 +33,7 @@ struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
 	__u64 rcpus[1];
-	struct jailhouse_memory mem_regions[24];
+	struct jailhouse_memory mem_regions[18];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
@@ -49,7 +60,7 @@ struct {
 			.pci_mmconfig_end_bus = 0,
 
 			.pci_is_virtual = 1,
-			.pci_domain = -1,
+			.pci_domain = 1,
 			.color = {
 				.way_size = 0x10000,
 				.root_map_offset = 0x0C000000000,
@@ -120,9 +131,9 @@ struct {
 
 	.mem_regions = {
 		/* IVSHMEM shared memory region for 0001:00:00.0 */
-		JAILHOUSE_SHMEM_NET_REGIONS(0x060000000, 0),
+		JAILHOUSE_SHMEM_NET_REGIONS(0x07e000000, 0),
 		/* IVSHMEM shared memory region for 0001:00:01.0 */
-		JAILHOUSE_SHMEM_NET_REGIONS(0x060100000, 0),
+		JAILHOUSE_SHMEM_NET_REGIONS(0x07e100000, 0),
 		/* FPGA configuration ports */ {
 			.phys_start = 0x80000000,
 			.virt_start = 0x80000000,
@@ -140,14 +151,7 @@ struct {
 		/* RAM */ {
 			.phys_start = 0x0,
 			.virt_start = 0x0,
-			.size = 0x60000000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_EXECUTE,
-		},
-		/* RAM */ {
-			.phys_start = 0x60200000,
-			.virt_start = 0x60200000,
-			.size = 0x1ee00000,
+			.size = 0x7e000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},

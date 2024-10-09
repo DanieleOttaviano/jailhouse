@@ -21,7 +21,7 @@
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[24];
+	struct jailhouse_memory mem_regions[17];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
@@ -48,7 +48,7 @@ struct {
 			.pci_mmconfig_end_bus = 0,
 
 			.pci_is_virtual = 1,
-			.pci_domain = -1,
+			.pci_domain = 1,
 			.color = {
 				.way_size = 0x10000,
 				.root_map_offset = 0x0C000000000,
@@ -114,9 +114,9 @@ struct {
 
 	.mem_regions = {
 		/* IVSHMEM shared memory region for 0001:00:00.0 */
-		JAILHOUSE_SHMEM_NET_REGIONS(0x060000000, 0),
+		JAILHOUSE_SHMEM_NET_REGIONS(0x07e000000, 0),
 		/* IVSHMEM shared memory region for 0001:00:01.0 */
-		JAILHOUSE_SHMEM_NET_REGIONS(0x060100000, 0),
+		JAILHOUSE_SHMEM_NET_REGIONS(0x07e100000, 0),
 		/* MMIO (permissive) */ {
 			.phys_start = 0xfd000000,
 			.virt_start = 0xfd000000,
@@ -127,14 +127,7 @@ struct {
 		/* RAM */ {
 			.phys_start = 0x0,
 			.virt_start = 0x0,
-			.size = 0x60000000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_EXECUTE,
-		},
-		/* RAM */ {
-			.phys_start = 0x60200000,
-			.virt_start = 0x60200000,
-			.size = 0x1ee00000,
+			.size = 0x7e000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
