@@ -42,3 +42,8 @@ hypervisor/fpga-mgr.c.old
 hypervisor/arch/arm64/zynqmp-fpga.c.old
 hypervisor/arch/arm64/include/asm/zynqmp-fpga.h.old
 hypervisor/include/jailhouse/fpga-mgr.h.old
+hypervisor/arch/arm64/zynqmp-fpga.c
+hypervisor/include/jailhouse/fpga-arch.h
+include/jailhouse/fpga-common-old.h
+hypervisor/arch/arm64/zynqmp-fpga.c
+hypervisor/include/jailhouse/fpga-arch.h
