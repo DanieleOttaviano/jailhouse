@@ -22,6 +22,7 @@
 #include <asm/smccc.h>
 #include <asm/sysregs.h>
 #include <asm/traps.h>
+#include <asm/memguard.h>
 
 #define GIC_V3_REDIST_SIZE	0x20000
 #define GIC_V4_REDIST_SIZE	0x40000
@@ -126,6 +127,7 @@ static int gicv3_init(void)
 {
 	unsigned long redist_size = GIC_V3_REDIST_SIZE;
 	unsigned int gicr_size;
+	int err;
 
 	/* Probe the GICD version */
 	gic_version = GICD_PIDR2_ARCH(mmio_read32(gicd_base + GICDv3_PIDR2));
@@ -152,6 +154,13 @@ static int gicv3_init(void)
 			system_config->platform_info.arm.gicr_base, gicr_size);
 	if (!gicr_base)
 		return -ENOMEM;
+
+	/* Initialize memguard: initialize PMU and HP timers */
+	err = memguard_init();
+	if (err < 0) {
+		printk("Timer not available... Have you configured memguard?\n");
+		return err;
+	}
 
 	return 0;
 }
@@ -192,6 +201,9 @@ static void gicv3_cpu_reset(struct per_cpu *cpu_data)
 	mmio_write32(gicr + GICR_ICACTIVER, 0xffff0000);
 
 	arm_write_sysreg(ICH_VMCR_EL2, 0);
+
+	/* Re-activate memguard interrupts */
+	memguard_cpu_reset();
 }
 
 static int gicv3_cpu_init(struct per_cpu *cpu_data)
@@ -304,6 +316,9 @@ static int gicv3_cpu_init(struct per_cpu *cpu_data)
 		}
 	}
 
+	/* Per-CPU init, setup compares, unmask timer */
+	memguard_cpu_init();
+
 	return 0;
 }
 
@@ -333,6 +348,9 @@ static int gicv3_cpu_shutdown(struct public_per_cpu *cpu_public)
 		cell_icc_igrpen1 &= ~ICC_IGRPEN1_EN;
 		arm_write_sysreg(ICC_IGRPEN1_EL1, cell_icc_igrpen1);
 	}
+
+	/* Disable timer and PMU */
+	memguard_cpu_shutdown();
 
 	return 0;
 }

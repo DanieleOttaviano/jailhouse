@@ -24,12 +24,13 @@
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[61];
+	struct jailhouse_memory mem_regions[60];
 	struct jailhouse_irqchip irqchips[3];
 } __attribute__((packed)) config = {
 	.header = {
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
+		.architecture = JAILHOUSE_ARM64,
 		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,
 		.hypervisor_memory = {
 			.phys_start = 0x271000000,
@@ -51,7 +52,43 @@ struct {
 				.gicv_base = 0x03886000,
 				.gic_version = 2,
 				.maintenance_irq = 25,
-			}
+			},
+			.memguard = {
+				/* Found out by using Linux perf tool and
+				 * watching /proc/interrupts
+				 * Parker manual says:
+				 *   The total size of 384 corresponds to:
+				 *   32  first IDs are SGI and PPI
+				 *   288 next IDs are global SPI, one to one
+				 *       mapped to the 288 LIC interrupts
+				 *   64  next IDs are local SPI, generated
+				 *       inside CCPLEX and for CCPLEX use only
+				 */
+				.num_irqs = 384,
+				.hv_timer = 26,
+				.irq_prio_min = 0xf0,
+				.irq_prio_max = 0x00,
+				.irq_prio_step = 0x10,
+				.irq_prio_threshold = 0x10,
+				/* One PMU irq per CPU */
+				/* Conversion from cpu_id to PMU IRQ number
+				 *
+				 * Number 296 is defined in device tree which
+				 * corresponds to:
+				 * (32 SGI and PPI +) 288 global SPI + 4
+				 * local SPI
+				 * This number is base for A57 cluster, 320
+				 * is for Denvers
+				 */
+				.num_pmu_irq = 6,
+				.pmu_cpu_irq = {
+					32 + 296,
+					32 + 297,
+					32 + 298,
+					32 + 299,
+					32 + 320, 32 + 321,
+				},
+			},
 		},
 		.root_cell = {
 			.name = "Jetson-TX2",
@@ -153,20 +190,13 @@ struct {
                         .flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
                                 JAILHOUSE_MEM_EXECUTE,
                 },
-		/* TOP_TKE */ {
+		/* TIMER */ {
 			.phys_start = 0x03010000,
 			.virt_start = 0x03010000,
 			.size = 0xe0000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
-		/* TIMER */ {
-                        .phys_start = 0x03020000,
-                        .virt_start = 0x03020000,
-                        .size = 0xa0000,
-                        .flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-                                JAILHOUSE_MEM_EXECUTE,
-                },
 		/* UARTA */ {
 			.phys_start = 0x03100000,
 			.virt_start = 0x03100000,

@@ -32,6 +32,7 @@ struct {
 	struct jailhouse_qos_device qos_devices[35];
 } __attribute__((packed)) config = {
 	.header = {
+		.architecture = JAILHOUSE_ARM64,
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
 		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,
@@ -136,11 +137,11 @@ struct {
 		/* RAM */ {
 			.phys_start = 0x0,
 			.virt_start = 0x0,
-			// Limit size to 512 M
-			.size = 0x20000000,
+			// Limit size to 256 M
+			.size = 0x10000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_COLORED,
-			.colors=0x0fff,
+			.colors=0x000f,
 		},
 		/* RAM */ {
 			.phys_start = 0x800000000,
@@ -155,6 +156,40 @@ struct {
 			.size = 0x1000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
+		},
+		/* TCM region for the R5 */ {
+			.phys_start = 0xffe00000,
+			.virt_start = 0xffe00000,
+			.size = 0xC0000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+
+		/* DDR 0 region for the R5 */ {
+			.phys_start = 0x3ed00000,
+			.virt_start = 0x3ed00000,
+			.size = 0x100000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+
+		/* DDR 1 region for the R5 */ {
+			.phys_start = 0x3ed40000,
+			.virt_start = 0x3ed40000,
+			.size = 0x100000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+
+		/* proc 0 region for the R5 */ {
+			.phys_start = 0xff9a0100,
+			.virt_start = 0xff9a0100,
+			.size = 0x100,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+
+		/* proc 1 region for the R5 */ {
+			.phys_start = 0xff9a0200,
+			.virt_start = 0xff9a0200,
+			.size = 0x100,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
 		},
 	},
 

@@ -30,6 +30,7 @@ struct {
 	.cell = {
 		.signature = JAILHOUSE_CELL_DESC_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
+		.architecture = JAILHOUSE_ARM64,
 		.name = "k3-am625-sk-linux-demo",
 		.flags = JAILHOUSE_CELL_PASSIVE_COMMREG,
 
@@ -50,7 +51,7 @@ struct {
 	},
 
 	.cpus = {
-		0xe,
+		0xc,
 	},
 
 	.mem_regions = {

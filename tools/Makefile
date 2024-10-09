@@ -42,6 +42,11 @@ BINARIES += demos/cache-timings
 targets += demos/cache-timings.o
 endif # $(ARCH),x86
 
+ifeq ($(ARCH),arm64)
+BINARIES += membomb utilstress
+targets += membomb.o utilstress.o
+endif
+
 always-y := $(BINARIES)
 
 HAS_PYTHON_MAKO := \

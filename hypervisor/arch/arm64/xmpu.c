@@ -228,48 +228,50 @@ static void arm_xmpu_cell_exit(struct cell *cell){
   // todo ... Take from cell configuration and do it for all the subordinates (DDR, FPD, OCM)
   xmpu_base = XMPU_DDR_BASE_ADDR;
 
-  for_each_cpu(cpu, cell->rcpu_set) {
-    if(cpu == 0){           // RPU 0
-      xmpu_channel_n = 0;
-    }
-    else if(cpu == 1){      // RPU 1
-      xmpu_channel_n = 0;
-    }
-    else if (cpu == 2){     // RISCV 0
-      xmpu_channel_n = 3; 
-    }
-    else{
-      xmpu_print("Error: rCPU doesn't exist\r\n");
-    }
-    // DEBUG
-    //xmpu_print("rCPU %d\n\r", cpu);
-  
-    //xmpu_channel_n = 0; 
-    xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
+  if(cell->config->rcpu_set_size != 0){
+    for_each_cpu(cpu, cell->rcpu_set) {
+      if(cpu == 0){           // RPU 0
+        xmpu_channel_n = 0;
+      }
+      else if(cpu == 1){      // RPU 1
+        xmpu_channel_n = 0;
+      }
+      else if (cpu == 2){     // RISCV 0
+        xmpu_channel_n = 3; 
+      }
+      else{
+        xmpu_print("Error: rCPU doesn't exist\r\n");
+      }
+      // DEBUG
+      //xmpu_print("rCPU %d\n\r", cpu);
+    
+      //xmpu_channel_n = 0; 
+      xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
 
-    if(cell->config->rcpu_set_size != 0){
-      for(i = 0; i<NR_XMPU_REGIONS; i++){
-        if(xmpu_chnl->region[i].id == cell->config->id){ 
-          // Clean regions used by the cell
-          valid_reg_n = i;
-          region_base = valid_reg_n * XMPU_REGION_OFFSET;
+      if(cell->config->rcpu_set_size != 0){
+        for(i = 0; i<NR_XMPU_REGIONS; i++){
+          if(xmpu_chnl->region[i].id == cell->config->id){ 
+            // Clean regions used by the cell
+            valid_reg_n = i;
+            region_base = valid_reg_n * XMPU_REGION_OFFSET;
 
-          //DEBUG
-          // xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
-          // xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
-          // xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-          // xmpu_print("XMPU region: %d\n\r", valid_reg_n);
+            //DEBUG
+            // xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
+            // xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
+            // xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+            // xmpu_print("XMPU region: %d\n\r", valid_reg_n);
 
-          set_xmpu_region_default(xmpu_base, region_base);
-          xmpu_chnl->region[valid_reg_n].id = 0;
-          xmpu_chnl->region[valid_reg_n].used = 0;
+            set_xmpu_region_default(xmpu_base, region_base);
+            xmpu_chnl->region[valid_reg_n].id = 0;
+            xmpu_chnl->region[valid_reg_n].used = 0;
+          }
         }
       }
+      else{
+        //xmpu_print("No rCPUs in this cell\n\r"); 
+      }
     }
-    else{
-      //xmpu_print("No rCPUs in this cell\n\r"); 
-    }
-  }
+  } 
 }
 
 // Cell init: config XMPU

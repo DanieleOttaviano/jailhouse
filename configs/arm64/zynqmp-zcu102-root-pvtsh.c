@@ -1,17 +1,73 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for Xilinx ZynqMP ZCU102 eval board
+ * Private+Shared Cache Configuration for Xilinx ZynqMP ZCU102
  *
- * Copyright (c) Siemens AG, 2016
+ * Copyright (c) Boston University
  *
  * Authors:
- *  Jan Kiszka <jan.kiszka@siemens.com>
+ *  Renato Mancuso <rmancuso@bu.edu>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  *
- * Reservation via device tree: 0x800000000..0x83fffffff
+ * * * * * * Description * * * * * *
+ *
+ * This configuration is intended to reorganize the memory seen by the
+ * (Linux) root-cell so that the shared cache is split in two
+ * partitions: 1/4 is a private cache partition where application's
+ * memory needs to be explicitly allocated; 3/4 is the shared cache
+ * space where application memory is allocated by default.
+ *
+ * Physical Memory Layout:
+ * NOTE: this platforms has 2GB @ 0x0_0000_0000 + 2GB @0x8_0000_0000
+ *
+ * Jailhouse:   0x8_7f00_0000 -> 0x8_8000_0000 (size: 0x0_0100_0000)
+ *
+ * Comm Reg1:   0x8_7e00_0000 -> 0x8_7f00_0000 (size: 0x0_0100_0000)
+ *
+ * Comm Reg2:   0x8_7d00_0000 -> 0x8_7e00_0000 (size: 0x0_0100_0000)
+ *
+ * PrivateHI:   0x8_0000_0000 -> 0x8_1f40_0000 (size: 0x0_1f40_0000)
+ *              COL: 0xf000,END: 0x8_7d00_0000
+ *              VIRT: 0x8_5dc0_0000 -> 0x8_7d00_0000
+ *
+ * SharedHI :   0x8_0000_0000 -> 0x8_5dc0_0000 (size: 0x0_5dc0_0000)
+ *              COL: 0x0fff,END: 0x8_7d00_0000
+ *              VIRT: 0x8_0000_0000 -> 0x8_5dc0_0000
+ *
+ * PrivateLO:   0x0_0000_0000 -> 0x0_2000_0000 (size: 0x0_2000_0000)
+ *              COL: 0xf000,END: 0x0_8000_0000
+ *              VIRT: 0x0_6000_0000 -> 0x0_8000_0000
+ *
+ * SharedLO :   0x0_0000_0000 -> 0x0_6000_0000 (size: 0x0_6000_0000)
+ *              COL: 0x0fff,END: 0x0_8000_0000
+ *              VIRT: 0x0_0000_0000 -> 0x0_6000_0000
+ *
+ * * * * * * Required DTS entry to match JH configuration * * * * * *
+ *
+ * / {
+ * 	reserved-memory {
+ * 		#address-cells = <2>;
+ * 		#size-cells = <2>;
+ * 		ranges;
+ *
+ * 		jailhouse_mem: jailhouse_mem@87d000000 {
+ * 			 no-map;
+ * 		         reg = <0x8 0x7d000000 0x0 0x03000000>;
+ * 		};
+ *
+ * 		private_hi: privatehi@85dc00000 {
+ * 		         reg = <0x8 0x5dc00000 0x0 0x1f400000>;
+ * 		};
+ *
+ * 		private_lo: privatelo@60000000 {
+ * 		         reg = <0x0 0x60000000 0x0 0x20000000>;
+ * 		};
+ *
+ * 	};
+ * };
+ *
  */
 #include <jailhouse/types.h>
 #include <jailhouse/cell-config.h>
@@ -21,8 +77,7 @@
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	__u64 rcpus[1];
-	struct jailhouse_memory mem_regions[24];
+	struct jailhouse_memory mem_regions[26];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
@@ -31,10 +86,11 @@ struct {
 	.header = {
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
+		.architecture = JAILHOUSE_ARM64,
 		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,
 		.hypervisor_memory = {
-			.phys_start = 0x6f000000,
-			.size =       0x01000000,
+			.phys_start = 0x87f000000,
+			.size =       0x001000000,
 		},
 		.debug_console = {
 			.address = 0xff000000,
@@ -50,7 +106,9 @@ struct {
 			.pci_is_virtual = 1,
 			.pci_domain = -1,
 			.color = {
-				.way_size = 0x10000,
+				/* in debug mode, the way_size is autodetected
+				 * if it is not specified */
+				/* .way_size = 0x10000, */
 				.root_map_offset = 0x0C000000000,
 			},
 			.iommu_units = {
@@ -95,10 +153,9 @@ struct {
 		},
 
 		.root_cell = {
-			.name = "ZynqMP-ZCU104",
+			.name = "ZynqMP-ZCU102 PVT+SH",
 
 			.cpu_set_size = sizeof(config.cpus),
-			.rcpu_set_size = sizeof(config.rcpus), 
 			.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 			.num_irqchips = ARRAY_SIZE(config.irqchips),
 			.num_pci_devices = ARRAY_SIZE(config.pci_devices),
@@ -113,22 +170,11 @@ struct {
 		0xf,
 	},
 
-	.rcpus = {
-		0x1, // RPU
-	},
-
 	.mem_regions = {
 		/* IVSHMEM shared memory region for 0001:00:00.0 */
-		JAILHOUSE_SHMEM_NET_REGIONS(0x060000000, 0),
+		JAILHOUSE_SHMEM_NET_REGIONS(0x87d000000, 0),
 		/* IVSHMEM shared memory region for 0001:00:01.0 */
-		JAILHOUSE_SHMEM_NET_REGIONS(0x060100000, 0),
-		/* FPGA configuration ports */ {
-			.phys_start = 0x80000000,
-			.virt_start = 0x80000000,
-			.size = 0x00100000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_IO,
-		},
+		JAILHOUSE_SHMEM_NET_REGIONS(0x87e000000, 0),
 		/* MMIO (permissive) */ {
 			.phys_start = 0xfd000000,
 			.virt_start = 0xfd000000,
@@ -136,29 +182,80 @@ struct {
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
 		},
-		/* RAM */ {
-			.phys_start = 0x00000000,
-			.virt_start = 0x00000000,
-			.size = 0x80000000,
+		/* RAM Shared LO*/ {
+			.phys_start = 0x0,
+			.virt_start = 0x0,
+			.size = 0x60000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_EXECUTE,
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_COLORED,
+			.colors=0x0fff,
 		},
-		/* RAM */ 
-		{
+		/* RAM Shared HI*/ {
 			.phys_start = 0x800000000,
 			.virt_start = 0x800000000,
-			.size = 0x080000000,
+			.size = 0x5dc00000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_EXECUTE,
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_COLORED,
+			.colors=0x0fff,
 		},
-
-		/* PCI host bridge */
-		{
+		/* RAM Private LO*/ {
+		        .phys_start = 0x0,
+			.virt_start = 0x060000000,
+			.size = 0x20000000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_COLORED |
+			        JAILHOUSE_MEM_COLORED_NO_COPY,
+			.colors=0xf000,
+		},
+		/* RAM Private HI*/ {
+		        .phys_start = 0x800000000,
+			.virt_start = 0x85dc00000,
+			.size = 0x1f400000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_COLORED |
+			        JAILHOUSE_MEM_COLORED_NO_COPY,
+			.colors=0xf000,
+		},
+		/* PCI host bridge */ {
 			.phys_start = 0x8000000000,
 			.virt_start = 0x8000000000,
 			.size = 0x1000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
+		},
+		/* TCM region for the R5 */ {
+			.phys_start = 0xffe00000,
+			.virt_start = 0xffe00000,
+			.size = 0xC0000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+
+		/* DDR 0 region for the R5 */ {
+			.phys_start = 0x3ed00000,
+			.virt_start = 0x3ed00000,
+			.size = 0x100000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+
+		/* DDR 1 region for the R5 */ {
+			.phys_start = 0x3ed40000,
+			.virt_start = 0x3ed40000,
+			.size = 0x100000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+
+		/* proc 0 region for the R5 */ {
+			.phys_start = 0xff9a0100,
+			.virt_start = 0xff9a0100,
+			.size = 0x100,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+
+		/* proc 1 region for the R5 */ {
+			.phys_start = 0xff9a0200,
+			.virt_start = 0xff9a0200,
+			.size = 0x100,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
 		},
 	},
 

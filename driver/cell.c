@@ -1,7 +1,7 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  * 
- * Omnivisor Patch for remote core virtualization 
+ * Omnivisor branch for remote core virtualization 
  * 
  * Copyright (c) Siemens AG, 2013-2016
  * Copyright (c) Daniele Ottaviano, 2024
@@ -203,6 +203,10 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 	if (config->revision != JAILHOUSE_CONFIG_REVISION) {
 		pr_err("jailhouse: Configuration revision mismatch\n");
 		err = -EINVAL;
+		goto kfree_config_out;
+	}
+	if (config->architecture != JAILHOUSE_ARCHITECTURE) {
+		pr_err("jailhouse: Configuration architecture mismatch\n");
 		goto kfree_config_out;
 	}
 

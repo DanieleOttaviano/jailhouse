@@ -22,6 +22,7 @@ struct {
 		.signature = JAILHOUSE_CELL_DESC_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
 		.name = "gic-demo",
+		.architecture = JAILHOUSE_ARM64,
 #ifdef USE_AARCH32
 		.flags = JAILHOUSE_CELL_PASSIVE_COMMREG | JAILHOUSE_CELL_AARCH32,
 #else

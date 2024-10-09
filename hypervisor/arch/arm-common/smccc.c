@@ -48,6 +48,9 @@ int smccc_discover(void)
 	if (ret != ARM_SMCCC_SUCCESS)
 		return sdei_available ? trace_error(-EIO) : 0;
 
+#ifndef CONFIG_MACH_RK3588
+	sdei_available = false;
+#else
 #ifdef __aarch64__
 	/* Check if we have SDEI (ARMv8 only) */
 	ret = smc(SDEI_VERSION);
@@ -57,6 +60,7 @@ int smccc_discover(void)
 		sdei_available = true;
 	}
 	sdei_probed = true;
+#endif
 #endif
 
 	/* We need to have at least SMCCC v1.1 */
@@ -139,7 +143,14 @@ enum trap_return handle_smc(struct trap_context *ctx)
 #if defined(__aarch64__) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 		regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);
 #else
-		regs[0] = ARM_SMCCC_NOT_SUPPORTED;
+		if (this_cell() == &root_cell)
+			/*
+			 *  S32G3 Hack: Passthru, we need it for SMIC.
+			 *  Requires further investigation!
+			 */
+			regs[0] = smc_arg7(regs[0], regs[1], regs[2], regs[3], regs[4], regs[5], regs[6], regs[7]);
+		else
+			regs[0] = ARM_SMCCC_NOT_SUPPORTED;
 #endif
 		break;
 

@@ -1,9 +1,10 @@
 /*
- * Memguard for Jailhouse ARM64, GICv2
+ * Memguard for Jailhouse ARM64, GICv2, GICv3
  *
  * Copyright (c) Czech Technical University in Prague, 2018
  * Copyright (C) Boston University, 2020
  * Copyright (C) Technical University of Munich, 2020
+ * Copyright (C) Minerva Systems, 2024
  *
  * Authors:
  *  Joel Matějka <matejjoe@fel.cvut.cz>
@@ -11,6 +12,7 @@
  *  Přemysl Houdek <houdepre@fel.cvut.cz>
  *  Renato Mancuso (BU) <rmancuso@bu.edu>
  *  Andrea Bastoni <andrea.bastoni@tum.de> at https://rtsl.cps.mw.tum.de
+ *  Filippo Fontana <filippo.fontana@minervasys.tech>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
@@ -29,6 +31,8 @@
 #include <asm/pmu.h>
 
 //#define MG_VERBOSE_DEBUG
+
+#define MAX_CPUS 255
 
 /*
  * Protocol to interact with the pmu/timer:
@@ -74,7 +78,7 @@ static inline void memguard_dump_timer_regs(void)
 static void memguard_isr_debug_print(const char* name)
 {
 #if 0
-	static u32 print_cnt[4] = {0, 0, 0, 0};
+	static u32 print_cnt[MAX_CPUS] = {0};
 	static u32 count = 0;
 
 	u64 now = timer_get_ticks();
@@ -230,10 +234,8 @@ void memguard_cpu_reset(void)
 	struct memguard *memguard = &this_cpu_public()->memguard;
 	memguard->block |= MG_RESET;
 
-	/* Jailhouse and Linux only play with SGI and PPIs. SPIs are
-	 * untouched, and we don't need to expliclty restart the PMU
-	 */
 	timer_cpu_reset();
+	pmu_cpu_reset();
 }
 
 /** Setup budget time + memory for this CPU. */

@@ -230,6 +230,7 @@ int color_copy_root(struct cell *root, bool init)
 
 	assert(root == &root_cell);
 	if (coloring_way_size == 0) {
+		col_print("WARN: way_size == 0, root cell not colored\n");
 		return 0;
 	}
 

@@ -13,6 +13,8 @@
 #ifndef _JAILHOUSE_ASM_GIC_V3_H
 #define _JAILHOUSE_ASM_GIC_V3_H
 
+#include <jailhouse/percpu.h>
+#include <asm/gic.h>
 #include <asm/sysregs.h>
 #include <asm/arch_gicv3.h>
 
@@ -125,4 +127,21 @@
 #define ICH_LR_PRIORITY_SHIFT	48
 #define ICH_LR_SGI_EOI		(0x1ULL << 41)
 #define ICH_LR_PHYS_ID_SHIFT	32
+
+static inline void gicv3_set_bit(unsigned int base, unsigned int irq)
+{
+	void *gicr = this_cpu_public()->gicr.base + GICR_SGI_BASE;
+	mmio_write32(gicr + base + IRQ_BIT_REG_OFF(irq),
+						(1 << IRQ_BIT_POS(irq)));
+}
+
+static inline void gicv3_enable_irq(unsigned int irq)
+{
+	gicv3_set_bit(GICR_ISENABLER, irq);
+}
+
+static inline void gicv3_disable_irq(unsigned int irq)
+{
+	gicv3_set_bit(GICR_ICENABLER, irq);
+}
 #endif /* _JAILHOUSE_ASM_GIC_V3_H */

@@ -3,11 +3,9 @@
  *
  * Configuration for NXP S32V234 SBC (rootcell for DRAM profiling)
  *
- * Copyright (C) 2016 Evidence Srl
+ * Copyright (C) Boston University, MA, USA, 2020
  *
  * Authors:
- *  Claudio Scordino <claudio@evidence.eu.com>
- *  Bruno Morelli <b.morelli@evidence.eu.com>
  *  Renato Mancuso <rmancuso@bu.edu>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See

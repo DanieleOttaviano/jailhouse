@@ -11,10 +11,9 @@
  * 0xfff00000 -> 0xfff01000  (DDR1)     : Fake UART page
  * 0xfff01000 -> 0x100000000 (DDR1)     : Loadable img mem. for inmate
  *
- * Copyright (c) Siemens AG, 2016
+ * Copyright (C) Boston University, MA, USA, 2020
  *
  * Authors:
- *  Jan Kiszka <jan.kiszka@siemens.com>
  *  Renato Mancuso <rmancuso@bu.edu>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See

@@ -49,10 +49,19 @@
 #endif
 
 /*
+ * Supported architectures of Jailhouse. Used in the header of system and cell
+ * configurations, as well as in python tooling for automatic architecture
+ * detection.
+ */
+#define JAILHOUSE_X86		0
+#define JAILHOUSE_ARM		1
+#define JAILHOUSE_ARM64		2
+
+/*
  * Incremented on any layout or semantic change of system or cell config.
  * Also update formats and HEADER_REVISION in pyjailhouse/config_parser.py.
  */
-#define JAILHOUSE_CONFIG_REVISION	13
+#define JAILHOUSE_CONFIG_REVISION	14
 
 #define JAILHOUSE_CELL_NAME_MAXLEN	31
 
@@ -75,7 +84,7 @@
 #define CELL_FLAGS_VIRTUAL_CONSOLE_PERMITTED(flags) \
 	!!((flags) & JAILHOUSE_CELL_VIRTUAL_CONSOLE_PERMITTED)
 
-#define JAILHOUSE_CELL_DESC_SIGNATURE	"JHCELL"
+#define JAILHOUSE_CELL_DESC_SIGNATURE	"JHCLL"
 
 /**
  * The jailhouse cell configuration.
@@ -84,7 +93,8 @@
  * structure.
  */
 struct jailhouse_cell_desc {
-	char signature[6];
+	char signature[5];
+	__u8 architecture;
 	__u16 revision;
 
 	char name[JAILHOUSE_CELL_NAME_MAXLEN+1];
@@ -92,9 +102,7 @@ struct jailhouse_cell_desc {
 	__u32 flags;
 
 	__u32 cpu_set_size;
-#if defined(CONFIG_OMNIVISOR)
 	__u32 rcpu_set_size;
-#endif /* CONFIG_OMNIVISOR */
 	__u32 num_memory_regions;
 	__u32 num_cache_regions;
 	__u32 num_irqchips;
@@ -125,11 +133,9 @@ struct jailhouse_cell_desc {
 #define JAILHOUSE_MEM_COLORED_NO_COPY	0x0400
 /* Set internally for remap_to/unmap_from root ops */
 #define JAILHOUSE_MEM_TMP_ROOT_REMAP	0x0800
-#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 #define JAILHOUSE_MEM_RPU		12 /* uses bits 12..13*/	// to do ... change to be generic
 #define JAILHOUSE_MEM_TCM_A		(1 << JAILHOUSE_MEM_RPU)
 #define JAILHOUSE_MEM_TCM_B		(2 << JAILHOUSE_MEM_RPU)
-#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 #define JAILHOUSE_MEM_IO_UNALIGNED	0x8000
 #define JAILHOUSE_MEM_IO_WIDTH_SHIFT	16 /* uses bits 16..19 */
 #define JAILHOUSE_MEM_IO_8		(1 << JAILHOUSE_MEM_IO_WIDTH_SHIFT)
@@ -329,7 +335,7 @@ struct jailhouse_pio {
 		.length = __length,	\
 	}
 
-#define JAILHOUSE_SYSTEM_SIGNATURE	"JHSYST"
+#define JAILHOUSE_SYSTEM_SIGNATURE	"JHSYS"
 
 /*
  * The flag JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE allows the root cell to read
@@ -387,8 +393,10 @@ struct jailhouse_qos_device {
  * General descriptor of the system.
  */
 struct jailhouse_system {
-	char signature[6];
+	char signature[5];
+	__u8 architecture;
 	__u16 revision;
+
 	__u32 flags;
 
 	/** Jailhouse's location in memory */
@@ -434,9 +442,7 @@ jailhouse_cell_config_size(struct jailhouse_cell_desc *cell)
 {
 	return sizeof(struct jailhouse_cell_desc) +
 		cell->cpu_set_size +
-#if defined(CONFIG_OMNIVISOR)
 		cell->rcpu_set_size +
-#endif /* CONFIG_OMNIVISOR */
 		cell->num_memory_regions * sizeof(struct jailhouse_memory) +
 		cell->num_cache_regions * sizeof(struct jailhouse_cache) +
 		cell->num_irqchips * sizeof(struct jailhouse_irqchip) +
@@ -461,22 +467,18 @@ jailhouse_cell_cpu_set(const struct jailhouse_cell_desc *cell)
 		sizeof(struct jailhouse_cell_desc));
 }
 
-#if defined(CONFIG_OMNIVISOR)
 static inline const unsigned long *
 jailhouse_cell_rcpu_set(const struct jailhouse_cell_desc *cell)
 {
 	return (const unsigned long *) 
 		((void *)jailhouse_cell_cpu_set(cell) + cell->cpu_set_size);
 }
-#endif /* CONFIG_OMNIVISOR */
 
 static inline const struct jailhouse_memory *
 jailhouse_cell_mem_regions(const struct jailhouse_cell_desc *cell)
 {
-#if defined(CONFIG_OMNIVISOR)
 	return (const struct jailhouse_memory *)
 		((void *)jailhouse_cell_rcpu_set(cell) + cell->rcpu_set_size);
-#endif /* CONFIG_OMNIVISOR */
 	return (const struct jailhouse_memory *)
 		((void *)jailhouse_cell_cpu_set(cell) + cell->cpu_set_size);
 }

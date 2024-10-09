@@ -17,9 +17,12 @@
 
 #include <jailhouse/types.h>
 #include <jailhouse/assert.h>
+#include <jailhouse/control.h>
+#include <jailhouse/cell.h>
 #include <asm/processor.h>
 #include <asm/sysregs.h>
 #include <asm/gic_v2.h>
+#include <asm/gic_v3.h>
 
 #define CNTHP_CTL_EL2_ENABLE	(1<<0)
 #define CNTHP_CTL_EL2_IMASK	(1<<1)
@@ -105,7 +108,10 @@ static inline void timer_cpu_reset(void)
 	/* Upon reset (create / destroy cells) JH disables all PPI
 	 * except the maintenance IRQ, we re-enable the hv_timer
 	 */
-	gicv2_enable_irq(hv_timer_irq);
+	if (system_config->platform_info.arm.gic_version == 3)
+		gicv3_enable_irq(hv_timer_irq);
+	else
+		gicv2_enable_irq(hv_timer_irq);
 }
 
 /* -------------------------- FUNCTION DECLARATION ------------------------- */

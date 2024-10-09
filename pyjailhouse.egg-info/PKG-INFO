@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: pyjailhouse
+Version: 0.12
+Summary: A Python interface for the Jailhouse Hypervisor
+Home-page: https://github.com/siemens/jailhouse
+Author-email: jailhouse-dev@googlegroups.com
+License: GPLv2
+Platform: UNKNOWN
+License-File: COPYING
+
+UNKNOWN
+

@@ -31,9 +31,10 @@ struct {
 	.header = {
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
 		.revision = JAILHOUSE_CONFIG_REVISION,
+		.architecture = JAILHOUSE_ARM64,
 		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,
 		.hypervisor_memory = {
-			.phys_start = 0x6f000000,
+			.phys_start = 0x7f000000,
 			.size =       0x01000000,
 		},
 		.debug_console = {
@@ -114,7 +115,7 @@ struct {
 	},
 
 	.rcpus = {
-		0x7, // RPU0, RPU1, RISC-C (soft-core)
+		0x7, // RPU0, RPU1, RISC-V (soft-core)
 	},
 
 	.mem_regions = {
@@ -139,7 +140,14 @@ struct {
 		/* RAM */ {
 			.phys_start = 0x0,
 			.virt_start = 0x0,
-			.size = 0x7f000000,
+			.size = 0x60000000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE,
+		},
+		/* RAM */ {
+			.phys_start = 0x60200000,
+			.virt_start = 0x60200000,
+			.size = 0x1ee00000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
@@ -156,6 +164,36 @@ struct {
 			.size = 0x1000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
+		},
+		/* TCM region for the R5 */ {
+			.phys_start = 0xffe00000,
+			.virt_start = 0xffe00000,
+			.size = 0xC0000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+		/* DDR 0 region for the R5 */ {
+			.phys_start = 0x3ed00000,
+			.virt_start = 0x3ed00000,
+			.size = 0x40000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+		/* DDR 1 region for the R5 */ {
+			.phys_start = 0x3ed40000,
+			.virt_start = 0x3ed40000,
+			.size = 0x40000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+		/* proc 0 region for the R5 */ {
+			.phys_start = 0xff9a0100,
+			.virt_start = 0xff9a0100,
+			.size = 0x100,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+		},
+		/* proc 1 region for the R5 */ {
+			.phys_start = 0xff9a0200,
+			.virt_start = 0xff9a0200,
+			.size = 0x100,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
 		},
 	},
 

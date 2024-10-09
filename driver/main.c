@@ -1,7 +1,7 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Omnivisor Patch for remote core virtualization
+ * Omnivisor branch for remote core virtualization
  * 
  * Copyright (c) Siemens AG, 2013-2017
  * Copyright (c) Valentine Sinitsyn, 2014
@@ -26,9 +26,7 @@
 #include <linux/miscdevice.h>
 #include <linux/firmware.h>
 #include <linux/mm.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5,7,0)
 #include <linux/kallsyms.h>
-#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
 #include <linux/sched/signal.h>
 #endif
@@ -117,13 +115,6 @@ static bool console_available;
 static struct resource *hypervisor_mem_res;
 
 static typeof(ioremap_page_range) *ioremap_page_range_sym;
-static typeof(__get_vm_area_caller) *__get_vm_area_caller_sym;
-static int (*vmap_pages_range_noflush_sym) (unsigned long, unsigned long,  
-                pgprot_t, struct page **, unsigned int);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0)
-unsigned long (*kallsyms_lookup_name_sym)(const char*);
-#endif
-
 #ifdef CONFIG_X86
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,3,0)
 #define lapic_timer_period	lapic_timer_frequency
@@ -168,21 +159,6 @@ static void init_hypercall(void)
 {
 }
 #endif
-
-static unsigned long lookup_kallsyms_lookup_name(void) 
-{
-    struct kprobe kp;
-    unsigned long addr;
-    
-    memset(&kp, 0, sizeof(struct kprobe));
-    kp.symbol_name = "kallsyms_lookup_name";
-    if (register_kprobe(&kp) < 0) {
-        return 0;
-    }
-    addr = (unsigned long)kp.addr;
-    unregister_kprobe(&kp);
-    return addr;
-}
 
 static void copy_console_page(struct jailhouse_virt_console *dst)
 {
@@ -262,7 +238,7 @@ static long get_max_rcpus(u32 rcpu_set_size,
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
 #define __get_vm_area(size, flags, start, end)			\
-	__get_vm_area_caller_sym(size, flags, start, end,	\
+	__get_vm_area_caller(size, flags, start, end,		\
 			     __builtin_return_address(0))
 #endif
 
@@ -270,11 +246,6 @@ void *jailhouse_ioremap(phys_addr_t phys, unsigned long virt,
 			unsigned long size)
 {
 	struct vm_struct *vma;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
-	unsigned int i, nr = size >> PAGE_SHIFT;
-	struct page ** page_list = kmalloc(sizeof(struct page *) * nr,
-							GFP_KERNEL);
-#endif
 
 	size = PAGE_ALIGN(size);
 	if (virt)
@@ -287,29 +258,12 @@ void *jailhouse_ioremap(phys_addr_t phys, unsigned long virt,
 		return NULL;
 	vma->phys_addr = phys;
 
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
-	for (i = 0; i < nr; i += 1U){
-		page_list[i]=phys_to_page(phys + (i << PAGE_SHIFT));
-	}	
-	if (vmap_pages_range_noflush_sym((unsigned long)vma->addr,
-				   (unsigned long)vma->addr + size, 
-				   PAGE_KERNEL_EXEC,
-				   page_list,
-				   PAGE_SHIFT
-				   )) {
-		vunmap(vma->addr);
-		return NULL;
-	}
-	kfree(page_list);
-#else
 	if (ioremap_page_range_sym((unsigned long)vma->addr,
-			   (unsigned long)vma->addr + size, phys,
-			   PAGE_KERNEL_EXEC)) {
+				   (unsigned long)vma->addr + size, phys,
+				   PAGE_KERNEL_EXEC)) {
 		vunmap(vma->addr);
 		return NULL;
 	}
-#endif
 
 	return vma->addr;
 }
@@ -479,6 +433,10 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	}
 	if (config_header.revision != JAILHOUSE_CONFIG_REVISION) {
 		pr_err("jailhouse: Configuration revision mismatch\n");
+		return -EINVAL;
+	}
+	if (config_header.architecture != JAILHOUSE_ARCHITECTURE) {
+		pr_err("jailhouse: Configuration architecture mismatch\n");
 		return -EINVAL;
 	}
 
@@ -1133,37 +1091,22 @@ static struct notifier_block jailhouse_shutdown_nb = {
 	.notifier_call = jailhouse_shutdown_notify,
 };
 
-
 static int __init jailhouse_init(void)
 {
 	int err;
-
-	// Get the address of kallsyms_lookup_name function
-	kallsyms_lookup_name_sym = (unsigned long (*)(const char*))lookup_kallsyms_lookup_name();
-	if(!kallsyms_lookup_name_sym){
-		pr_err("kallsyms_lookup_name function not resolved\n");
-		return -EINVAL;
-	}
 
 #if defined(CONFIG_KALLSYMS_ALL) && LINUX_VERSION_CODE < KERNEL_VERSION(5,7,0)
 #define __RESOLVE_EXTERNAL_SYMBOL(symbol)			\
 	symbol##_sym = (void *)kallsyms_lookup_name(#symbol);	\
 	if (!symbol##_sym)					\
 		return -EINVAL
-#elif defined(CONFIG_KALLSYMS_ALL) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0)
-#define __RESOLVE_EXTERNAL_SYMBOL(symbol)				\
-	symbol##_sym = (void *)kallsyms_lookup_name_sym(#symbol);	\
-	if (!symbol##_sym)						\
-		return -EINVAL
 #else
 #define __RESOLVE_EXTERNAL_SYMBOL(symbol)			\
 	symbol##_sym = &symbol
 #endif
 #define RESOLVE_EXTERNAL_SYMBOL(symbol...) __RESOLVE_EXTERNAL_SYMBOL(symbol)
-	
-	RESOLVE_EXTERNAL_SYMBOL(__get_vm_area_caller);
+
 	RESOLVE_EXTERNAL_SYMBOL(ioremap_page_range);
-	RESOLVE_EXTERNAL_SYMBOL(vmap_pages_range_noflush);
 #ifdef CONFIG_X86
 	RESOLVE_EXTERNAL_SYMBOL(lapic_timer_period);
 #endif

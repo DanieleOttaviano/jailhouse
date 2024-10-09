@@ -42,7 +42,15 @@
  */
 #define JAILHOUSE_INMATE_MEM_PAGE_DIR_LEN	512
 
+struct trap_context {
+	unsigned long regs[31];
+	unsigned long long far;
+	unsigned long long elr;
+	unsigned long long esr;
+};
+
 void __attribute__((used)) vector_irq(void);
+void __attribute__((used)) vector_sync(struct trap_context *ctx);
 
 static inline void enable_irqs(void)
 {

@@ -146,8 +146,10 @@ color_paging_create(const struct paging_structures *pg_structs,
 {
 	struct color_op op;
 
-	if (coloring_way_size == 0)
+	if (coloring_way_size == 0) {
+		col_print("WARN: way_size == 0, coloring disabled\n");
 		return -EINVAL;
+	}
 
 	op.pg_structs = pg_structs;
 	op.phys = phys;
@@ -172,8 +174,10 @@ color_paging_destroy(const struct paging_structures *pg_structs,
 {
 	struct color_op op;
 
-	if (coloring_way_size == 0)
+	if (coloring_way_size == 0) {
+		col_print("WARN: way_size == 0, coloring disabled\n");
 		return -EINVAL;
+	}
 
 	op.pg_structs = pg_structs;
 	op.phys = phys;
