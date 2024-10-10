@@ -153,7 +153,7 @@ class PIORegion:
 
 
 class CellConfig:
-    _HEADER_FORMAT = '=5sBH32s4xIIIIIIIIIIIQ8x32x'
+    _HEADER_FORMAT = '=5sBH32s4xIIIIIIIIIIIIQ8x32x'
 
     def __init__(self, data, root_cell=False):
         self.data = data
@@ -165,6 +165,7 @@ class CellConfig:
              name,
              self.flags,
              self.cpu_set_size,
+             self.rcpu_set_size,
              self.num_memory_regions,
              self.num_cache_regions,
              self.num_irqchips,
@@ -193,7 +194,7 @@ class CellConfig:
                     if mask_array[n] & (1 << bit) != 0:
                         self.cpus.add(n * 8 + bit)
 
-            mem_region_offs = cpu_set_offs + self.cpu_set_size
+            mem_region_offs = cpu_set_offs + self.cpu_set_size + self.rcpu_set_size
             self.memory_regions = []
             for n in range(self.num_memory_regions):
                 self.memory_regions.append(

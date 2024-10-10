@@ -458,7 +458,6 @@ static void cell_destroy_internal(struct cell *cell)
 		for_each_cpu(cpu, cell->rcpu_set) {
 			// to do ... call platform and architectueral specific arch_park_rcpu and modify public_per_rcpu stats
 #if defined(CONFIG_MACH_ZYNQMP_ZCU102)
-			printk("Stopping rCPU %d\r\n", cpu);
 			if(cpu == 0){
 				zynqmp_r5_stop(NODE_RPU_0);
 			}
@@ -591,7 +590,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 
 #if defined(CONFIG_OMNIVISOR)
 	/* the root cell's rCPU set must be super-set of new cell's set */
-	printk("Cell rCPU set size: %d\r\n", cell->config->rcpu_set_size);
 	if (cell->config->rcpu_set_size > 0) {
 		for_each_cpu(cpu, cell->rcpu_set)
 			if (!cell_owns_rcpu(&root_cell, cpu)) {
@@ -599,7 +597,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 				goto err_cell_exit;
 			}
 	}
-	printk("Cell has rCPU set\r\n");
 #endif /* CONFIG_OMNIVISOR */
 
 	err = arch_cell_create(cell);
@@ -639,7 +636,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			//       sizeof(public_per_cpu(cpu)->stats));
 		}
 	}
-	printk("Cell rCPU bitmap cleared\r\n");
 #endif /* CONFIG_OMNIVISOR */
 
 	/*

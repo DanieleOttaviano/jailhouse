@@ -479,8 +479,6 @@ jailhouse_cell_mem_regions(const struct jailhouse_cell_desc *cell)
 {
 	return (const struct jailhouse_memory *)
 		((void *)jailhouse_cell_rcpu_set(cell) + cell->rcpu_set_size);
-	return (const struct jailhouse_memory *)
-		((void *)jailhouse_cell_cpu_set(cell) + cell->cpu_set_size);
 }
 
 static inline const struct jailhouse_cache *
