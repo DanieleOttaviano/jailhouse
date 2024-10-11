@@ -169,7 +169,7 @@ static void init_hypercall(void)
 #endif
 
 #if defined(CONFIG_FPGA)
-	static long max_fpga_regions; //to see if we have to do partial or full
+	long max_fpga_regions; //to see if we have to do partial or full
 #endif /* CONFIG_FPGA */
 
 
@@ -1017,7 +1017,8 @@ int jailhouse_cmd_fpga_load(struct jailhouse_fpga_load __user *arg)
 	*/
 	
 	/*.... use other flags for Intel FPGAs*/
-	err = jailhouse_fpga_load(fpga_load_args);
+	//err = jailhouse_fpga_load(fpga_load_args);
+	err = 0;
 	return err;
 }
 #endif /* CONFIG_FPGA */

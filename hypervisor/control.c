@@ -68,6 +68,18 @@ unsigned int next_cpu(unsigned int cpu, struct cpu_set *cpu_set,
 	return cpu;
 }
 
+unsigned int next_region(unsigned int region, struct fpga_region_set *fpga_region_set,
+			 unsigned int exception)
+{
+	do
+		region++;
+	while (region <= fpga_region_set->max_region_id &&
+	       (region == exception || !test_bit(region, fpga_region_set->bitmap)));
+	return region;
+
+
+}
+
 /**
  * Check if a CPU ID is contained in the system's CPU set, i.e. the initial CPU
  * set of the root cell.
@@ -327,22 +339,22 @@ int cell_init(struct cell *cell)
 #if defined(CONFIG_FPGA)
 	if(fpga_regions_size > PAGE_SIZE)
 		return trace_error(-EINVAL);
-	if (fpga_regions_size > sizeof(cell->small_fpga_regions.bitmap)) {
+	if (fpga_regions_size > sizeof(cell->small_fpga_region_set.bitmap)) {
 		fpga_region_set = page_alloc(&mem_pool, 1);
 		if (!fpga_region_set)
 			return -ENOMEM;
 	} else {
-		fpga_region_set = &cell->small_fpga_regions;
+		fpga_region_set = &cell->small_fpga_region_set;
 	}
 	fpga_region_set->max_region_id = fpga_regions_size * 8 - 1;
 	memcpy(fpga_region_set->bitmap, config_fpga_regions, fpga_regions_size);
 
-	cell->fpga_regions = fpga_region_set;
+	cell->fpga_region_set = fpga_region_set;
 	// DEBUG PRINT
 	// printk("small_rcpu_set->bitmap = %ld\r\n", cell->small_rcpu_set.bitmap[0]);
 
-	if (err && cell->fpga_regions != &cell->small_fpga_regions)
-		page_free(&mem_pool, cell->fpga_regions, 1);
+	if (err && cell->fpga_region_set!= &cell->small_fpga_region_set)
+		page_free(&mem_pool, cell->fpga_region_set, 1);
 #endif /* CONFIG_FPGA */
 
 	return err;
@@ -502,6 +514,13 @@ static void cell_destroy_internal(struct cell *cell)
 		set_bit(cpu, root_cell.rcpu_set->bitmap);
 	}	
 #endif /* CONFIG_OMNIVISOR */
+
+#if defined (CONFIG_FPGA)
+	for_each_region(cpu, cell->fpga_region_set){
+		//if soft core, power off??
+		set_bit(cpu,root_cell.fpga_region_set->bitmap);
+	}
+#endif
 	
 	for_each_mem_region(mem, cell->config, n) {
 		if (!JAILHOUSE_MEMORY_IS_SUBPAGE(mem))
@@ -621,6 +640,15 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		}
 #endif /* CONFIG_OMNIVISOR */
 
+#if defined (CONFIG_FPGA)
+	/*the root cell's fpga region set must be super-set of new cell's set*/
+	for_each_region(cpu, cell->fpga_region_set)
+		if(!cell_owns_fpga_region(&root_cell,cpu)) {
+			err = trace_error(-EBUSY);
+			goto err_cell_exit;
+		}
+#endif
+
 	err = arch_cell_create(cell);
 	if (err)
 		goto err_cell_exit;
@@ -657,6 +685,13 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		//       sizeof(public_per_cpu(cpu)->stats));
 	}
 #endif /* CONFIG_OMNIVISOR */
+
+#if defined(CONFIG_FPGA)
+	//publicly accessible data structure for regions? :(
+	for_each_region(cpu, cell->fpga_region_set) {
+		clear_bit(cpu, root_cell.fpga_region_set->bitmap);
+	}
+#endif
 
 	/*
 	 * Unmap the cell's memory regions from the root cell and map them to
@@ -1155,7 +1190,7 @@ static int fpga_create(unsigned int region_id)
 	printk("create\n");
 	if(!cell_owns_fpga_region(&root_cell,region_id))
 		return trace_error(-EBUSY);
-	clear_bit(region_id,root_cell.fpga_regions->bitmap);
+	clear_bit(region_id,root_cell.fpga_region_set->bitmap);
 	printk("FPGA region%d created\n",region_id);
 	return ret;
 
@@ -1163,7 +1198,7 @@ static int fpga_create(unsigned int region_id)
 
 static int fpga_destroy(unsigned int region_id)
 {
-	set_bit(region_id,root_cell.fpga_regions->bitmap);
+	set_bit(region_id,root_cell.fpga_region_set->bitmap);
 	printk("FPGA region%d destroyed\n",region_id);
 	return 0;
 

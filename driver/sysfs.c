@@ -70,7 +70,6 @@ static const struct sysfs_ops cell_sysfs_ops = {
 /* End of compatibility section - remove as version become obsolete */
 
 static struct kobject *cells_dir;
-static struct kobject *fpga_dir;
 
 struct cell_cpu {
 	struct kobject kobj;
@@ -250,6 +249,39 @@ static int print_cpumask(char *buf, size_t size, cpumask_t *mask, bool as_list)
 	return written;
 }
 
+#if defined (CONFIG_FPGA)
+extern long max_fpga_regions; //to see if we have to do partial or full
+
+static int print_fpgalist(char *buf, size_t size, u32 *mask){
+   int i=0,written=0;
+   int start,end;
+   while(i<max_fpga_regions){
+		if((*mask) & (1U << i)){
+			start = i;
+			 while (i < max_fpga_regions && ((*mask) & (1U << i))) {
+                i++;
+            }
+			end = i-1;
+			if(written > 0)
+				written+=snprintf(buf + written,size-written, ",");
+			if (start == end)
+        		written+=snprintf(buf + written,size-written, "%d", start);
+			else
+       			written+=snprintf(buf + written,size-written, "%d-%d", start, end);
+    		}
+		else
+			i++;
+		}
+		written+=snprintf(buf + written,size-written, "\n");
+		return written;
+}
+
+static int print_fpgaregions(char *buf, size_t size, u32 *mask)
+{
+	return scnprintf(buf, size, "%x\n",*mask);
+}
+#endif /* CONFIG_FPGA*/
+
 static int print_failed_cpus(char *buf, size_t size, const struct cell *cell,
 			 bool as_list)
 {
@@ -352,6 +384,27 @@ static ssize_t rcpus_assigned_list_show(struct kobject *kobj,
 }
 #endif /* CONFIG_OMNIVISOR */
 
+#if defined(CONFIG_FPGA)
+
+static ssize_t fpga_regions_assigned_show(struct kobject *kobj,
+				  struct kobj_attribute *attr, char *buf)
+{
+	struct cell *cell = container_of(kobj, struct cell, kobj);
+
+	return print_fpgaregions(buf, PAGE_SIZE, &cell->fpga_regions_assigned);
+}
+
+static ssize_t fpga_regions_assigned_list_show(struct kobject *kobj,
+				  struct kobj_attribute *attr, char *buf)
+{
+	struct cell *cell = container_of(kobj, struct cell, kobj);
+
+	return print_fpgalist(buf, PAGE_SIZE, &cell->fpga_regions_assigned);
+}
+
+#endif /* CONFIG_FPGA */
+
+
 static struct kobj_attribute cell_name_attr = __ATTR_RO(name);
 static struct kobj_attribute cell_state_attr = __ATTR_RO(state);
 static struct kobj_attribute cell_cpus_assigned_attr =
@@ -367,6 +420,12 @@ static struct kobj_attribute cell_rcpus_assigned_attr =
 static struct kobj_attribute cell_rcpus_assigned_list_attr =
 	__ATTR_RO(rcpus_assigned_list);
 #endif /* CONFIG_OMNIVISOR */
+#if defined (CONFIG_FPGA)
+static struct kobj_attribute cell_fpga_regions_assigned_attr =
+	__ATTR_RO(fpga_regions_assigned);
+static struct kobj_attribute cell_fpga_regions_assigned_list_attr =
+	__ATTR_RO(fpga_regions_assigned_list);
+#endif /* CONFIG_FPGA */
 
 static struct attribute *cell_attrs[] = {
 	&cell_name_attr.attr,
@@ -379,6 +438,10 @@ static struct attribute *cell_attrs[] = {
 	&cell_rcpus_assigned_attr.attr,
 	&cell_rcpus_assigned_list_attr.attr,
 #endif /* CONFIG_OMNIVISOR */
+#if defined (CONFIG_FPGA)
+	&cell_fpga_regions_assigned_attr.attr,
+	&cell_fpga_regions_assigned_list_attr.attr,
+#endif /* CONFIG_FPGA */
 	NULL,
 };
 COMPAT_ATTRIBUTE_GROUPS(cell);
@@ -399,13 +462,6 @@ static struct cell_cpu *find_cell_cpu(struct cell *cell, unsigned int cpu)
 
 	return NULL;
 }
-#if defined(CONFIG_FPGA)
-int jailhouse_sysfs_region_create(struct region *region)
-{
-	
-}
-#endif /* CONFIG_FPGA */
-
 
 int jailhouse_sysfs_cell_create(struct cell *cell)
 {
@@ -631,14 +687,6 @@ int jailhouse_sysfs_init(struct device *dev)
 		sysfs_remove_group(&dev->kobj, &jailhouse_attribute_group);
 		return -ENOMEM;
 	}
-	#if defined(CONFIG_FPGA)
-	/*for FPGA*/
-	fpga_dir = kobject_create_and_add("fpga_regions",&dev->kobj);
-	if (!cells_dir) {
-		sysfs_remove_group(&dev->kobj, &jailhouse_attribute_group);
-		return -ENOMEM;
-	}
-	#endif /* CONFIG_FPGA */
 	return 0;
 }
 
