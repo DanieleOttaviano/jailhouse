@@ -45,6 +45,11 @@ struct cell *root_cell;
 static LIST_HEAD(cells);
 static cpumask_t offlined_cpus;
 
+#if defined(CONFIG_FPGA)
+	extern long max_fpga_regions; //to see if we have to do partial or full
+#endif /* CONFIG_FPGA */
+
+
 /* first mask is subset of second?*/
 static inline int fpga_subset(u32 *src1, u32 *src2)
 {	
@@ -275,13 +280,9 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 
 #if defined(CONFIG_FPGA)
 	if (!fpga_subset(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned)) {
-		//DEBUG
-		//pr_err("%x is not subset of %x\n",cell->fpga_regions_assigned, root_cell->fpga_regions_assigned);
 		err = -EBUSY;
 		goto error_cell_delete;
 	}
-	//DEBUG
-	pr_err("%x is subset of %x\n",cell->fpga_regions_assigned, root_cell->fpga_regions_assigned);
 #endif /* CONFIG_FPGA*/
 
 	/* Off-line each CPU assigned to the new cell and remove it from the
@@ -461,7 +462,32 @@ static int load_image(struct cell *cell,
 }
 
 #if defined(CONFIG_FPGA)
-int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream __user *bitstream)
+
+static void set_flags(u32 *flags)
+{
+	if(max_fpga_regions > 1){
+		*flags  = FPGA_MGR_PARTIAL_RECONFIG;
+	} else {
+		*flags = 0;
+	}
+	/*
+	if (encrypted with device key)
+	*flags |= FPGA_MGR_ENCRYPTED_BITSTREAM;
+	else if (encrypted with user key)
+	*flags |= FPGA_MGR_USERKEY_ENCRYPTED_BITSTREAM;
+
+	if (ddr bitstream authentication)
+	*flags |= FPGA_MGR_DDR_MEM_AUTH_BITSTREAM;
+	else if (secure memory bitstream authentication)
+	*flags |= FPGA_MGR_SECURE_MEM_AUTH_BITSTREAM;
+
+	compressed bitstream, LSB first bitstream are only for Altera FPGAs
+	*/
+
+
+}
+
+static int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream __user *bitstream)
 {
     int ret;
     struct fpga_image_info* info;
@@ -470,6 +496,11 @@ int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream __user 
 	unsigned int len;
 	unsigned int __user region_id = bitstream->region;
 
+	//check if cell owns this region first.
+	if(cell->fpga_regions_assigned & (1U << region_id) == 0){
+		pr_err("Cell doesn't own region %d\n",region_id);
+		return -EPERM;
+	}
 
     sprintf(name,"region%d",region_id);
     fpga_region = fpga_region_class_find(NULL,name,device_match_name);
@@ -478,15 +509,16 @@ int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream __user 
         return -ENODEV;
     }
 
+
 	info = fpga_image_info_alloc(&fpga_region->dev);
 	if (!info)
 		return -ENOMEM;
 
-	info->flags = 0;
+	set_flags(&info->flags);
 
 	info->firmware_name = devm_kstrdup(&fpga_region->dev, bitstream->name,  GFP_KERNEL);
 	//debug
-	pr_info("Firmware name is %s\n",info->firmware_name);
+	//pr_info("Firmware name is %s\n",info->firmware_name);
 	len = strlen(info->firmware_name);
 	if (info->firmware_name[len - 1] == '\n') //lose terminating '\n'
 		info->firmware_name[len - 1] = 0;
@@ -531,25 +563,27 @@ int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 		goto unlock_out;
 
 	//bitstreams first, then images
+	// DEBUG PRINT
+	//pr_err("cell_load.num_bitstreams: %d\n",cell_load.num_bitstreams);
 #if defined(CONFIG_FPGA)
 	pr_err("cell_load.num_bitstreams: %d\n",cell_load.num_bitstreams);
 	for (n = cell_load.num_bitstreams; n > 0; n--, bitstream++) {
-		pr_info("NAME: %s\n",bitstream->name);
-		//err = load_bitstream(cell,bitstream)
-		if (err)
-			break;
+		err = load_bitstream(cell,bitstream);
+		if (err){
+			pr_err("Unable to load bitstream in region %d\n",bitstream->region);
+			goto unlock_out;
+		}
 	}
 #endif /* CONFIG_FPGA*/
 
 	// DEBUG PRINT
-	pr_err("cell_load.num_preload_images: %d\n",cell_load.num_preload_images);
+	//pr_err("cell_load.num_preload_images: %d\n",cell_load.num_preload_images);
 	for (n = cell_load.num_preload_images; n > 0; n--, image++) {
 		err = load_image(cell, image);
 		if (err)
 			break;
 	}
-	
-	
+
 unlock_out:
 	mutex_unlock(&jailhouse_lock);
 

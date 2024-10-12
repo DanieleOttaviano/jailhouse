@@ -519,6 +519,9 @@ static void cell_destroy_internal(struct cell *cell)
 	for_each_region(cpu, cell->fpga_region_set){
 		//if soft core, power off??
 		set_bit(cpu,root_cell.fpga_region_set->bitmap);
+		volatile u32* fpga_start = (u32*)0x80000000; //CHECK ADDRESSS HERE
+		fpga_start[cpu] = 1;
+		// Reset for region <cpu> must be up.
 	}
 #endif
 	
@@ -884,6 +887,25 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 #endif /* CONFIG_MACH_ZYNQMP_ZCU102 */
 	}	
 #endif /* CONFIG_OMNIVISOR */
+
+#if defined(CONFIG_FPGA)
+	//for each region, start if it has to be started
+	for_each_region(cpu,cell->fpga_region_set){
+		//Map page where configuration port for region x is located
+		//if needed, reset the soft core and start
+		err = paging_create(&hv_paging_structs, 0x80000000, PAGE_SIZE, //change address?
+			0x80000000, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
+		if (err){
+			printk("paging_create for fpga configuration port failed\r\n");
+		}
+		else{
+			// Reset the core
+			volatile u32* fpga_start = (u32*)0x80000000;
+			fpga_start[cpu] = 1;
+			fpga_start[cpu] = 0;
+		}
+	}
+#endif
 
 	printk("Started cell \"%s\"\n", cell->config->name);
 

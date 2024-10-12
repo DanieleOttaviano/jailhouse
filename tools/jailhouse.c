@@ -82,7 +82,11 @@ static void __attribute__((noreturn)) help(char *prog, int exit_status)
 	       "   cell list\n"
 	       "   cell load { ID | [--name] NAME } "
 				"{ IMAGE | { -s | --string } \"STRING\" }\n"
+		#if defined(CONFIG_FPGA)
 	       "             [-a | --address ADDRESS] ... [-b | --bitstream \"BITSTREAM_NAME\" REGION_ID] ...\n"
+		#else
+		   "             [-a | --address ADDRESS] ...\n"
+		#endif /* CONFIG_FPGA */
 	       "   cell start { ID | [--name] NAME }\n"
 	       "   cell shutdown { ID | [--name] NAME }\n"
 	       "   cell destroy { ID | [--name] NAME }\n",
@@ -132,7 +136,7 @@ static int open_dev()
 	}
 	return fd;
 }
-/*
+
 static void *read_string(const char *string, size_t *size)
 {
 	void *buffer;
@@ -147,7 +151,7 @@ static void *read_string(const char *string, size_t *size)
 
 	return buffer;
 } 
-*/
+
 static void *read_file(const char *name, size_t *size)
 {
 	struct stat stat;
@@ -443,12 +447,11 @@ static int cell_shutdown_load(int argc, char *argv[],
 	struct jailhouse_cell_id cell_id;
 	int err, fd, id_args, arg_num;
 	unsigned int images, n;
-	size_t size=0;
+	size_t size;
 	char *endp;
 	#if defined(CONFIG_FPGA)
 	struct jailhouse_preload_bitstream *bitstream;
 	unsigned int bitstreams;
-	unsigned int regions[32]; //trova modo migliore :/
 	#endif /* CONFIG_FPGA*/
 
 	id_args = parse_cell_id(&cell_id, argc - 3, &argv[3]);
@@ -461,30 +464,23 @@ static int cell_shutdown_load(int argc, char *argv[],
 	bitstreams = 0;
 	while (arg_num < argc) {
 		#if defined (CONFIG_FPGA) 
-			if(match_opt(argv[arg_num], "-b", "--bitstream")) {
+			while(arg_num < argc &&
+					match_opt(argv[arg_num], "-b", "--bitstream")) {
 				if (arg_num + 1 >= argc)
 					help(argv[0], 1);
 				arg_num+=3;
 				bitstreams++;
-				if(arg_num == argc)
-					break; 
-			} 
+			}
+		if(arg_num >= argc)
+			break; 
 		#endif
 		if (match_opt(argv[arg_num], "-s", "--string")) {
 			if (arg_num + 1 >= argc || bitstreams > 0)
 				help(argv[0], 1);
 			arg_num++;
 		}
-		#if defined(CONFIG_FPGA)
-		if(bitstreams == 0){
-		#endif
-			images++;
-			arg_num++;
-		#if defined(CONFIG_FPGA)
-		}
-		#endif
-
-	
+		images++;
+		arg_num++;
 		if (arg_num < argc &&
 		    match_opt(argv[arg_num], "-a", "--address")) {
 			if (arg_num + 1 >= argc ||bitstreams > 0)
@@ -507,16 +503,14 @@ static int cell_shutdown_load(int argc, char *argv[],
 	for (n = 0, image = cell_load->image; n < images; n++, image++) {
 		if (match_opt(argv[arg_num], "-s", "--string")) {
 			arg_num++;
-			arg_num++;/* 
 			image->source_address =
 				(unsigned long)read_string(argv[arg_num++],
-							   &size); */
+							   &size);
 		} else {
 			arg_num++;
-			/* 
 			image->source_address =
 				(unsigned long)read_file(argv[arg_num++],
-							 &size) */; 	
+							 &size);
 		}
 		image->size =size;
 		image->target_address = 0;
@@ -539,24 +533,15 @@ static int cell_shutdown_load(int argc, char *argv[],
 		fprintf(stderr, "insufficient memory\n");
 		exit(1);
 	}
-	memset(regions,0,32);
+	
 	for (n = 0, bitstream = cell_load->bitstream; n < bitstreams; n++, bitstream++) {
 			arg_num++; //skip '-b'
 			strncpy(bitstream->name,argv[arg_num++],JAILHOUSE_BITSTREAM_NAME_LEN);
 			bitstream->region = atoi(argv[arg_num++]);
 			bitstream->flags = 0;
 			//DEBUG
-			printf("Bitstream found: %s, region %d\n",bitstream->name,bitstream->region);
-			//check that we are not programming the same region twice!
-			if(regions[bitstream->region]==1){
-				pr_err("Can't program same region twice\n");
-				return -EINVAL;
-			}
-			regions[bitstream->region]=1;
-
-
+			//printf("Bitstream found: %s, region %d\n",bitstream->name,bitstream->region);
 	}
-
 	#endif/* CONFIG_FPGA */
 
 	fd = open_dev();
@@ -568,7 +553,6 @@ static int cell_shutdown_load(int argc, char *argv[],
 	close(fd);
 	for (n = 0, image = cell_load->image; n < images; n++, image++)
 		free((void *)(unsigned long)image->source_address);
-free;
 	free(cell_load->bitstream);
 	free(cell_load);
 	return err;
