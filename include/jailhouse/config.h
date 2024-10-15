@@ -3,4 +3,5 @@
 #define CONFIG_ARM_GIC_V2 	  1
 #define CONFIG_DEBUG     	  1
 #define CONFIG_OMNIVISOR      1
-#define CONFIG_XMPU_ACTIVE 1
+#define CONFIG_XMPU_ACTIVE    1
+#define CONFIG_FPGA           1

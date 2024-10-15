@@ -70,6 +70,18 @@ unsigned int next_cpu(unsigned int cpu, struct cpu_set *cpu_set,
 	return cpu;
 }
 
+unsigned int next_region(unsigned int region, struct fpga_region_set *fpga_region_set,
+			 unsigned int exception)
+{
+	do
+		region++;
+	while (region <= fpga_region_set->max_region_id &&
+	       (region == exception || !test_bit(region, fpga_region_set->bitmap)));
+	return region;
+
+
+}
+
 /**
  * Check if a CPU ID is contained in the system's CPU set, i.e. the initial CPU
  * set of the root cell.
@@ -276,6 +288,12 @@ int cell_init(struct cell *cell)
 	struct cpu_set *rcpu_set;
 #endif /* CONFIG_OMNIVISOR  */
 
+#if defined(CONFIG_FPGA)
+	const unsigned long *config_fpga_regions = 
+		jailhouse_cell_fpga_regions(cell->config);
+		unsigned long fpga_regions_size = cell->config->fpga_regions_size;
+	struct fpga_region_set *fpga_region_set;
+#endif /* CONFIG_FPGA*/
 	int err;
 
 	if (cpu_set_size > PAGE_SIZE)
@@ -319,6 +337,27 @@ int cell_init(struct cell *cell)
 		page_free(&mem_pool, cell->rcpu_set, 1);
 
 #endif /* CONFIG_OMNIVISOR */
+
+#if defined(CONFIG_FPGA)
+	if(fpga_regions_size > PAGE_SIZE)
+		return trace_error(-EINVAL);
+	if (fpga_regions_size > sizeof(cell->small_fpga_region_set.bitmap)) {
+		fpga_region_set = page_alloc(&mem_pool, 1);
+		if (!fpga_region_set)
+			return -ENOMEM;
+	} else {
+		fpga_region_set = &cell->small_fpga_region_set;
+	}
+	fpga_region_set->max_region_id = fpga_regions_size * 8 - 1;
+	memcpy(fpga_region_set->bitmap, config_fpga_regions, fpga_regions_size);
+
+	cell->fpga_region_set = fpga_region_set;
+	// DEBUG PRINT
+	// printk("small_rcpu_set->bitmap = %ld\r\n", cell->small_rcpu_set.bitmap[0]);
+
+	if (err && cell->fpga_region_set!= &cell->small_fpga_region_set)
+		page_free(&mem_pool, cell->fpga_region_set, 1);
+#endif /* CONFIG_FPGA */
 
 	return err;
 }
@@ -478,6 +517,18 @@ static void cell_destroy_internal(struct cell *cell)
 		}	
 	}
 #endif /* CONFIG_OMNIVISOR */
+
+#if defined (CONFIG_FPGA)
+	if (cell->config->fpga_regions_size > 0){
+	for_each_region(cpu, cell->fpga_region_set){
+		//if soft core, power off
+		set_bit(cpu,root_cell.fpga_region_set->bitmap);
+		volatile u32* fpga_start = (u32*)0x80000000; //CHECK ADDRESSS HERE
+		fpga_start[cpu] = 1;
+		// Reset for region <cpu> must be up.
+	}
+	}
+#endif
 	
 	for_each_mem_region(mem, cell->config, n) {
 		if (!JAILHOUSE_MEMORY_IS_SUBPAGE(mem))
@@ -599,6 +650,17 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 	}
 #endif /* CONFIG_OMNIVISOR */
 
+#if defined (CONFIG_FPGA)
+	if (cell->config->fpga_regions_size > 0){
+	/*the root cell's fpga region set must be super-set of new cell's set*/
+	for_each_region(cpu, cell->fpga_region_set)
+		if(!cell_owns_fpga_region(&root_cell,cpu)) {
+			err = trace_error(-EBUSY);
+			goto err_cell_exit;
+		}
+	}
+#endif
+
 	err = arch_cell_create(cell);
 	if (err)
 		goto err_cell_exit;
@@ -637,6 +699,14 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		}
 	}
 #endif /* CONFIG_OMNIVISOR */
+
+#if defined(CONFIG_FPGA)
+	//publicly accessible data structure for regions?
+	if(cell->config->fpga_regions_size > 0)
+	for_each_region(cpu, cell->fpga_region_set) {
+		clear_bit(cpu, root_cell.fpga_region_set->bitmap);
+	}
+#endif
 
 	/*
 	 * Unmap the cell's memory regions from the root cell and map them to
@@ -831,6 +901,27 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 		}	
 	}
 #endif /* CONFIG_OMNIVISOR */
+
+#if defined(CONFIG_FPGA)
+	if(cell->config->fpga_regions_size > 0){
+		//for each region, start if it has to be started
+		for_each_region(cpu,cell->fpga_region_set){
+			//Map page where configuration port for region x is located
+			//if needed, reset the soft core and start
+			err = paging_create(&hv_paging_structs, 0x80000000, PAGE_SIZE, //change address?
+				0x80000000, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
+			if (err){
+				printk("paging_create for fpga configuration port failed\r\n");
+			}
+			else{
+				// Reset the core
+				volatile u32* fpga_start = (u32*)0x80000000;
+				fpga_start[cpu] = 1;
+				fpga_start[cpu] = 0;
+			} 
+		}
+	}
+#endif
 
 	printk("Started cell \"%s\"\n", cell->config->name);
 

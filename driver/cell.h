@@ -38,6 +38,9 @@ struct cell {
 #if defined(CONFIG_OMNIVISOR)	
 	cpumask_t rcpus_assigned;
 #endif /* CONFIG_OMNIVISOR */
+#if defined(CONFIG_FPGA)	
+	u32 fpga_regions_assigned;
+#endif /* CONFIG_FPGA */
 	u32 num_memory_regions;
 	struct jailhouse_memory *memory_regions;
 	u64 color_root_map_offset;

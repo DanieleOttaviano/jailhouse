@@ -40,6 +40,8 @@ extern struct jailhouse_system *system_config;
 
 unsigned int next_cpu(unsigned int cpu, struct cpu_set *cpu_set,
 		      unsigned int exception);
+unsigned int next_region(unsigned int region, struct fpga_region_set *fpga_region_set,
+		      unsigned int exception);
 
 /**
  * Get the first CPU in a given set.
@@ -73,6 +75,15 @@ unsigned int next_cpu(unsigned int cpu, struct cpu_set *cpu_set,
 	for ((cpu) = -1;					\
 	     (cpu) = next_cpu((cpu), (set), (exception)),	\
 	     (cpu) <= (set)->max_cpu_id;			\
+	    )
+
+/* same for fpga regions */
+#define for_each_region(region,set)	for_each_region_except(region, set, -1)
+
+#define for_each_region_except(region, set, exception)		\
+	for ((region) = -1;					\
+	     (region) = next_region((region), (set), (exception)),	\
+	     (region) <= (set)->max_region_id;			\
 	    )
 
 /**
@@ -137,6 +148,21 @@ static inline bool cell_owns_rcpu(struct cell *cell, unsigned int rcpu_id)
 }
 #endif /* CONFIG_OMNIVISOR */
 
+#if defined (CONFIG_FPGA)
+/**
+ * Check if the region is assigned to the specified cell.
+ * @param cell		Cell the rCPU may belong to.
+ * @param region_id	ID of the rCPU.
+ *
+ * @return True if the CPU is assigned to the cell.
+ */
+static inline bool cell_owns_fpga_region(struct cell *cell, unsigned int fpga_region)
+{
+	return (fpga_region <= cell->fpga_region_set->max_region_id &&
+		test_bit(fpga_region, cell->fpga_region_set->bitmap));
+}
+
+#endif /* CONFIG_FPGA */
 bool cpu_id_valid(unsigned long cpu_id);
 
 int cell_init(struct cell *cell);

@@ -31,6 +31,16 @@ struct cpu_set {
 	unsigned long bitmap[1];
 };
 
+/** Describes a set of FPGA regions */
+struct fpga_region_set {
+	/** Maximum region ID expressible with this set. */
+	unsigned long max_region_id;
+	/** Bitmap of regins in the set.
+	 * @note Typically, the bitmap is extended by embedding this structure
+	 * into a larger buffer. */
+	unsigned long bitmap[1];
+};
+
 typedef signed char s8;
 typedef unsigned char u8;
 
