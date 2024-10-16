@@ -18,7 +18,7 @@
 #define PERIOD 30 // 30 us
 
 static uint32_t memory_size = 4 * 1024 * 1024; 			// 4Mb
-static uint8_t* base_address = (uint8_t *)0x78FF0000;
+static uint8_t* base_address = (uint8_t *)0x70FF0000;
 
 void main(void){
 	volatile uint32_t* system_counter = (uint32_t*)0xFF250000;

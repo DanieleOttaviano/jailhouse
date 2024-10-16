@@ -23,7 +23,7 @@
 void main(void){
 	volatile uint32_t* system_counter = (uint32_t*)0xFF250000;
 	volatile uint32_t *shared_memory = (uint32_t *)0x46d00000;
-	uint32_t *mem_array = (uint32_t *)0x78FF0000;
+	uint32_t *mem_array = (uint32_t *)0x70FF0000;
 	uint32_t start, end, diff;
 	uint32_t readsum = 0;
   	uint32_t time_us = 0;
