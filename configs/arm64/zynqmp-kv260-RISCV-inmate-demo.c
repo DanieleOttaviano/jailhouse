@@ -21,7 +21,7 @@ struct {
 	__u64 cpus[1];
 	__u64 rcpus[1];
 	struct jailhouse_memory mem_regions[4];
-	union jailhouse_stream_id stream_ids[2];
+	union jailhouse_stream_id stream_ids[1];
 } __attribute__((packed)) config = {
 	.cell = {
 		.signature = JAILHOUSE_CELL_DESC_SIGNATURE,
@@ -64,7 +64,7 @@ struct {
 		/* RAM */ {
 			.phys_start = 0x70000000,
 			.virt_start = 0,
-			.size = 0x8000000,
+			.size = 0x2000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE,
 		},
@@ -83,4 +83,10 @@ struct {
 		},
 	},
 
+	.stream_ids = {
+		{
+			.mmu500.id = 0x1280,	 // [14:10] TBU3 ID 00100 , [9:0] FPGA Master Stream-ID 1010xxxxx 
+			.mmu500.mask_out = 0x3f, // Mask out bits 0..5
+		},	
+	},
 };
