@@ -257,8 +257,7 @@ static int print_cpumask(char *buf, size_t size, cpumask_t *mask, bool as_list)
 extern long max_fpga_regions; //to see if we have to do partial or full
 
 static int print_fpgalist(char *buf, size_t size, u32 *mask){
-   int i=0,written=0;
-   int start,end;
+   u32 i=0,written=0,start,end;
    while(i<max_fpga_regions){
 		if((*mask) & (1U << i)){
 			start = i;

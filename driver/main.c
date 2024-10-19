@@ -256,7 +256,7 @@ static long get_max_fpga_regions(u32 fpga_regions_size,
 	u8 bitmap;
 
 	// DEBUG PRINT
-	//pr_err("rcpu_set_size: %u\n",pos);
+	//pr_err("fpga_region_set_size: %u\n",pos);
 	while (pos-- > 0) {
 		if (get_user(bitmap, fpga_regions + pos))
 			return -EFAULT;

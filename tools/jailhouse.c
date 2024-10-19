@@ -393,7 +393,7 @@ static int cell_list(int argc, char *argv[])
 #if defined(CONFIG_OMNIVISOR)
 	#if defined(CONFIG_FPGA)
 		printf("%-8s%-24s%-18s%-24s%-24s%-24s%-24s\n",
-		       "ID", "Name", "State", "Assigned CPUs", "Assigned rCPUs", "Assigned FPGAregions", "Failed CPUs");
+		       "ID", "Name", "State", "Assigned CPUs", "Assigned rCPUs", "Assigned FPGA regions", "Failed CPUs");
 	#else
 		printf("%-8s%-24s%-18s%-24s%-24s%-24s\n",
 		       "ID", "Name", "State", "Assigned CPUs", "Assigned rCPUs", "Failed CPUs");
