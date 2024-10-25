@@ -23,19 +23,19 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <asm/cacheflush.h>
+
+#include "cell.h"
+#include "main.h"
+#include "pci.h"
+#include "sysfs.h"
+
 #if defined(CONFIG_OMNIVISOR)	
 #include <asm/smc.h>
 #endif /* CONFIG_OMNIVISOR */
 #if defined(CONFIG_OMNV_FPGA)
 #include <linux/fpga/fpga-mgr.h>
 #include <linux/fpga/fpga-region.h>
-#endif
-
-
-#include "cell.h"
-#include "main.h"
-#include "pci.h"
-#include "sysfs.h"
+#endif /* CONFIG_OMNV_FPGA */
 
 #include <jailhouse/hypercall.h>
 
