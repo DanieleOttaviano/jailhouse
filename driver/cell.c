@@ -504,7 +504,7 @@ static int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream 
 	unsigned int __user region_id = bitstream->region;
 
 	//check if cell owns this region first.
-	if(cell->fpga_regions_assigned & (1U << region_id) == 0){
+	if(cell->fpga_regions_assigned & ((1U << region_id) == 0)){
 		pr_err("Cell doesn't own region %d\n",region_id);
 		return -EPERM;
 	}

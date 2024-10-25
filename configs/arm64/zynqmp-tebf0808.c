@@ -62,7 +62,7 @@ struct {
 				},
 			},
 			.arm = {
-				.gic_version = 2,	/
+				.gic_version = 2,
 				.gicd_base = 0xf9010000,
 				.gicc_base = 0xf902f000,
 				.gich_base = 0xf9040000,
