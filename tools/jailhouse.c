@@ -48,7 +48,7 @@ struct jailhouse_cell_info {
 #if defined(CONFIG_OMNIVISOR)
 	char *rcpus_assigned_list;
 #endif /* CONFIG_OMNIVISOR */
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	char *fpga_regions_assigned_list;
 #endif
 	char *cpus_failed_list;
@@ -339,10 +339,10 @@ static struct jailhouse_cell_info *get_cell_info(const unsigned int id)
 	cinfo->rcpus_assigned_list =
 		read_sysfs_cell_string(id, "rcpus_assigned_list");
 #endif /* CONFIG_OMNIVISOR */
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	cinfo->fpga_regions_assigned_list =
 		read_sysfs_cell_string(id, "fpga_regions_assigned_list");
-#endif /* CONFIG_FPGA */
+#endif /* CONFIG_OMNV_FPGA */
 	/* get failed cpu list */
 	cinfo->cpus_failed_list = read_sysfs_cell_string(id, "cpus_failed_list");
 
@@ -356,9 +356,9 @@ static void cell_info_free(struct jailhouse_cell_info *cinfo)
 #if defined(CONFIG_OMNIVISOR)
 	free(cinfo->rcpus_assigned_list);
 #endif /* CONFIG_OMNIVISOR */
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	free(cinfo->fpga_regions_assigned_list);
-#endif /* CONFIG_FPGA */
+#endif /* CONFIG_OMNV_FPGA */
 	free(cinfo->cpus_failed_list);
 	free(cinfo);
 }
@@ -391,21 +391,21 @@ static int cell_list(int argc, char *argv[])
 
 	if (num_entries > 0){
 #if defined(CONFIG_OMNIVISOR)
-	#if defined(CONFIG_FPGA)
+	#if defined(CONFIG_OMNV_FPGA)
 		printf("%-8s%-24s%-18s%-24s%-24s%-24s%-24s\n",
 		       "ID", "Name", "State", "Assigned CPUs", "Assigned rCPUs", "Assigned FPGA regions", "Failed CPUs");
 	#else
 		printf("%-8s%-24s%-18s%-24s%-24s%-24s\n",
 		       "ID", "Name", "State", "Assigned CPUs", "Assigned rCPUs", "Failed CPUs");
-	#endif /* CONFIG_FPGA*/
+	#endif /* CONFIG_OMNV_FPGA*/
 #else
-	#if defined(CONFIG_FPGA)
+	#if defined(CONFIG_OMNV_FPGA)
 		printf("%-8s%-24s%-18s%-24s%-24s%-24s\n",
 		       "ID", "Name", "State", "Assigned CPUs", "Assigned FPGA regions", "Failed CPUs");
 	#else
 		printf("%-8s%-24s%-18s%-24s%-24s\n",
 		       "ID", "Name", "State", "Assigned CPUs", "Failed CPUs");
-	#endif /* CONFIG_FPGA */
+	#endif /* CONFIG_OMNV_FPGA */
 #endif /* CONFIG_OMNIVISOR */
 	}
 	for (i = 0; i < num_entries; i++) {
@@ -413,21 +413,21 @@ static int cell_list(int argc, char *argv[])
 
 		cinfo = get_cell_info(id);
 #if defined(CONFIG_OMNIVISOR)	
-	#if defined(CONFIG_FPGA)
+	#if defined(CONFIG_OMNV_FPGA)
 		printf("%-8d%-24s%-18s%-24s%-24s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
 		       cinfo->state, cinfo->cpus_assigned_list, cinfo->rcpus_assigned_list, cinfo->fpga_regions_assigned_list, cinfo->cpus_failed_list);
 	#else
 		printf("%-8d%-24s%-18s%-24s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
 		       cinfo->state, cinfo->cpus_assigned_list, cinfo->rcpus_assigned_list, cinfo->cpus_failed_list);
-	#endif /*CONFIG_FPGA*/	
+	#endif /*CONFIG_OMNV_FPGA*/	
 #else
-	#if defined(CONFIG_FPGA)
+	#if defined(CONFIG_OMNV_FPGA)
 		printf("%-8d%-24s%-18s%-24s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
 		       cinfo->state, cinfo->cpus_assigned_list, cinfo->fpga_regions_assigned_list,cinfo->cpus_failed_list);
 	#else
 		printf("%-8d%-24s%-18s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
 		       cinfo->state, cinfo->cpus_assigned_list, cinfo->cpus_failed_list);
-	#endif /* CONFIG_FPGA*/
+	#endif /* CONFIG_OMNV_FPGA*/
 #endif /* CONFIG_OMNIVISOR */
 		cell_info_free(cinfo);
 		free(namelist[i]);
@@ -447,10 +447,10 @@ static int cell_shutdown_load(int argc, char *argv[],
 	unsigned int images, n;
 	size_t size;
 	char *endp;
-	#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	struct jailhouse_preload_bitstream *bitstream;
 	unsigned int bitstreams = 0;
-	#endif /* CONFIG_FPGA*/
+#endif /* CONFIG_OMNV_FPGA*/
 
 	id_args = parse_cell_id(&cell_id, argc - 3, &argv[3]);
 	arg_num = 3 + id_args;
@@ -461,7 +461,7 @@ static int cell_shutdown_load(int argc, char *argv[],
 	images = 0;
 	
 	while (arg_num < argc) {
-		#if defined (CONFIG_FPGA) 
+#if defined (CONFIG_OMNV_FPGA) 
 			while(arg_num < argc &&
 					match_opt(argv[arg_num], "-b", "--bitstream")) {
 				if (arg_num + 1 >= argc)
@@ -471,9 +471,9 @@ static int cell_shutdown_load(int argc, char *argv[],
 			}
 		if(arg_num >= argc)
 			break; 
-		#endif
+#endif /* CONFIG_OMNV_FPGA */
 		if (match_opt(argv[arg_num], "-s", "--string")) {
-			if (arg_num + 1 >= argc || bitstreams > 0)
+			if (arg_num + 1 >= argc)
 				help(argv[0], 1);
 			arg_num++;
 		}
@@ -481,10 +481,15 @@ static int cell_shutdown_load(int argc, char *argv[],
 		arg_num++;
 		if (arg_num < argc &&
 		    match_opt(argv[arg_num], "-a", "--address")) {
-			if (arg_num + 1 >= argc ||bitstreams > 0)
+			if (arg_num + 1 >= argc)
 				help(argv[0], 1);
 			arg_num+=2;
 		}
+#if defined(CONFIG_OMNV_FPGA)
+		if (bitstreams > 0 && images == 0) {
+			help(argv[0], 1);	
+		}
+#endif /* CONFIG_OMNV_FPGA */
 	}
 
 	cell_load = malloc(sizeof(*cell_load) + sizeof(*image) * images);
@@ -522,7 +527,7 @@ static int cell_shutdown_load(int argc, char *argv[],
 		}
 	}
 
-	#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	cell_load->num_bitstreams = bitstreams;
 	cell_load->bitstream = malloc(sizeof(struct jailhouse_preload_bitstream) * bitstreams);
 	if (!cell_load->bitstream) {
@@ -536,7 +541,7 @@ static int cell_shutdown_load(int argc, char *argv[],
 			bitstream->region = atoi(argv[arg_num++]);
 			bitstream->flags = 0;
 	}
-	#endif/* CONFIG_FPGA */
+#endif/* CONFIG_OMNV_FPGA */
 
 	fd = open_dev();
 
@@ -547,7 +552,9 @@ static int cell_shutdown_load(int argc, char *argv[],
 	close(fd);
 	for (n = 0, image = cell_load->image; n < images; n++, image++)
 		free((void *)(unsigned long)image->source_address);
+#if defined(CONFIG_OMNV_FPGA)
 	free(cell_load->bitstream);
+#endif /* CONFIG_OMNV_FPGA */
 	free(cell_load);
 	return err;
 }

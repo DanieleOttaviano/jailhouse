@@ -288,12 +288,12 @@ int cell_init(struct cell *cell)
 	struct cpu_set *rcpu_set;
 #endif /* CONFIG_OMNIVISOR  */
 
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	const unsigned long *config_fpga_regions = 
 		jailhouse_cell_fpga_regions(cell->config);
 		unsigned long fpga_regions_size = cell->config->fpga_regions_size;
 	struct fpga_region_set *fpga_region_set;
-#endif /* CONFIG_FPGA*/
+#endif /* CONFIG_OMNV_FPGA*/
 	int err;
 
 	if (cpu_set_size > PAGE_SIZE)
@@ -338,7 +338,7 @@ int cell_init(struct cell *cell)
 
 #endif /* CONFIG_OMNIVISOR */
 
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	if(fpga_regions_size > PAGE_SIZE)
 		return trace_error(-EINVAL);
 	if (fpga_regions_size > sizeof(cell->small_fpga_region_set.bitmap)) {
@@ -357,7 +357,7 @@ int cell_init(struct cell *cell)
 
 	if (err && cell->fpga_region_set!= &cell->small_fpga_region_set)
 		page_free(&mem_pool, cell->fpga_region_set, 1);
-#endif /* CONFIG_FPGA */
+#endif /* CONFIG_OMNV_FPGA */
 
 	return err;
 }
@@ -518,7 +518,7 @@ static void cell_destroy_internal(struct cell *cell)
 	}
 #endif /* CONFIG_OMNIVISOR */
 
-#if defined (CONFIG_FPGA)
+#if defined (CONFIG_OMNV_FPGA)
 	if (cell->config->fpga_regions_size > 0){
 	for_each_region(cpu, cell->fpga_region_set){
 		//if soft core, power off
@@ -650,7 +650,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 	}
 #endif /* CONFIG_OMNIVISOR */
 
-#if defined (CONFIG_FPGA)
+#if defined (CONFIG_OMNV_FPGA)
 	if (cell->config->fpga_regions_size > 0){
 	/*the root cell's fpga region set must be super-set of new cell's set*/
 	for_each_region(cpu, cell->fpga_region_set)
@@ -700,7 +700,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 	}
 #endif /* CONFIG_OMNIVISOR */
 
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	//publicly accessible data structure for regions?
 	if(cell->config->fpga_regions_size > 0)
 	for_each_region(cpu, cell->fpga_region_set) {
@@ -902,7 +902,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	}
 #endif /* CONFIG_OMNIVISOR */
 
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	if(cell->config->fpga_regions_size > 0){
 		//for each region, start if it has to be started
 		for_each_region(cpu,cell->fpga_region_set){

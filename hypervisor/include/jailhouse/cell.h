@@ -56,7 +56,7 @@ struct cell {
 	struct cpu_set small_rcpu_set;
 #endif /* CONFIG_OMNIVISOR */
 
-#if defined (CONFIG_FPGA)
+#if defined (CONFIG_OMNV_FPGA)
 	/** Pointer to cell's regions . */
 	struct fpga_region_set *fpga_region_set;	
 	/** Stores the cell's regions if small enough. */

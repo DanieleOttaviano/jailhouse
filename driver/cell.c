@@ -26,7 +26,7 @@
 #if defined(CONFIG_OMNIVISOR)	
 #include <asm/smc.h>
 #endif /* CONFIG_OMNIVISOR */
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 #include <linux/fpga/fpga-mgr.h>
 #include <linux/fpga/fpga-region.h>
 #endif
@@ -49,9 +49,9 @@ struct cell *root_cell;
 static LIST_HEAD(cells);
 static cpumask_t offlined_cpus;
 
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	extern long max_fpga_regions; //to see if we have to do partial or full
-#endif /* CONFIG_FPGA */
+#endif /* CONFIG_OMNV_FPGA */
 
 
 /* first mask is subset of second?*/
@@ -121,11 +121,11 @@ retry:
 	// DEBUG PRINT
 	// pr_err("cpus->assigned %ld\nrcpus->assigned %ld\n",cell->cpus_assigned, cell->rcpus_assigned);
 #endif /* CONFIG_OMNIVISOR */
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	cell->fpga_regions_assigned = *(jailhouse_cell_fpga_regions(cell_desc));
 	//DEBUG PRINT
 	//pr_err("regions assigned %x\n",cell->fpga_regions_assigned);
-#endif /* CONFIG_FPGA*/
+#endif /* CONFIG_OMNV_FPGA*/
 	cell->num_memory_regions = cell_desc->num_memory_regions;
 	cell->memory_regions = vmalloc(sizeof(struct jailhouse_memory) *
 				       cell->num_memory_regions);
@@ -286,13 +286,12 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 	}
 #endif /* CONFIG_OMNIVISOR */
 
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	if (!fpga_subset(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned)) {
 		err = -EBUSY;
 		goto error_cell_delete;
 	}
-#endif /* CONFIG_FPGA*/
-
+#endif /* CONFIG_OMNV_FPGA*/
 	/* Off-line each CPU assigned to the new cell and remove it from the
 	 * root cell's set. */
 	for_each_cpu(cpu, &cell->cpus_assigned) {
@@ -326,10 +325,10 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 	}
 #endif /* CONFIG_OMNIVISOR */
 
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	//remove each region from root cell
 	remove_regions_from_cell(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned);
-#endif /* CONFIG_FPGA */
+#endif /* CONFIG_OMNV_FPGA */
 
 	jailhouse_pci_do_all_devices(cell, JAILHOUSE_PCI_TYPE_DEVICE,
 	                             JAILHOUSE_PCI_ACTION_CLAIM);
@@ -469,7 +468,7 @@ static int load_image(struct cell *cell,
 	return err;
 }
 
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 
 static void set_flags(u32 *flags)
 {
@@ -544,14 +543,14 @@ static int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream 
 
    return ret;
 }
-#endif /* CONFIG_FPGA */
+#endif /* CONFIG_OMNV_FPGA */
 
 int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 {
 	struct jailhouse_preload_image __user *image = arg->image;
-#if defined (CONFIG_FPGA)
+#if defined (CONFIG_OMNV_FPGA)
 	struct jailhouse_preload_bitstream __user * bitstream = arg->bitstream;
-#endif /* CONFIG_FPGA */
+#endif /* CONFIG_OMNV_FPGA */
 	struct jailhouse_cell_load cell_load;
 	struct cell *cell;
 	unsigned int n;
@@ -568,8 +567,7 @@ int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 	if (err)
 		goto unlock_out;
 
-	
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	//bitstreams first, then images
 	// DEBUG PRINT
 	//pr_err("cell_load.num_bitstreams: %d\n",cell_load.num_bitstreams);
@@ -580,7 +578,7 @@ int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 			goto unlock_out;
 		}
 	}
-#endif /* CONFIG_FPGA*/
+#endif /* CONFIG_OMNV_FPGA*/
 
 	// DEBUG PRINT
 	//pr_err("cell_load.num_preload_images: %d\n",cell_load.num_preload_images);
@@ -633,7 +631,7 @@ static int cell_destroy(struct cell *cell)
 		cpumask_set_cpu(rcpu, &root_cell->rcpus_assigned);
 	}
 #endif /* CONFIG_OMNIVISOR */
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 	give_regions_to_cell(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned);
 #endif
 	for_each_cpu(cpu, &cell->cpus_assigned) {

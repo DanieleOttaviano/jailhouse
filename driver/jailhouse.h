@@ -61,13 +61,13 @@ struct jailhouse_preload_image {
 	__u64 padding;
 };
 
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_OMNV_FPGA)
 struct jailhouse_preload_bitstream {
 	__u32 region;
 	__u32 flags;
 	char name[JAILHOUSE_BITSTREAM_NAME_LEN+1];
 };
-#endif /* CONFIG_FPGA */
+#endif /* CONFIG_OMNV_FPGA */
 struct jailhouse_cell_id {
 	__s32 id;
 	__u32 padding;
@@ -77,12 +77,12 @@ struct jailhouse_cell_id {
 struct jailhouse_cell_load {
 	struct jailhouse_cell_id cell_id;
 	__u32 num_preload_images;
-	#if defined(CONFIG_FPGA)
+	#if defined(CONFIG_OMNV_FPGA)
 	__u32 num_bitstreams;
 	struct jailhouse_preload_bitstream *bitstream; 
 	 #else
 	__u32 padding;
-	#endif /* CONFIG_FPGA */
+	#endif /* CONFIG_OMNV_FPGA */
 	struct jailhouse_preload_image image[];
 };
 
