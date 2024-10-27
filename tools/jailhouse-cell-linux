@@ -697,6 +697,11 @@ parser.add_argument('-i', '--initrd', metavar='INITRD',
                     help='initrd/initramfs for the kernel')
 parser.add_argument('-c', '--cmdline', metavar='"CMDLINE"',
                     help='kernel command line')
+parser.add_argument('-b','--bitstream',nargs=2,metavar=('BITSTREAM','REGION'),type=str,action='append', #so you can give multiple bitstreams
+                    help=' bitstream to load followed by region number')
+# also information for accelerator images
+parser.add_argument('-l','--load',nargs='+',metavar=('IMAGE','ADDRESS'),action='append',
+                    help=' additional image to load, followed by optional target address')
 parser.add_argument('-w', '--write-params', metavar='PARAMS_FILE',
                     type=argparse.FileType('wb'),
                     help='only parse cell configuration, write out '
@@ -736,11 +741,33 @@ else:
             '/../inmates/tools/' + arch.name + '/linux-loader.bin'
 
     cell = JailhouseCell(config)
-    cell.load(open(linux_loader, mode='rb').read(), arch.loader_address())
-    cell.load(arch.kernel_image, arch.kernel_address())
+ 
+    if args.bitstream:
+        for bitstream, region in args.bitstream:
+            cell.load_bitstream(bitstream,int(region))
+
+
+    cell.load_image(open(linux_loader, mode='rb').read(), arch.loader_address())
+    cell.load_image(arch.kernel_image, arch.kernel_address())
     if arch.dtb_address():
-        cell.load(arch.dtb.get(), arch.dtb_address())
+        cell.load_image(arch.dtb.get(), arch.dtb_address())
     if args.initrd:
-        cell.load(args.initrd.read(), arch.ramdisk_address())
-    cell.load(arch.params, arch.params_address())
+        cell.load_image(args.initrd.read(), arch.ramdisk_address())
+    cell.load_image(arch.params, arch.params_address())
+
+    #if there are any additonal images
+    if args.load:
+        for value in args.load:
+            try:
+                if len(value) == 1:
+                    image = value[0]
+                    address = "0" # default is 0
+                else:
+                    image, address = value
+                    with open(image, 'rb') as f:
+                        content = f.read()
+                        address = int(address,16) #verify
+                        cell.load_image(content, address)
+            except Exception as e:
+                raise argparse.ArgumentTypeError(f"Error parsing image and address: {str(e)}")
     cell.start()
