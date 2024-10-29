@@ -119,13 +119,20 @@ retry:
 		    min((unsigned int)nr_cpumask_bits,
 		        cell_desc->rcpu_set_size * 8));
 	// DEBUG PRINT
-	// pr_err("cpus->assigned %ld\nrcpus->assigned %ld\n",cell->cpus_assigned, cell->rcpus_assigned);
+	//pr_err("cpus->assigned %ld\nrcpus->assigned %ld\n",cell->cpus_assigned, cell->rcpus_assigned);
 #endif /* CONFIG_OMNIVISOR */
+
 #if defined(CONFIG_OMNV_FPGA)
-	cell->fpga_regions_assigned = *(jailhouse_cell_fpga_regions(cell_desc));
+	if(cell_desc->fpga_regions_size > 0){
+		cell->fpga_regions_assigned = *(jailhouse_cell_fpga_regions(cell_desc));
+	}
+	else{
+		cell->fpga_regions_assigned = 0;
+	}
 	//DEBUG PRINT
 	//pr_err("regions assigned %x\n",cell->fpga_regions_assigned);
 #endif /* CONFIG_OMNV_FPGA*/
+
 	cell->num_memory_regions = cell_desc->num_memory_regions;
 	cell->memory_regions = vmalloc(sizeof(struct jailhouse_memory) *
 				       cell->num_memory_regions);

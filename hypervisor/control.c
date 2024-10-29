@@ -503,12 +503,6 @@ static void cell_destroy_internal(struct cell *cell)
 			else if(cpu == 1){
 				zynqmp_r5_stop(NODE_RPU_1);
 			}
-			else if (cpu == 2){
-				// The page is already being mapped during the startup of the rCPU
-				volatile u32* riscv_start = (u32*)0x80000000;
-				// Reset state UP
-				riscv_start[0] = 1;
-			}
 			else{
 				printk("rCPU doesn't exist\r\n");
 			}
@@ -520,13 +514,13 @@ static void cell_destroy_internal(struct cell *cell)
 
 #if defined (CONFIG_OMNV_FPGA)
 	if (cell->config->fpga_regions_size > 0){
-	for_each_region(cpu, cell->fpga_region_set){
-		//if soft core, power off
-		set_bit(cpu,root_cell.fpga_region_set->bitmap);
-		volatile u32* fpga_start = (u32*)0x80000000; //CHECK ADDRESSS HERE
-		fpga_start[cpu] = 1;
-		// Reset for region <cpu> must be up.
-	}
+		for_each_region(cpu, cell->fpga_region_set){
+			//if soft core, power off
+			set_bit(cpu,root_cell.fpga_region_set->bitmap);
+			volatile u32* fpga_start = (u32*)0x80000000; //CHECK ADDRESSS HERE
+			fpga_start[cpu] = 1;
+			// Reset for region <cpu> must be up.
+		}
 	}
 #endif
 	
@@ -879,20 +873,6 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 			else if(cpu == 1){
 				zynqmp_r5_start(NODE_RPU_1,(u32)0x03ad0000);
 			}
-			else if(cpu == 2){ // to do ... add other riscv cores
-				// Mapping of the page where the configuration port is located
-				err = paging_create(&hv_paging_structs, 0x80000000, PAGE_SIZE,
-					0x80000000, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
-				if (err){
-					printk("paging_create for fpga configuration port failed\r\n");
-				}
-				else{
-					// Reset the core
-					volatile u32* riscv_start = (u32*)0x80000000;
-					riscv_start[0] = 1;
-					riscv_start[0] = 0;
-				}
-			}
 			else{
 				printk("rCPU doesn't exist\r\n");
 				return -1;
@@ -906,6 +886,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	if(cell->config->fpga_regions_size > 0){
 		//for each region, start if it has to be started
 		for_each_region(cpu,cell->fpga_region_set){
+			printk("Starting FPGA region %d\r\n", cpu);
 			//Map page where configuration port for region x is located
 			//if needed, reset the soft core and start
 			err = paging_create(&hv_paging_structs, 0x80000000, PAGE_SIZE, //change address?

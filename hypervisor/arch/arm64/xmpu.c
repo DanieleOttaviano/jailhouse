@@ -274,24 +274,81 @@ static void arm_xmpu_cell_exit(struct cell *cell){
   } 
 }
 
+// Helper function to set core/fpga permissions
+static int set_core_permissions(u8 xmpu_channel_n, u32 xmpu_base, u64 cell_master_id, u64 cell_master_mask, struct cell *cell) {
+  u8 i = 0;
+  u8 valid_reg_n = 0;
+  u32 region_base = 0;
+  u32 addr_start, addr_end;
+  xmpu_channel *xmpu_chnl;
+  const struct jailhouse_memory *mem;
+  unsigned int n;
+
+  for_each_mem_region(mem, cell->config, n){
+    // If in DDR memory
+    if((mem->virt_start <= DDR_LOW_END - mem->size) || 
+      ((mem->virt_start >= DDR_HIGH_START) && (mem->virt_start <= DDR_HIGH_END - mem->size ))){ 
+      xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
+    }
+    else{
+      continue;
+    }
+
+    addr_start = mem->phys_start;
+    addr_end =  mem->phys_start + mem->size - 1;
+    
+    // Check for free region in the channel
+    for(i = 0; i<NR_XMPU_REGIONS; i++){
+      if(xmpu_chnl->region[i].used == 0){
+        valid_reg_n = i; 
+        break;
+      }
+    }
+    if (i == NR_XMPU_REGIONS){
+      xmpu_print("ERROR: No XMPU free region, impossible to create the VM\n\r");
+      return -1;
+    }
+    region_base = valid_reg_n * XMPU_REGION_OFFSET;
+
+    //DEBUG
+    // xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
+    // xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
+    // xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+    // xmpu_print("XMPU region: %d\n\r", valid_reg_n);
+    // xmpu_print("Master ID:    0x%04llx\n\r", cell_master_id);
+    // xmpu_print("Master Mask:  0x%04llx\n\r", cell_master_mask);
+    
+    // Configure region
+    xmpu_chnl->region[valid_reg_n].addr_start =     addr_start;
+    xmpu_chnl->region[valid_reg_n].addr_end =       addr_end;
+    xmpu_chnl->region[valid_reg_n].master_id =      cell_master_id; 
+    xmpu_chnl->region[valid_reg_n].master_mask =    cell_master_mask;
+    xmpu_chnl->region[valid_reg_n].ns_checktype =   0;
+    xmpu_chnl->region[valid_reg_n].region_ns =      0;
+    xmpu_chnl->region[valid_reg_n].wrallowed =      (mem->flags & JAILHOUSE_MEM_WRITE) ? 1 : 0;
+    xmpu_chnl->region[valid_reg_n].rdallowed =      (mem->flags & JAILHOUSE_MEM_READ) ? 1 : 0;
+    xmpu_chnl->region[valid_reg_n].enable =         1;
+    xmpu_chnl->region[valid_reg_n].id =             cell->config->id;
+    xmpu_chnl->region[valid_reg_n].used =           1;
+    set_xmpu_region(xmpu_base, region_base, &xmpu_chnl->region[valid_reg_n]);   
+  }
+
+  return 0;
+}
+
+
 // Cell init: config XMPU
 static int arm_xmpu_cell_init(struct cell *cell){
   u32 xmpu_base = 0;
-  u32 region_base = 0; 
-  u32 addr_start, addr_end;
-  u8 i = 0;
-  u8 valid_reg_n = 0;
   u8 xmpu_channel_n = 0;
   u64 cell_master_id = 0;
   u64 cell_master_mask = 0;
-  xmpu_channel *xmpu_chnl;
-  const struct jailhouse_memory *mem;
-	unsigned int cpu, n;
+	unsigned int cpu;
 
   //xmpu_print("Initializing XMPU for cell %d\n\r", cell->config->id);
   
   // If there is at least one rCPU in the configuration give the requested accesses
-  // For each rCPU in the cell configuration Set the XMPU reguiom registers
+  // For each rCPU in the cell configuration Set the XMPU region registers
   if(cell->config->rcpu_set_size != 0){
     // To do: take from cell configuration
     for_each_cpu(cpu, cell->rcpu_set) {
@@ -309,70 +366,32 @@ static int arm_xmpu_cell_init(struct cell *cell){
         cell_master_id = 0x0010;    // 0000 00(00 0001 0000)  to do: take from cell configuration
         cell_master_mask = 0x03F0;  // 0000 00(11 1111 0000)  to do: take from cell configuration 
       }
-		  else if (cpu == 2){     // RISCV 0
-        // S_AXI_HP0_FPD (HP0) (1010, AXI ID[5:0]) DOESN'T WORK ...
-        xmpu_channel_n = 3; 
-        xmpu_base = XMPU_DDR_3_BASE_ADDR;
-        cell_master_id = 0x0280;    // 0000 00(10 1000 0000)  to do: take from cell configuration
-        cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration 
-      }
 		  else{
 			  xmpu_print("Error: rCPU doesn't exist\r\n");
-		  }
-      // DEBUG
-	  	// xmpu_print("rCPU %d\n\r", cpu);
-      for_each_mem_region(mem, cell->config, n){
-        // If in DDR memory
-        if((mem->virt_start <= DDR_LOW_END - mem->size) || 
-          ((mem->virt_start >= DDR_HIGH_START) && (mem->virt_start <= DDR_HIGH_END - mem->size ))){ 
-          xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
-        }
-        else{
-          continue;
-        }
-
-        addr_start = mem->phys_start;
-        addr_end =  mem->phys_start + mem->size - 1;
-        
-        // Check for free region in the channel
-        for(i = 0; i<NR_XMPU_REGIONS; i++){
-          if(xmpu_chnl->region[i].used == 0){
-            valid_reg_n = i; 
-            break;
-          }
-        }
-        if (i == NR_XMPU_REGIONS){
-          xmpu_print("ERROR: No XMPU free region, impossible to create the VM\n\r");
-          return -1;
-        }
-        region_base = valid_reg_n * XMPU_REGION_OFFSET;
-
-        //DEBUG
-        // xmpu_print("Allowed memory region: 0x%08x - 0x%08x\n\r", addr_start, addr_end);
-        // xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
-        // xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-        // xmpu_print("XMPU region: %d\n\r", valid_reg_n);
-        // xmpu_print("Master ID:    0x%04llx\n\r", cell_master_id);
-        // xmpu_print("Master Mask:  0x%04llx\n\r", cell_master_mask);
-        
-        // Configure region
-        xmpu_chnl->region[valid_reg_n].addr_start =     addr_start;
-        xmpu_chnl->region[valid_reg_n].addr_end =       addr_end;
-        xmpu_chnl->region[valid_reg_n].master_id =      cell_master_id; 
-        xmpu_chnl->region[valid_reg_n].master_mask =    cell_master_mask;
-        xmpu_chnl->region[valid_reg_n].ns_checktype =   0;
-        xmpu_chnl->region[valid_reg_n].region_ns =      0;
-        xmpu_chnl->region[valid_reg_n].wrallowed =      (mem->flags & JAILHOUSE_MEM_WRITE) ? 1 : 0;
-        xmpu_chnl->region[valid_reg_n].rdallowed =      (mem->flags & JAILHOUSE_MEM_READ) ? 1 : 0;
-        xmpu_chnl->region[valid_reg_n].enable =         1;
-        xmpu_chnl->region[valid_reg_n].id =             cell->config->id;
-        xmpu_chnl->region[valid_reg_n].used =           1;
-        set_xmpu_region(xmpu_base, region_base, &xmpu_chnl->region[valid_reg_n]);  
+        return 0;
       }
+      // DEBUG
+	  	xmpu_print("rCPU %d permissions settings ...\n\r", cpu);
+      set_core_permissions(xmpu_channel_n, xmpu_base, cell_master_id, cell_master_mask, cell);
     }
   }
   else{
-    //xmpu_print("No rCPUs in this cell\n\r");
+    xmpu_print("No rCPUs in this cell\n\r");
+  }
+
+  // If FPGA in cell, give the requested accesses
+  // to do ... specify the FPGA regions and give the permession to the corresponding maser ID
+  if(cell->config->fpga_regions_size > 0){
+    // S_AXI_HP0_FPD (HP0) (1010, AXI ID[5:0]) DOESN'T WORK ...
+    xmpu_channel_n = 3; 
+    xmpu_base = XMPU_DDR_3_BASE_ADDR;
+    cell_master_id = 0x0280;    // 0000 00(10 1000 0000)  to do: take from cell configuration
+    cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration  
+    xmpu_print("FPGA region permissions settings ...\n\r");
+    set_core_permissions(xmpu_channel_n, xmpu_base, cell_master_id, cell_master_mask, cell);
+  }
+  else{
+    xmpu_print("No FPGA regions in this cell\n\r");
   }
 
   return 0;

@@ -1,8 +1,8 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for demo inmate on Xilinx ZynqMP ZCU102 eval board:
- * 1 CPU, 64K RAM, 1 serial port
+ * Configuration for demo inmate on Xilinx ZynqMP KRIA kV260 eval board:
+ * 1 Soft-Core RISCV CPU on FPGA
  *
  * Copyright (c) Siemens AG, 2016
  *
@@ -19,7 +19,7 @@
 struct {
 	struct jailhouse_cell_desc cell;
 	__u64 cpus[1];
-	__u64 rcpus[1];
+	__u64 fpga_regions[1];
 	struct jailhouse_memory mem_regions[4];
 	union jailhouse_stream_id stream_ids[1];
 } __attribute__((packed)) config = {
@@ -31,7 +31,7 @@ struct {
 		.flags = JAILHOUSE_CELL_PASSIVE_COMMREG,
 
 		.cpu_set_size = sizeof(config.cpus),
-		.rcpu_set_size = sizeof(config.rcpus),
+		.fpga_regions_size = sizeof(config.fpga_regions),
 		.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 		.num_irqchips = 0,
 		.num_pci_devices = 0,
@@ -49,9 +49,9 @@ struct {
 		0x0,
 	},
 
-	.rcpus = {
-		0x4,	//0x0100
-	},
+    .fpga_regions = {
+        0x1
+    },
 
 	.mem_regions = {
 		/* UART not used yet*/ {

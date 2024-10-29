@@ -33,6 +33,7 @@ struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
 	__u64 rcpus[1];
+	__u64 fpga_regions[1];
 	struct jailhouse_memory mem_regions[18];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
@@ -111,6 +112,7 @@ struct {
 
 			.cpu_set_size = sizeof(config.cpus),
 			.rcpu_set_size = sizeof(config.rcpus), 
+			.fpga_regions_size = sizeof(config.fpga_regions),
 			.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 			.num_irqchips = ARRAY_SIZE(config.irqchips),
 			.num_pci_devices = ARRAY_SIZE(config.pci_devices),
@@ -126,7 +128,11 @@ struct {
 	},
 
 	.rcpus = {
-		0x7, // RPU0, RPU1, RISC-V (soft-core)
+		0x3, // RPU0, RPU1
+	},
+
+	.fpga_regions = {
+		0x1
 	},
 
 	.mem_regions = {
