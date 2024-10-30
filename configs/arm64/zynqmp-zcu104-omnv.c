@@ -1,28 +1,17 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for Xilinx ZynqMP Kria KV260 board
+ * Configuration for Xilinx ZynqMP ZCU102 eval board
  *
  * Copyright (c) Siemens AG, 2016
- * Copyright (c) Daniele Ottaviano, 2024
  *
  * Authors:
  *  Jan Kiszka <jan.kiszka@siemens.com>
- *  Daniele Ottaviano <danieleottaviano97@gmail.com>
- * 
+ *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  *
- * Reservation via device tree: 
- * 	reserved-memory {
- *		#address-cells = <2>;
- *		#size-cells = <2>;
- *		ranges;
- *		jailhouse_reserved: jailhouse@7e000000 {
- *			no-map;
- *			reg = <0x0 0x7e000000 0x0 0x2000000>;
- *		}; 
- *	};
+ * Reservation via device tree: 0x800000000..0x83fffffff
  */
 #include <jailhouse/types.h>
 #include <jailhouse/cell-config.h>
@@ -34,7 +23,7 @@ struct {
 	__u64 cpus[1];
 	__u64 rcpus[1];
 	__u64 fpga_regions[1];
-	struct jailhouse_memory mem_regions[18];
+	struct jailhouse_memory mem_regions[24];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
@@ -46,11 +35,11 @@ struct {
 		.architecture = JAILHOUSE_ARM64,
 		.flags = JAILHOUSE_SYS_VIRTUAL_DEBUG_CONSOLE,
 		.hypervisor_memory = {
-			.phys_start = 0x7f000000,
+			.phys_start = 0x6f000000,
 			.size =       0x01000000,
 		},
 		.debug_console = {
-			.address = 0xff010000,
+			.address = 0xff000000,
 			.size = 0x1000,
 			.type = JAILHOUSE_CON_TYPE_XUARTPS,
 			.flags = JAILHOUSE_CON_ACCESS_MMIO |
@@ -60,10 +49,11 @@ struct {
 			.pci_mmconfig_base = 0xfc000000,
 			.pci_mmconfig_end_bus = 0,
 
+			.pci_is_virtual = 1,
+			.pci_domain = -1,
+
 			.fpga_configuration_base = 0x80000000,
 			
-			.pci_is_virtual = 1,
-			.pci_domain = 1,
 			.color = {
 				.way_size = 0x10000,
 				.root_map_offset = 0x0C000000000,
@@ -110,10 +100,10 @@ struct {
 		},
 
 		.root_cell = {
-			.name = "ZynqMP-KV260",
+			.name = "ZynqMP-ZCU104",
 
 			.cpu_set_size = sizeof(config.cpus),
-			.rcpu_set_size = sizeof(config.rcpus), 
+			.rcpu_set_size = sizeof(config.rcpus),
 			.fpga_regions_size = sizeof(config.fpga_regions),
 			.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 			.num_irqchips = ARRAY_SIZE(config.irqchips),
@@ -128,20 +118,20 @@ struct {
 	.cpus = {
 		0xf,
 	},
-
 	.rcpus = {
-		0x3, // RPU0, RPU1
+		0x3,
 	},
-
-	.fpga_regions = {
-		0x1
-	},
+ 	.fpga_regions = {
+		0x1,
+	}, 
 
 	.mem_regions = {
 		/* IVSHMEM shared memory region for 0001:00:00.0 */
-		JAILHOUSE_SHMEM_NET_REGIONS(0x07e000000, 0),
+		//JAILHOUSE_SHMEM_NET_REGIONS(0x060000000, 0),
+		JAILHOUSE_SHMEM_NET_REGIONS(0x50400000, 0),
 		/* IVSHMEM shared memory region for 0001:00:01.0 */
-		JAILHOUSE_SHMEM_NET_REGIONS(0x07e100000, 0),
+		JAILHOUSE_SHMEM_NET_REGIONS(0x50500000, 0),
+		//JAILHOUSE_SHMEM_NET_REGIONS(0x060100000, 0),
 		/* FPGA configuration ports */ {
 			.phys_start = 0x80000000,
 			.virt_start = 0x80000000,
@@ -157,56 +147,21 @@ struct {
 				JAILHOUSE_MEM_IO,
 		},
 		/* RAM */ {
-			.phys_start = 0x0,
-			.virt_start = 0x0,
-			.size = 0x7e000000,
+			.phys_start = 0x00000000,
+			.virt_start = 0x00000000,
+			.size = 0x80000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE,
 		},
-		/* RAM */ {
-			.phys_start = 0x800000000,
-			.virt_start = 0x800000000,
-			.size = 0x080000000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_EXECUTE,
-		},
-		/* PCI host bridge */ {
+		/* PCI host bridge */
+		{
 			.phys_start = 0x8000000000,
 			.virt_start = 0x8000000000,
 			.size = 0x1000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
 		},
-		/* TCM region for the R5 */ {
-			.phys_start = 0xffe00000,
-			.virt_start = 0xffe00000,
-			.size = 0xC0000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
-		},
-		/* DDR 0 region for the R5 */ {
-			.phys_start = 0x3ed00000,
-			.virt_start = 0x3ed00000,
-			.size = 0x40000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
-		},
-		/* DDR 1 region for the R5 */ {
-			.phys_start = 0x3ed40000,
-			.virt_start = 0x3ed40000,
-			.size = 0x40000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
-		},
-		/* proc 0 region for the R5 */ {
-			.phys_start = 0xff9a0100,
-			.virt_start = 0xff9a0100,
-			.size = 0x100,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
-		},
-		/* proc 1 region for the R5 */ {
-			.phys_start = 0xff9a0200,
-			.virt_start = 0xff9a0200,
-			.size = 0x100,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
-		},
+		
 	},
 
 	.irqchips = {
@@ -258,8 +213,6 @@ struct {
 	},
 
 	.qos_devices = {
-
-		/* Peripherials in LPD with QoS Support */
 		{
 			.name = "rpu0",
 			.flags = (FLAGS_HAS_REGUL),
@@ -279,114 +232,10 @@ struct {
 		},
 
 		{
-			.name = "afifm6",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_AFIFM6_BASE,
-		},
-
-		{
-			.name = "dap",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_DAP_BASE,
-		},
-
-		{
-			.name = "usb0",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_USB0_BASE,
-		},
-
-		{
-			.name = "usb1",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_USB1_BASE,
-		},
-
-		{
-			.name = "intiou",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_INTIOU_BASE,
-		},
-
-		{
-			.name = "intcsupmu",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_INTCSUPMU_BASE,
-		},
-
-		{
-			.name = "intlpdinbound",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_INTLPDINBOUND_BASE,
-		},
-
-		{
-			.name = "intlpdocm",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_INTLPDOCM_BASE,
-		},
-
-		{
-			.name = "ib5",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_IB5_BASE,
-		},
-
-		{
-			.name = "ib6",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_IB6_BASE,
-		},
-		
-		{
-			.name = "ib8",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_IB8_BASE,
-		},
-
-		{
-			.name = "ib0",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_IB0_BASE,
-		},
-
-		{
-			.name = "ib11",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_IB5_BASE,
-		},
-
-		{
-			.name = "ib12",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_IB5_BASE,
-		},
-		
-		/* Peripherials in FPD with QoS Support */	
-		{
-			.name = "intfpdcci",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_INTFPDCCI_BASE,
-		},
-
-		{
-			.name = "intfpdsmmutbu3",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_INTFPDSMMUTBU3_BASE,
-		},
-
-		{
-			.name = "intfpdsmmutbu4",
-			.flags = (FLAGS_HAS_REGUL),
-			.base = M_INTFPDSMMUTBU4_BASE,
-		},
-
-		{
 			.name = "afifm0",
 			.flags = (FLAGS_HAS_REGUL),
 			.base = M_AFIFM0_BASE,
 		},
-
 		{
 			.name = "afifm1",
 			.flags = (FLAGS_HAS_REGUL),
@@ -400,7 +249,7 @@ struct {
 		},
 
 		{
-			.name = "intfpdsmmutbu5",
+			.name = "smmutbu5",
 			.flags = (FLAGS_HAS_REGUL),
 			.base = M_INITFPDSMMUTBU5_BASE,
 		},
@@ -464,7 +313,6 @@ struct {
 			.flags = (FLAGS_HAS_REGUL),
 			.base = ISS_IB2_BASE,
 		},
-		
 		{
 			.name = "issib6",
 			.flags = (FLAGS_HAS_REGUL),

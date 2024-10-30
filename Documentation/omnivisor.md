@@ -93,3 +93,45 @@ jailhouse cell create ${JAILHOUSE_DIR}/configs/arm64/zynqmp-kv260-RPU-inmate-dem
 jailhouse cell load inmate-demo-RPU ${JAILHOUSE_DIR}/inmates/demos/armr5/baremetal-demo_tcm.bin -a 0xffe00000 ${JAILHOUSE_DIR}/inmates/demos/armr5/baremetal-demo.bin
 jailhouse cell start inmate-demo-RPU
 ```
+
+## FPGA support
+The Omnivisor also enables the use of FPGA regions as additional resources for the cells. 
+
+To enable FPGA support, modify the config file `include/jailhouse/config.h` 
+by appending this define:
+
+```c
+#define CONFIG_OMNV_FPGA 1
+```
+Compile with the new configuration as described before, then start the hypervisor using a configuration that includes FPGA regions (e.g ```zynqmp-kv260-RISCV-inmate-demo.cell```)
+
+```sh
+jailhouse enable ${JAILHOUSE_DIR}/configs/arm64/zynqmp-kv260-RISCV-inmate-demo.cell
+```
+Once enabled, check the cell list to verify that the hypervisor can see the FPGA:
+
+```sh
+jailhouse cell list
+
+ID      Name                    State             Assigned CPUs           Assigned rCPUs       Assigned FPGA regions   Failed CPUs             
+0       ZynqMP-KV260            running           0-3                     0-2                  0
+```
+
+Now, after a cell creation, you can load a bitstream along with traditional images, specifying the FPGA region to be loaded in:
+```sh
+jailhouse cell load ${CELL_ID} ${IMAGE} -b ${BITSTREAM_NAME} ${REGION_ID}
+```
+
+To test a cell with a FPGA region, use the following command:
+
+```sh
+jailhouse cell create ${JAILHOUSE_DIR}/configs/arm64/zynqmp-kv260-RISCV-inmate-demo.cell
+jailhouse cell load inmate-demo-RISCV ${JAILHOUSE_DIR}/inmates/demos/riscv/riscv-demo.bin -b pico32_tg.bit 0
+jailhouse cell start inmate-demo-RISCV
+```
+
+### Notes about the bitstream
+* The bitstream to be loaded has to be under ```/lib/firmware```.
+* Each region can have a configuration port for reset
+    * The base address for the configuration ports is specified in the root cell configuration
+    * The configuration port for region ```n``` is at ```base_address + 4 * n```

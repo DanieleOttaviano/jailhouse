@@ -517,7 +517,7 @@ static void cell_destroy_internal(struct cell *cell)
 		for_each_region(cpu, cell->fpga_region_set){
 			//if soft core, power off
 			set_bit(cpu,root_cell.fpga_region_set->bitmap);
-			volatile u32* fpga_start = (u32*)0x80000000; //CHECK ADDRESSS HERE
+			volatile u32* fpga_start = (u32*)system_config->platform_info.fpga_configuration_base; //CHECK ADDRESSS HERE
 			fpga_start[cpu] = 1;
 			// Reset for region <cpu> must be up.
 		}
@@ -896,7 +896,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 			}
 			else{
 				// Reset the core
-				volatile u32* fpga_start = (u32*)0x80000000;
+				volatile u32* fpga_start = (u32*)system_config->platform_info.fpga_configuration_base;
 				fpga_start[cpu] = 1;
 				fpga_start[cpu] = 0;
 			} 

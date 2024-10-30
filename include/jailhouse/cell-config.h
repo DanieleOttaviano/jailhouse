@@ -410,6 +410,7 @@ struct jailhouse_system {
 		__u16 pci_domain;
 		/* Disable spectre (CVE-2017-5715) mitigations */
 		__u32 no_spectre_mitigation;
+		__u64 fpga_configuration_base;
 		struct jailhouse_iommu iommu_units[JAILHOUSE_MAX_IOMMU_UNITS];
 		struct jailhouse_coloring color;
 		struct jailhouse_memguard_config memguard;
