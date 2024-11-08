@@ -56,6 +56,7 @@
 #include <asm/cpu_ops.h>
 #endif
 
+#include "rcpu.h"
 #include "cell.h"
 #include "jailhouse.h"
 #include "main.h"
@@ -602,6 +603,12 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 #endif
 #endif
 
+	pr_err("Remote Processors Discovering ...\n");
+	// Setup Remote Processors (rCPUs)
+	err = jailhouse_rcpus_setup();
+	if (err)
+		goto error_unmap;
+
 	err = jailhouse_sysfs_core_init(jailhouse_dev, header->core_size);
 	if (err)
 		goto error_unmap;
@@ -800,6 +807,8 @@ static int jailhouse_cmd_disable(void)
 		goto unlock_out;
 
 	jailhouse_pci_virtual_root_devices_remove();
+
+	jailhouse_rcpus_remove();
 
 	error_code = 0;
 

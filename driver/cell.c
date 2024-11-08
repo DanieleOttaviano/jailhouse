@@ -24,6 +24,7 @@
 #include <linux/vmalloc.h>
 #include <asm/cacheflush.h>
 
+#include "rcpu.h"
 #include "cell.h"
 #include "main.h"
 #include "pci.h"
@@ -132,6 +133,12 @@ retry:
 	//DEBUG PRINT
 	//pr_err("regions assigned %x\n",cell->fpga_regions_assigned);
 #endif /* CONFIG_OMNV_FPGA*/
+
+	err = jailhouse_rcpus_check(cell);
+	if (err) {
+		kfree(cell);
+		return ERR_PTR(err);
+	}
 
 	cell->num_memory_regions = cell_desc->num_memory_regions;
 	cell->memory_regions = vmalloc(sizeof(struct jailhouse_memory) *
