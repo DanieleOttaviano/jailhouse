@@ -85,7 +85,7 @@ static void __attribute__((noreturn)) help(char *prog, int exit_status)
 	       "   cell list\n"
 	       "   cell load { ID | [--name] NAME } "
 				"{ IMAGE | { -s | --string } \"STRING\" }\n"
-	       "             [-a | --address ADDRESS] ... [-b | --bitstream \"BITSTREAM_NAME\" REGION_ID] ...\n"
+		   "             [-a | --address ADDRESS] ... [-r | --rcpu \"RCPU_IMAGE_NAME\" \"RCPU_MASK\"] ... [-b | --bitstream \"BITSTREAM_NAME\" REGION_ID] ...\n"
 	       "   cell start { ID | [--name] NAME }\n"
 	       "   cell shutdown { ID | [--name] NAME }\n"
 	       "   cell destroy { ID | [--name] NAME }\n",
@@ -447,6 +447,11 @@ static int cell_shutdown_load(int argc, char *argv[],
 	unsigned int images, n;
 	size_t size;
 	char *endp;
+#if defined(CONFIG_OMNIVISOR)
+	struct jailhouse_preload_rcpu_image *rcpu_image;
+	unsigned int rcpu_images = 0;
+#endif /* CONFIG_OMNIVISOR */
+
 #if defined(CONFIG_OMNV_FPGA)
 	struct jailhouse_preload_bitstream *bitstream;
 	unsigned int bitstreams = 0;
@@ -461,14 +466,25 @@ static int cell_shutdown_load(int argc, char *argv[],
 	images = 0;
 	
 	while (arg_num < argc) {
+#if defined (CONFIG_OMNIVISOR)
+		while (arg_num < argc &&
+			   match_opt(argv[arg_num], "-r", "--rcpu")) {
+			if (arg_num + 2 >= argc)
+				help(argv[0], 1);
+			arg_num += 3; // -r|--rcpu {image.elf} {rcpu}
+			rcpu_images++;
+		}
+		if(arg_num >= argc)
+			break; 	
+#endif /* CONFIG_OMNIVISOR */
 #if defined (CONFIG_OMNV_FPGA) 
-			while(arg_num < argc &&
-					match_opt(argv[arg_num], "-b", "--bitstream")) {
-				if (arg_num + 1 >= argc)
+		while(arg_num < argc &&
+			match_opt(argv[arg_num], "-b", "--bitstream")) {
+				if (arg_num + 2 >= argc)
 					help(argv[0], 1);
-				arg_num+=3;
+				arg_num+=3; // -b|--bitstream {bitstream} {region} 
 				bitstreams++;
-			}
+		}
 		if(arg_num >= argc)
 			break; 
 #endif /* CONFIG_OMNV_FPGA */
@@ -485,6 +501,7 @@ static int cell_shutdown_load(int argc, char *argv[],
 				help(argv[0], 1);
 			arg_num+=2;
 		}
+		// Can I load a bitstream without any image?
 #if defined(CONFIG_OMNV_FPGA)
 		if (bitstreams > 0 && images == 0) {
 			help(argv[0], 1);	
@@ -527,6 +544,21 @@ static int cell_shutdown_load(int argc, char *argv[],
 		}
 	}
 
+#if defined(CONFIG_OMNIVISOR)
+	cell_load->num_rcpu_images = rcpu_images;
+	cell_load->rcpu_image = malloc(sizeof(struct jailhouse_preload_rcpu_image) * rcpu_images);
+	if (!cell_load->rcpu_image) {
+		fprintf(stderr, "insufficient memory\n");
+		exit(1);
+	}
+
+	for (n = 0, rcpu_image = cell_load->rcpu_image; n < rcpu_images; n++, rcpu_image++) {
+		arg_num++; //skip '-r'
+		strncpy(rcpu_image->name, argv[arg_num++], JAILHOUSE_RCPU_IMAGE_NAMELEN);
+		rcpu_image->rcpu_id = atoi(argv[arg_num++]);
+	}
+#endif /* CONFIG_OMNIVISOR */
+
 #if defined(CONFIG_OMNV_FPGA)
 	cell_load->num_bitstreams = bitstreams;
 	cell_load->bitstream = malloc(sizeof(struct jailhouse_preload_bitstream) * bitstreams);
@@ -536,10 +568,10 @@ static int cell_shutdown_load(int argc, char *argv[],
 	}
 	
 	for (n = 0, bitstream = cell_load->bitstream; n < bitstreams; n++, bitstream++) {
-			arg_num++; //skip '-b'
-			strncpy(bitstream->name,argv[arg_num++],JAILHOUSE_BITSTREAM_NAME_LEN);
-			bitstream->region = atoi(argv[arg_num++]);
-			bitstream->flags = 0;
+		arg_num++; //skip '-b'
+		strncpy(bitstream->name, argv[arg_num++], JAILHOUSE_BITSTREAM_NAMELEN);
+		bitstream->region = atoi(argv[arg_num++]);
+		bitstream->flags = 0;
 	}
 #endif/* CONFIG_OMNV_FPGA */
 
@@ -552,6 +584,9 @@ static int cell_shutdown_load(int argc, char *argv[],
 	close(fd);
 	for (n = 0, image = cell_load->image; n < images; n++, image++)
 		free((void *)(unsigned long)image->source_address);
+#if defined(CONFIG_OMNIVISOR)
+	free(cell_load->rcpu_image);
+#endif /* CONFIG_OMNIVISOR */
 #if defined(CONFIG_OMNV_FPGA)
 	free(cell_load->bitstream);
 #endif /* CONFIG_OMNV_FPGA */

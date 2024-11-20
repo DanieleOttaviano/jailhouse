@@ -562,6 +562,9 @@ static int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream 
 int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 {
 	struct jailhouse_preload_image __user *image = arg->image;
+#if defined (CONFIG_OMNIVISOR)
+	struct jailhouse_preload_rcpu_image __user * rcpu_image = arg->rcpu_image;
+#endif /* CONFIG_OMNIVISOR */
 #if defined (CONFIG_OMNV_FPGA)
 	struct jailhouse_preload_bitstream __user * bitstream = arg->bitstream;
 #endif /* CONFIG_OMNV_FPGA */
@@ -581,10 +584,23 @@ int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 	if (err)
 		goto unlock_out;
 
+#if defined(CONFIG_OMNIVISOR)
+	// DEBUG PRINT
+	pr_info("Preparing to load %d images for Remote Processors...\n",cell_load.num_rcpu_images);
+	for (n = cell_load.num_rcpu_images; n > 0; n--, rcpu_image++) {
+		pr_info("Loading image: %s on RCPU: %d \n", rcpu_image->name, rcpu_image->rcpu_id);
+		err = jailhouse_load_rcpu_image(cell, rcpu_image);
+		if (err){
+			pr_err("Unable to load rcpu image %s\n",rcpu_image->name);
+			goto unlock_out;
+		}
+	}
+#endif /* CONFIG_OMNIVISOR */
+
 #if defined(CONFIG_OMNV_FPGA)
 	//bitstreams first, then images
 	// DEBUG PRINT
-	//pr_err("cell_load.num_bitstreams: %d\n",cell_load.num_bitstreams);
+	pr_err("cell_load.num_bitstreams: %d\n",cell_load.num_bitstreams);
 	for (n = cell_load.num_bitstreams; n > 0; n--, bitstream++) {
 		err = load_bitstream(cell,bitstream);
 		if (err){
@@ -595,7 +611,7 @@ int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 #endif /* CONFIG_OMNV_FPGA*/
 
 	// DEBUG PRINT
-	//pr_err("cell_load.num_preload_images: %d\n",cell_load.num_preload_images);
+	pr_err("cell_load.num_preload_images: %d\n",cell_load.num_preload_images);
 	for (n = cell_load.num_preload_images; n > 0; n--, image++) {
 		err = load_image(cell, image);
 		if (err)
@@ -613,6 +629,9 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 	struct jailhouse_cell_id cell_id;
 	struct cell *cell;
 	int err;
+	#if defined(CONFIG_OMNIVISOR)
+	unsigned int rcpu;
+	#endif /* CONFIG_OMNIVISOR */
 
 	if (copy_from_user(&cell_id, arg, sizeof(cell_id)))
 		return -EFAULT;
@@ -620,6 +639,18 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 	err = cell_management_prologue(&cell_id, &cell);
 	if (err)
 		return err;
+
+
+#if defined(CONFIG_OMNIVISOR)
+	for_each_cpu(rcpu, &cell->rcpus_assigned) {
+		//DEBUG
+		pr_info("Starting rcpu %d\n",rcpu);
+		err = jailhouse_start_rcpu(rcpu);
+		if (err) {
+			pr_err("Failed to start rcpu %d\n", rcpu);		
+		}	
+	}
+#endif /* CONFIG_OMNIVISOR */
 
 	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_START, cell->id);
 	
@@ -642,6 +673,10 @@ static int cell_destroy(struct cell *cell)
 
 #if defined(CONFIG_OMNIVISOR)
 	for_each_cpu(rcpu, &cell->rcpus_assigned) {
+		err = jailhouse_stop_rcpu(rcpu);
+		if (err){
+			pr_err("Failed to stop rcpu %d\n", rcpu);
+		}
 		cpumask_set_cpu(rcpu, &root_cell->rcpus_assigned);
 	}
 #endif /* CONFIG_OMNIVISOR */
