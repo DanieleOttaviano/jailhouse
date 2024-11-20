@@ -30,9 +30,6 @@
 /* QoS Support only provided on arm64 */
 #include <asm/qos.h>
 #endif
-#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
-#include <asm/zynqmp-r5.h>
-#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 
 enum msg_type {MSG_REQUEST, MSG_INFORMATION};
 enum failure_mode {ABORT_ON_ERROR, WARN_ON_ERROR};
@@ -495,18 +492,6 @@ static void cell_destroy_internal(struct cell *cell)
 	// For each rCPU, power them off
 	if (cell->config->rcpu_set_size > 0) {
 		for_each_cpu(cpu, cell->rcpu_set) {
-			// to do ... call platform and architectueral specific arch_park_rcpu and modify public_per_rcpu stats
-#if defined(CONFIG_MACH_ZYNQMP_ZCU102)
-			if(cpu == 0){
-				zynqmp_r5_stop(NODE_RPU_0);
-			}
-			else if(cpu == 1){
-				zynqmp_r5_stop(NODE_RPU_1);
-			}
-			else{
-				printk("rCPU doesn't exist\r\n");
-			}
-#endif /* CONFIG_MACH_ZYNQMP_ZCU102 */
 			set_bit(cpu, root_cell.rcpu_set->bitmap);
 		}	
 	}
@@ -517,7 +502,7 @@ static void cell_destroy_internal(struct cell *cell)
 		for_each_region(cpu, cell->fpga_region_set){
 			//if soft core, power off
 			set_bit(cpu,root_cell.fpga_region_set->bitmap);
-			volatile u32* fpga_start = (u32*)system_config->platform_info.fpga_configuration_base; //CHECK ADDRESSS HERE
+			volatile u32* fpga_start = (u32*)system_config->platform_info.fpga_configuration_base;
 			fpga_start[cpu] = 1;
 			// Reset for region <cpu> must be up.
 		}
@@ -812,6 +797,9 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	unsigned int cpu, n;
 	struct cell *cell;
 	int err;
+#if defined(CONFIG_OMNV_FPGA)
+	unsigned long fpga_base_addr;
+#endif
 
 	err = cell_management_prologue(CELL_START, cpu_data, id, &cell);
 	if (err)
@@ -860,43 +848,24 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 		arch_reset_cpu(cpu);
 	}
 
-#if defined(CONFIG_OMNIVISOR)
-	// For each rCPU
-	if (cell->config->rcpu_set_size > 0) {
-		for_each_cpu(cpu, cell->rcpu_set) {
-#if defined(CONFIG_MACH_ZYNQMP_ZCU102)	
-			// to do ... call platform and architectueral specific arch_reset_rcpu
-			printk("Starting rCPU %d\r\n", cpu);
-			if(cpu == 0){
-				zynqmp_r5_start(NODE_RPU_0,(u32)0x03ed0000);
-			}
-			else if(cpu == 1){
-				zynqmp_r5_start(NODE_RPU_1,(u32)0x03ad0000);
-			}
-			else{
-				printk("rCPU doesn't exist\r\n");
-				return -1;
-			}
-#endif /* CONFIG_MACH_ZYNQMP_ZCU102 */
-		}	
-	}
-#endif /* CONFIG_OMNIVISOR */
-
 #if defined(CONFIG_OMNV_FPGA)
+    fpga_base_addr = system_config->platform_info.fpga_configuration_base;
+	// DEBUG PRINT
+	// printk("FPGA base address: 0x%lx\r\n", fpga_base_addr);
 	if(cell->config->fpga_regions_size > 0){
 		//for each region, start if it has to be started
 		for_each_region(cpu,cell->fpga_region_set){
 			printk("Starting FPGA region %d\r\n", cpu);
 			//Map page where configuration port for region x is located
 			//if needed, reset the soft core and start
-			err = paging_create(&hv_paging_structs, 0x80000000, PAGE_SIZE, //change address?
-				0x80000000, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
+			err = paging_create(&hv_paging_structs, fpga_base_addr, PAGE_SIZE,
+				fpga_base_addr, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
 			if (err){
 				printk("paging_create for fpga configuration port failed\r\n");
 			}
 			else{
 				// Reset the core
-				volatile u32* fpga_start = (u32*)system_config->platform_info.fpga_configuration_base;
+				volatile u32* fpga_start = (u32*)fpga_base_addr;
 				fpga_start[cpu] = 1;
 				fpga_start[cpu] = 0;
 			} 
@@ -949,15 +918,6 @@ static int cell_set_loadable(struct per_cpu *cpu_data, unsigned long id)
 			if (err)
 				goto out_resume;
 		}
-#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
-		// to do ... call sram request function (platform specific)
-		if(mem->flags & JAILHOUSE_MEM_TCM_A){
-			zynqmp_r5_tcm_request(ZYNQMP_R5_TCMA_ID);
-		}
-		if(mem->flags & JAILHOUSE_MEM_TCM_B){
-			zynqmp_r5_tcm_request(ZYNQMP_R5_TCMB_ID);
-		}
-#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 	}
 
 	config_commit(NULL);
@@ -1052,15 +1012,6 @@ void shutdown(void)
 		if (root_mem->flags & JAILHOUSE_MEM_COLORED) {
 			arch_unmap_memory_region(&root_cell, root_mem);
 		}
-#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
-		// to do ... call sram release function (platform specific)
-		if(root_mem->flags & JAILHOUSE_MEM_TCM_A){
-			zynqmp_r5_tcm_release(ZYNQMP_R5_TCMA_ID);
-		}
-		if(root_mem->flags & JAILHOUSE_MEM_TCM_B){
-			zynqmp_r5_tcm_release(ZYNQMP_R5_TCMB_ID);
-		}
-#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 	}
 
 	/* copy back the root cell into a non-colored phys range */

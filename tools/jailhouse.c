@@ -83,9 +83,10 @@ static void __attribute__((noreturn)) help(char *prog, int exit_status)
 	       "   memguard { CPU ID } period_us budget_mem event_type\n"
 	       "   cell create CELLCONFIG\n"
 	       "   cell list\n"
-	       "   cell load { ID | [--name] NAME } "
-				"{ IMAGE | { -s | --string } \"STRING\" }\n"
-		   "             [-a | --address ADDRESS] ... [-r | --rcpu \"RCPU_IMAGE_NAME\" \"RCPU_MASK\"] ... [-b | --bitstream \"BITSTREAM_NAME\" REGION_ID] ...\n"
+	       "   cell load { ID | [--name] NAME } { IMAGE | { -s | --string } \"STRING\" }\n"
+		   "             [-a | --address ADDRESS] ...\n" 
+		   "             [-r | --rcpu RCPU_IMAGE_NAME RCPU_MASK] ...\n"
+		   "             [-b | --bitstream BITSTREAM_NAME REGION_ID] ...\n"
 	       "   cell start { ID | [--name] NAME }\n"
 	       "   cell shutdown { ID | [--name] NAME }\n"
 	       "   cell destroy { ID | [--name] NAME }\n",
