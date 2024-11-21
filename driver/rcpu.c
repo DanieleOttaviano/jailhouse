@@ -7,6 +7,7 @@
 
 static const struct of_device_id rproc_of_match[] = {
 	{ .compatible = "xlnx,zynqmp-r5-remoteproc", },
+	{ .compatible = "xlnx,versal-r5-remoteproc", },
 	{},
 };
 
@@ -28,10 +29,11 @@ static const char * const rproc_state_string[] = {
 static struct rproc **rproc;
 static int num_rprocs;
 
-// Check if the Remote Processor is in running or attached state and stop it
-static int stop_running_rcpu(unsigned int rcpu_id) {
-	int err = 0;
-
+// start the rcpu
+int jailhouse_start_rcpu(unsigned int rcpu_id){
+	int err;
+	
+	// Check if the rcu is in running or attached state
 	if (rproc[rcpu_id]->state == RPROC_RUNNING || rproc[rcpu_id]->state == RPROC_ATTACHED) {
 		pr_info("rcpu %d is %s, %s it\n", rcpu_id,
 			rproc[rcpu_id]->state == RPROC_RUNNING ? "running" : "attached", 
@@ -41,19 +43,6 @@ static int stop_running_rcpu(unsigned int rcpu_id) {
 			pr_err("Failed to %s rcpu %d\n", 
 				rproc[rcpu_id]->state == RPROC_RUNNING ? "stop" : "detach", rcpu_id);
 		}
-	}
-
-	return err;
-}
-
-// start the rcpu
-int jailhouse_start_rcpu(unsigned int rcpu_id){
-	int err;
-	
-	// Check if the rcu is in running or attached state
-	err = stop_running_rcpu(rcpu_id);	
-	if (err) {
-		return err;
 	}
 
 	err = rproc_boot(rproc[rcpu_id]);
@@ -203,9 +192,15 @@ int jailhouse_rcpus_setup(){
 		}
 
 		// Check if the rcu is in running or attached state
-		err = stop_running_rcpu(i);	
-		if (err) {
-			return err;
+		if (rproc[i]->state == RPROC_RUNNING || rproc[i]->state == RPROC_ATTACHED) {
+			pr_info("rcpu %d is %s, %s it\n", i,
+				rproc[i]->state == RPROC_RUNNING ? "running" : "attached", 
+				rproc[i]->state == RPROC_RUNNING ? "stopping" : "detaching");
+			err = rproc[i]->state == RPROC_RUNNING ? rproc_shutdown(rproc[i]) : rproc_detach(rproc[i]);
+			if (err) {
+				pr_err("Failed to %s rcpu %d\n", 
+					rproc[i]->state == RPROC_RUNNING ? "stop" : "detach", i);
+			}
 		}
 
 		i++;
