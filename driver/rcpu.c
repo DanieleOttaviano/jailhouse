@@ -1,3 +1,17 @@
+/*
+* Jailhouse, a Linux-based partitioning hypervisor
+*
+* Omnivisor demo RISC-V Makefile
+*
+* Copyright (c) Daniele Ottaviano, 2024
+*
+* Authors:
+*   Daniele Ottaviano <danieleottaviano97@gmail.com>
+*
+* This work is licensed under the terms of the GNU GPL, version 2.  See
+* the COPYING file in the top-level directory.
+*
+*/
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/remoteproc.h>
