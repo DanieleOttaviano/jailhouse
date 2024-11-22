@@ -682,7 +682,7 @@ static int cell_destroy(struct cell *cell)
 #endif /* CONFIG_OMNIVISOR */
 #if defined(CONFIG_OMNV_FPGA)
 	give_regions_to_cell(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned);
-#endif
+#endif /* CONFIG_OMNV_FPGA */
 	for_each_cpu(cpu, &cell->cpus_assigned) {
 		if (cpumask_test_cpu(cpu, &offlined_cpus)) {
 			if (add_cpu(cpu) != 0)

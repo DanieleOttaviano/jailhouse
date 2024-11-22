@@ -46,6 +46,10 @@ static unsigned int num_cells = 1;
 volatile unsigned long panic_in_progress;
 unsigned long panic_cpu = -1;
 
+#if defined(CONFIG_OMNV_FPGA)
+static int fpga_started;
+#endif /* CONFIG_OMNV_FPGA */
+
 /**
  * CPU set iterator.
  * @param cpu		Previous CPU ID.
@@ -502,8 +506,11 @@ static void cell_destroy_internal(struct cell *cell)
 		for_each_region(cpu, cell->fpga_region_set){
 			//if soft core, power off
 			set_bit(cpu,root_cell.fpga_region_set->bitmap);
-			volatile u32* fpga_start = (u32*)system_config->platform_info.fpga_configuration_base;
-			fpga_start[cpu] = 1;
+			// If the FPGA is non loaded (only create is performed) this can cause a crash
+			if (fpga_started){
+				volatile u32* fpga_start = (u32*)system_config->platform_info.fpga_configuration_base;
+				fpga_start[cpu] = 1;
+			}
 			// Reset for region <cpu> must be up.
 		}
 	}
@@ -864,6 +871,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 				printk("paging_create for fpga configuration port failed\r\n");
 			}
 			else{
+				fpga_started = 1;
 				// Reset the core
 				volatile u32* fpga_start = (u32*)fpga_base_addr;
 				fpga_start[cpu] = 1;
