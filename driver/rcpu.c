@@ -29,6 +29,23 @@ static const char * const rproc_state_string[] = {
 static struct rproc **rproc;
 static int num_rprocs;
 
+static int image_exists(const char *name){
+	struct file *file;
+	int err;
+	char filepath[256];
+
+	snprintf(filepath, sizeof(filepath), "/lib/firmware/%s", name);
+
+	file = filp_open(filepath, O_RDONLY, 0);
+	if (IS_ERR(file)) {
+		err = PTR_ERR(file);
+		pr_err("Failed to open Image file %s: %d\n", filepath, err);
+		return err;
+	}
+	filp_close(file, NULL);
+	return 0;
+}
+
 // start the rcpu
 int jailhouse_start_rcpu(unsigned int rcpu_id){
 	int err;
@@ -88,7 +105,14 @@ int jailhouse_load_rcpu_image(struct cell *cell,
 	err = !(cpumask_test_cpu(id, &cell->rcpus_assigned));
 	if (err) {
 		pr_err("rcpu ID %d not valid\n",id);
-		return -EINVAL;
+		return err;
+	}
+
+	// Check if the image file exists
+	err = image_exists(rcpu_image.name); 
+	if (err) {
+		pr_err("Image %s not found\n", rcpu_image.name);
+		return err;
 	}
 
 	// Load the rcpu image
