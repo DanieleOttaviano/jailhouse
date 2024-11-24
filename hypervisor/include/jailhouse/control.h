@@ -133,7 +133,6 @@ static inline bool cell_owns_cpu(struct cell *cell, unsigned int cpu_id)
 		test_bit(cpu_id, cell->cpu_set->bitmap));
 }
 
-#if defined(CONFIG_OMNIVISOR)
 /**
  * Check if the rCPU is assigned to the specified cell.
  * @param cell		Cell the rCPU may belong to.
@@ -146,7 +145,6 @@ static inline bool cell_owns_rcpu(struct cell *cell, unsigned int rcpu_id)
 	return (rcpu_id <= cell->rcpu_set->max_cpu_id &&
 		test_bit(rcpu_id, cell->rcpu_set->bitmap));
 }
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined (CONFIG_OMNV_FPGA)
 /**

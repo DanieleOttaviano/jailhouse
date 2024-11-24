@@ -30,9 +30,8 @@
 #include "pci.h"
 #include "sysfs.h"
 
-#if defined(CONFIG_OMNIVISOR)	
 #include <asm/smc.h>
-#endif /* CONFIG_OMNIVISOR */
+
 #if defined(CONFIG_OMNV_FPGA)
 #include <linux/fpga/fpga-mgr.h>
 #include <linux/fpga/fpga-region.h>
@@ -114,14 +113,12 @@ retry:
 		    min((unsigned int)nr_cpumask_bits,
 		        cell_desc->cpu_set_size * 8));
 
-#if defined(CONFIG_OMNIVISOR)	
 	bitmap_copy(cpumask_bits(&cell->rcpus_assigned),
 		    jailhouse_cell_rcpu_set(cell_desc),
 		    min((unsigned int)nr_cpumask_bits,
 		        cell_desc->rcpu_set_size * 8));
 	// DEBUG PRINT
 	//pr_err("cpus->assigned %ld\nrcpus->assigned %ld\n",cell->cpus_assigned, cell->rcpus_assigned);
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined(CONFIG_OMNV_FPGA)
 	if(cell_desc->fpga_regions_size > 0){
@@ -222,9 +219,7 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 	void __user *user_config;
 	struct cell *cell;
 	unsigned int cpu;
-#if defined(CONFIG_OMNIVISOR)
 	unsigned int rcpu;
-#endif /* CONFIG_OMNIVISOR */
 	int err = 0;
 
 	if (copy_from_user(&cell_params, arg, sizeof(cell_params)))
@@ -293,12 +288,10 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 		goto error_cell_delete;
 	}
 
-#if defined(CONFIG_OMNIVISOR)
 	if (!cpumask_subset(&cell->rcpus_assigned, &root_cell->rcpus_assigned)) {
 		err = -EBUSY;
 		goto error_cell_delete;
 	}
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined(CONFIG_OMNV_FPGA)
 	if (!fpga_subset(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned)) {
@@ -331,13 +324,11 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 		cpumask_clear_cpu(cpu, &root_cell->cpus_assigned);
 	}
 
-#if defined(CONFIG_OMNIVISOR)	
 	// For each rCPUs check if they are online and shutdown them (to do ...)
 	// remove it from root_cell 
 	for_each_cpu(rcpu, &cell->rcpus_assigned) {
 		cpumask_clear_cpu(rcpu, &root_cell->rcpus_assigned);	
 	}
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined(CONFIG_OMNV_FPGA)
 	//remove each region from root cell
@@ -562,9 +553,7 @@ static int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream 
 int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 {
 	struct jailhouse_preload_image __user *image = arg->image;
-#if defined (CONFIG_OMNIVISOR)
 	struct jailhouse_preload_rcpu_image __user * rcpu_image = arg->rcpu_image;
-#endif /* CONFIG_OMNIVISOR */
 #if defined (CONFIG_OMNV_FPGA)
 	struct jailhouse_preload_bitstream __user * bitstream = arg->bitstream;
 #endif /* CONFIG_OMNV_FPGA */
@@ -584,7 +573,6 @@ int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 	if (err)
 		goto unlock_out;
 
-#if defined(CONFIG_OMNIVISOR)
 	// DEBUG PRINT
 	pr_info("Preparing to load %d images for Remote Processors...\n",cell_load.num_rcpu_images);
 	for (n = cell_load.num_rcpu_images; n > 0; n--, rcpu_image++) {
@@ -595,7 +583,6 @@ int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 			goto unlock_out;
 		}
 	}
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined(CONFIG_OMNV_FPGA)
 	//bitstreams first, then images
@@ -629,9 +616,7 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 	struct jailhouse_cell_id cell_id;
 	struct cell *cell;
 	int err;
-	#if defined(CONFIG_OMNIVISOR)
 	unsigned int rcpu;
-	#endif /* CONFIG_OMNIVISOR */
 
 	if (copy_from_user(&cell_id, arg, sizeof(cell_id)))
 		return -EFAULT;
@@ -641,7 +626,6 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 		return err;
 
 
-#if defined(CONFIG_OMNIVISOR)
 	for_each_cpu(rcpu, &cell->rcpus_assigned) {
 		//DEBUG
 		pr_info("Starting rcpu %d\n",rcpu);
@@ -650,7 +634,6 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 			pr_err("Failed to start rcpu %d\n", rcpu);		
 		}	
 	}
-#endif /* CONFIG_OMNIVISOR */
 
 	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_START, cell->id);
 	
@@ -662,16 +645,13 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 static int cell_destroy(struct cell *cell)
 {
 	unsigned int cpu;
-	int err;
-#if defined(CONFIG_OMNIVISOR)
 	unsigned int rcpu;
-#endif /* CONFIG_OMNIVISOR */
+	int err;
 
 	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_DESTROY, cell->id);
 	if (err)
 		return err;
 
-#if defined(CONFIG_OMNIVISOR)
 	for_each_cpu(rcpu, &cell->rcpus_assigned) {
 		err = jailhouse_stop_rcpu(rcpu);
 		if (err){
@@ -679,7 +659,6 @@ static int cell_destroy(struct cell *cell)
 		}
 		cpumask_set_cpu(rcpu, &root_cell->rcpus_assigned);
 	}
-#endif /* CONFIG_OMNIVISOR */
 #if defined(CONFIG_OMNV_FPGA)
 	give_regions_to_cell(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned);
 #endif /* CONFIG_OMNV_FPGA */

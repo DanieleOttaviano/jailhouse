@@ -282,12 +282,10 @@ int cell_init(struct cell *cell)
 	unsigned long cpu_set_size = cell->config->cpu_set_size;
 	struct cpu_set *cpu_set;
 
-#if defined(CONFIG_OMNIVISOR)
 	const unsigned long *config_rcpu_set =
 		jailhouse_cell_rcpu_set(cell->config);
 	unsigned long rcpu_set_size = cell->config->rcpu_set_size;
 	struct cpu_set *rcpu_set;
-#endif /* CONFIG_OMNIVISOR  */
 
 #if defined(CONFIG_OMNV_FPGA)
 	const unsigned long *config_fpga_regions = 
@@ -315,9 +313,6 @@ int cell_init(struct cell *cell)
 	if (err && cell->cpu_set != &cell->small_cpu_set)
 		page_free(&mem_pool, cell->cpu_set, 1);
 
-#if defined(CONFIG_OMNIVISOR)
-	// DEBUG PRINT
-	// printk("small_cpu_set->bitmap = %ld\r\n", cell->small_cpu_set.bitmap[0]);
 	if (rcpu_set_size > PAGE_SIZE)
 		return trace_error(-EINVAL);
 	if (rcpu_set_size > sizeof(cell->small_rcpu_set.bitmap)) {
@@ -331,13 +326,10 @@ int cell_init(struct cell *cell)
 	memcpy(rcpu_set->bitmap, config_rcpu_set, rcpu_set_size);
 
 	cell->rcpu_set = rcpu_set;
-	// DEBUG PRINT
-	// printk("small_rcpu_set->bitmap = %ld\r\n", cell->small_rcpu_set.bitmap[0]);
 
 	if (err && cell->rcpu_set != &cell->small_rcpu_set)
 		page_free(&mem_pool, cell->rcpu_set, 1);
 
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined(CONFIG_OMNV_FPGA)
 	if(fpga_regions_size > PAGE_SIZE)
@@ -492,14 +484,12 @@ static void cell_destroy_internal(struct cell *cell)
 		       sizeof(public_per_cpu(cpu)->stats));
 	}
 
-#if defined(CONFIG_OMNIVISOR)	
 	// For each rCPU, power them off
 	if (cell->config->rcpu_set_size > 0) {
 		for_each_cpu(cpu, cell->rcpu_set) {
 			set_bit(cpu, root_cell.rcpu_set->bitmap);
 		}	
 	}
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined (CONFIG_OMNV_FPGA)
 	if (cell->config->fpga_regions_size > 0){
@@ -625,7 +615,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			goto err_cell_exit;
 		}
 
-#if defined(CONFIG_OMNIVISOR)
 	/* the root cell's rCPU set must be super-set of new cell's set */
 	if (cell->config->rcpu_set_size > 0) {
 		for_each_cpu(cpu, cell->rcpu_set)
@@ -634,7 +623,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 				goto err_cell_exit;
 			}
 	}
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined (CONFIG_OMNV_FPGA)
 	if (cell->config->fpga_regions_size > 0){
@@ -673,7 +661,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		       sizeof(public_per_cpu(cpu)->stats));
 	}
 
-#if defined(CONFIG_OMNIVISOR)
 	// to do ... public per rcpu managment	
 	if (cell->config->rcpu_set_size > 0) {
 		for_each_cpu(cpu, cell->rcpu_set) {
@@ -684,7 +671,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			//       sizeof(public_per_cpu(cpu)->stats));
 		}
 	}
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined(CONFIG_OMNV_FPGA)
 	//publicly accessible data structure for regions?

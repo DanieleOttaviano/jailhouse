@@ -219,7 +219,6 @@ static long get_max_cpus(u32 cpu_set_size,
 	return -EINVAL;
 }
 
-#if defined(CONFIG_OMNIVISOR)
 static long get_max_rcpus(u32 rcpu_set_size,
 			 const struct jailhouse_system __user *system_config)
 {
@@ -242,7 +241,6 @@ static long get_max_rcpus(u32 rcpu_set_size,
 	}
 	return -EINVAL;
 }
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined (CONFIG_OMNV_FPGA)
 static long get_max_fpga_regions(u32 fpga_regions_size,
@@ -445,9 +443,7 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	unsigned int clock_gates;
 	const char *fw_name;
 	long max_cpus;
-#if defined(CONFIG_OMNIVISOR)
 	long max_rcpus;
-#endif /* CONFIG_OMNIVISOR */
 	int err;
 
 	fw_name = jailhouse_get_fw_name();
@@ -480,18 +476,18 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 		return max_cpus;
 	if (max_cpus > UINT_MAX)
 		return -EINVAL;
-	
-#if defined(CONFIG_OMNIVISOR)	
-	max_rcpus = get_max_rcpus(config_header.root_cell.rcpu_set_size, arg);
-	if (max_rcpus < 0)
-		return max_rcpus;
-	if (max_rcpus > UINT_MAX)
-		return -EINVAL;
+
+	if (config_header.root_cell.rcpu_set_size > 0) {
+		max_rcpus = get_max_rcpus(config_header.root_cell.rcpu_set_size, arg);
+		if (max_rcpus < 0)
+			return max_rcpus;
+		if (max_rcpus > UINT_MAX)
+			return -EINVAL;
+	}
 
 	// DEBUG PRINT
 	// pr_err("max_cpus : %ld\n",max_cpus);
 	// pr_err("max_rcpus : %ld\n",max_rcpus);
-#endif /* CONFIG_OMNIVISOR */
 
 #if defined(CONFIG_OMNV_FPGA)
 	max_fpga_regions = get_max_fpga_regions(config_header.root_cell.fpga_regions_size, arg);
@@ -603,11 +599,12 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 #endif
 #endif
 
-	pr_err("Remote Processors Discovering ...\n");
 	// Setup Remote Processors (rCPUs)
-	err = jailhouse_rcpus_setup();
-	if (err)
-		goto error_unmap;
+	if(config_header.root_cell.rcpu_set_size > 0){
+		err = jailhouse_rcpus_setup();
+		if (err)
+			goto error_unmap;
+	}	
 
 	err = jailhouse_sysfs_core_init(jailhouse_dev, header->core_size);
 	if (err)

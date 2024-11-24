@@ -147,8 +147,8 @@ int jailhouse_rcpus_check(struct cell *cell){
 	required_rcpus = cpumask_weight(&cell->rcpus_assigned);
 
 	//DEBUG
-	pr_info("Required rcpus:  %d\n", required_rcpus);
-	pr_info("Available rcpus: %d\n", num_rprocs);
+	//pr_info("Required rcpus:  %d\n", required_rcpus);
+	//pr_info("Available rcpus: %d\n", num_rprocs);
 
 	if (required_rcpus > num_rprocs){
 		pr_err("Requested rcpus (%d) are more than available rcpus (%d)\n", required_rcpus, num_rprocs);	
