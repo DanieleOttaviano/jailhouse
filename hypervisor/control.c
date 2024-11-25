@@ -889,14 +889,16 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 			printk("Starting FPGA region %d\r\n", cpu);
 			//Map page where configuration port for region x is located
 			//if needed, reset the soft core and start
-			err = paging_create(&hv_paging_structs, 0x80000000, PAGE_SIZE, //change address?
-				0x80000000, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
+			u64 fpga_config_base = system_config->platform_info.fpga_configuration_base;
+			printk("Fpga configuration base is %llx\n",fpga_config_base);
+			err = paging_create(&hv_paging_structs, fpga_config_base, PAGE_SIZE, //change address?
+				fpga_config_base, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
 			if (err){
 				printk("paging_create for fpga configuration port failed\r\n");
 			}
 			else{
 				// Reset the core
-				volatile u32* fpga_start = (u32*)system_config->platform_info.fpga_configuration_base;
+				volatile u32* fpga_start = (u32*)fpga_config_base;
 				fpga_start[cpu] = 1;
 				fpga_start[cpu] = 0;
 			} 

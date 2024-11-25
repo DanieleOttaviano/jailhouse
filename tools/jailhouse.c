@@ -27,6 +27,8 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+//DELETE
+#include <sys/time.h>
 
 #include <jailhouse.h>
 #include <jailhouse/config.h>
@@ -452,6 +454,7 @@ static int cell_shutdown_load(int argc, char *argv[],
 	unsigned int bitstreams = 0;
 #endif /* CONFIG_OMNV_FPGA*/
 
+
 	id_args = parse_cell_id(&cell_id, argc - 3, &argv[3]);
 	arg_num = 3 + id_args;
 	if (id_args == 0 || (mode == SHUTDOWN && arg_num != argc) ||
@@ -548,7 +551,6 @@ static int cell_shutdown_load(int argc, char *argv[],
 	err = ioctl(fd, JAILHOUSE_CELL_LOAD, cell_load);
 	if (err)
 		perror("JAILHOUSE_CELL_LOAD");
-
 	close(fd);
 	for (n = 0, image = cell_load->image; n < images; n++, image++)
 		free((void *)(unsigned long)image->source_address);

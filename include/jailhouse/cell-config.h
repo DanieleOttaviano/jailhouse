@@ -390,6 +390,10 @@ struct jailhouse_qos_device {
 } __attribute__((packed));
 
 
+#define JAILHOUSE_FPGA_FULL 0x0
+#define JAILHOUSE_FPGA_PARTIAL 0x1
+/* add more flags for encrypted, compressed, authenticated ?*/
+
 /**
  * General descriptor of the system.
  */
@@ -411,6 +415,7 @@ struct jailhouse_system {
 		/* Disable spectre (CVE-2017-5715) mitigations */
 		__u32 no_spectre_mitigation;
 		__u64 fpga_configuration_base;
+		__u32 fpga_options;
 		struct jailhouse_iommu iommu_units[JAILHOUSE_MAX_IOMMU_UNITS];
 		struct jailhouse_coloring color;
 		struct jailhouse_memguard_config memguard;

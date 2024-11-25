@@ -50,7 +50,7 @@ static LIST_HEAD(cells);
 static cpumask_t offlined_cpus;
 
 #if defined(CONFIG_OMNV_FPGA)
-	extern long max_fpga_regions; //to see if we have to do partial or full
+	extern u32 fpga_flags; //to see if we have to do partial or full
 #endif /* CONFIG_OMNV_FPGA */
 
 
@@ -405,10 +405,10 @@ static int load_image(struct cell *cell,
 		return -EFAULT;
 
 	// DEBUG PRINT
-	// pr_err("\nimage.size: %dBytes (0x%x)", image.size, image.size);
-	// pr_err("image.source_address: 0x%x\n", image.source_address);
-	// pr_err("image.target_address: 0x%x\n", image.target_address);
-	// pr_err("image.padding: %dBytes (0x%x)\n", image.padding, image.padding);
+	//pr_err("\nimage.size: %dBytes (0x%x)", image.size, image.size);
+	//pr_err("image.source_address: 0x%x\n", image.source_address);
+	//pr_err("image.target_address: 0x%x\n", image.target_address);
+	//pr_err("image.padding: %dBytes (0x%x)\n", image.padding, image.padding);
 
 	if (image.size == 0)
 		return 0;
@@ -416,15 +416,16 @@ static int load_image(struct cell *cell,
 	mem = cell->memory_regions;
 	for (regions = cell->num_memory_regions; regions > 0; regions--) {
 		image_offset = image.target_address - mem->virt_start;
-		// pr_err("Check if image target > mem virt start and if image_offset < mem size \n");
-		// pr_err("image.target_address:0x%x - mem->virt_start:0x%x = image_offset:0x%x\n",image.target_address, mem->virt_start, image_offset);
+		//pr_err("Check if image target > mem virt start and if image_offset < mem size \n");
+		//pr_err("image.target_address:0x%x - mem->virt_start:0x%x = image_offset:0x%x\n",image.target_address, mem->virt_start, image_offset);
 		if (image.target_address >= mem->virt_start &&
 		    image_offset < mem->size) {
-			// pr_err("Check on image size \n");
-			// pr_err("image.size:0x%x > mem->size:0x%x - image_offset:0x%x\n",image.size, mem->size, image_offset);
+			//pr_err("Check on image size \n");
+			//pr_err("image.size:0x%x > mem->size:0x%x - image_offset:0x%x\n",image.size, mem->size, image_offset);
 			if (image.size > mem->size - image_offset ||
 			    (mem->flags & MEM_REQ_FLAGS) != MEM_REQ_FLAGS)
 				return -EINVAL;
+				
 			break;
 		}
 		mem++;
@@ -479,11 +480,13 @@ static int load_image(struct cell *cell,
 
 static void set_flags(u32 *flags)
 {
-	if(max_fpga_regions > 1){
+	if(fpga_flags &= JAILHOUSE_FPGA_PARTIAL){
 		*flags  = FPGA_MGR_PARTIAL_RECONFIG;
 	} else {
 		*flags = 0; /* indicates full reconfiguration */
 	}
+	pr_info("flags is currently %d\n",*flags);
+	//consider other options!
 	/*
 	if (encrypted with device key)
 	*flags |= FPGA_MGR_ENCRYPTED_BITSTREAM;
@@ -508,6 +511,8 @@ static int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream 
     char name[10];
 	unsigned int len;
 	unsigned int __user region_id = bitstream->region;
+	ktime_t start, end;
+	s64 duration_ns;
 
 	//check if cell owns this region first.
 	if(cell->fpga_regions_assigned & ((1U << region_id) == 0)){
@@ -537,8 +542,11 @@ static int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream 
 
 	/* Add info to region and do the programming */
 	fpga_region->info = info;
+	start = ktime_get();
 	ret = fpga_region_program_fpga(fpga_region);
-
+	end = ktime_get();
+	duration_ns = ktime_to_ns(ktime_sub(end, start));
+	//pr_err("%s;%lld",info->firmware_name,duration_ns);
 	/* Deallocate the image info if you're done with it */
 	fpga_region->info = NULL;
 	fpga_image_info_free(info);

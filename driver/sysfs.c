@@ -254,14 +254,13 @@ static int print_cpumask(char *buf, size_t size, cpumask_t *mask, bool as_list)
 }
 
 #if defined (CONFIG_OMNV_FPGA)
-extern long max_fpga_regions; //to see if we have to do partial or full
 
 static int print_fpgalist(char *buf, size_t size, u32 *mask){
    u32 i=0,written=0,start,end;
-   while(i<max_fpga_regions){
+	while(i<32){
 		if((*mask) & (1U << i)){
 			start = i;
-			 while (i < max_fpga_regions && ((*mask) & (1U << i))) {
+			 while (i < 32 && ((*mask) & (1U << i))) {
                 i++;
             }
 			end = i-1;

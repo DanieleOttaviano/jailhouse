@@ -133,7 +133,7 @@ static typeof(__hyp_stub_vectors) *__hyp_stub_vectors_sym;
 #endif
 
 #if defined(CONFIG_OMNV_FPGA)
-	long max_fpga_regions; //to see if we have to do partial or full
+	u32 fpga_flags; //to see if we have to do partial or full
 #endif /* CONFIG_OMNV_FPGA */
 
 /* last_console contains three members:
@@ -447,6 +447,9 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 #if defined(CONFIG_OMNIVISOR)
 	long max_rcpus;
 #endif /* CONFIG_OMNIVISOR */
+#if defined(CONFIG_OMNV_FPGA)
+	long max_fpga_regions;
+#endif /* CONFIG_OMNV_FPGA*/
 	int err;
 
 	fw_name = jailhouse_get_fw_name();
@@ -480,6 +483,7 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	if (max_cpus > UINT_MAX)
 		return -EINVAL;
 	
+	//pr_err("max_cpus : %ld\n",max_cpus);
 #if defined(CONFIG_OMNIVISOR)	
 	max_rcpus = get_max_rcpus(config_header.root_cell.rcpu_set_size, arg);
 	if (max_rcpus < 0)
@@ -488,8 +492,8 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 		return -EINVAL;
 
 	// DEBUG PRINT
-	// pr_err("max_cpus : %ld\n",max_cpus);
-	// pr_err("max_rcpus : %ld\n",max_rcpus);
+	
+	//pr_err("max_rcpus : %ld\n",max_rcpus);
 #endif /* CONFIG_OMNIVISOR */
 
 #if defined(CONFIG_OMNV_FPGA)
@@ -498,6 +502,8 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 		return max_fpga_regions;
 	if (max_fpga_regions > UINT_MAX)
 		return -EINVAL;
+	
+	fpga_flags = config_header.platform_info.fpga_options;
 	// DEBUG PRINT
 	//pr_err("max_fpga_regions : %ld\n",max_fpga_regions);
 #endif /* CONFIG_OMNV_FPGA */
