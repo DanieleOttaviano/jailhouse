@@ -14,6 +14,8 @@
  * the COPYING file in the top-level directory.
  */
 
+#include "rcpu.h"
+#include "fpga.h"
 #include "cell.h"
 #include "jailhouse.h"
 #include "main.h"
@@ -253,18 +255,14 @@ static int print_cpumask(char *buf, size_t size, cpumask_t *mask, bool as_list)
 	return written;
 }
 
-#if defined (CONFIG_OMNV_FPGA)
-extern long max_fpga_regions; //to see if we have to do partial or full
-#else
-long max_fpga_regions = 0;
-#endif /* CONFIG_OMNV_FPGA*/
 
 static int print_fpgalist(char *buf, size_t size, u32 *mask){
    u32 i=0,written=0,start,end;
-   while(i<max_fpga_regions){
+   u32 fpga_mask_size = 32;
+   while(i<fpga_mask_size){
 		if((*mask) & (1U << i)){
 			start = i;
-			 while (i < max_fpga_regions && ((*mask) & (1U << i))) {
+			 while (i < fpga_mask_size && ((*mask) & (1U << i))) {
                 i++;
             }
 			end = i-1;

@@ -46,9 +46,7 @@ static unsigned int num_cells = 1;
 volatile unsigned long panic_in_progress;
 unsigned long panic_cpu = -1;
 
-#if defined(CONFIG_OMNV_FPGA)
 static int fpga_started;
-#endif /* CONFIG_OMNV_FPGA */
 
 /**
  * CPU set iterator.
@@ -287,12 +285,10 @@ int cell_init(struct cell *cell)
 	unsigned long rcpu_set_size = cell->config->rcpu_set_size;
 	struct cpu_set *rcpu_set;
 
-#if defined(CONFIG_OMNV_FPGA)
 	const unsigned long *config_fpga_regions = 
 		jailhouse_cell_fpga_regions(cell->config);
 		unsigned long fpga_regions_size = cell->config->fpga_regions_size;
 	struct fpga_region_set *fpga_region_set;
-#endif /* CONFIG_OMNV_FPGA*/
 	int err;
 
 	if (cpu_set_size > PAGE_SIZE)
@@ -331,7 +327,6 @@ int cell_init(struct cell *cell)
 		page_free(&mem_pool, cell->rcpu_set, 1);
 
 
-#if defined(CONFIG_OMNV_FPGA)
 	if(fpga_regions_size > PAGE_SIZE)
 		return trace_error(-EINVAL);
 	if (fpga_regions_size > sizeof(cell->small_fpga_region_set.bitmap)) {
@@ -350,7 +345,6 @@ int cell_init(struct cell *cell)
 
 	if (err && cell->fpga_region_set!= &cell->small_fpga_region_set)
 		page_free(&mem_pool, cell->fpga_region_set, 1);
-#endif /* CONFIG_OMNV_FPGA */
 
 	return err;
 }
@@ -491,7 +485,6 @@ static void cell_destroy_internal(struct cell *cell)
 		}	
 	}
 
-#if defined (CONFIG_OMNV_FPGA)
 	if (cell->config->fpga_regions_size > 0){
 		for_each_region(cpu, cell->fpga_region_set){
 			//if soft core, power off
@@ -504,7 +497,6 @@ static void cell_destroy_internal(struct cell *cell)
 			// Reset for region <cpu> must be up.
 		}
 	}
-#endif
 	
 	for_each_mem_region(mem, cell->config, n) {
 		if (!JAILHOUSE_MEMORY_IS_SUBPAGE(mem))
@@ -624,7 +616,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			}
 	}
 
-#if defined (CONFIG_OMNV_FPGA)
 	if (cell->config->fpga_regions_size > 0){
 	/*the root cell's fpga region set must be super-set of new cell's set*/
 	for_each_region(cpu, cell->fpga_region_set)
@@ -633,7 +624,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			goto err_cell_exit;
 		}
 	}
-#endif
 
 	err = arch_cell_create(cell);
 	if (err)
@@ -672,13 +662,11 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		}
 	}
 
-#if defined(CONFIG_OMNV_FPGA)
 	//publicly accessible data structure for regions?
 	if(cell->config->fpga_regions_size > 0)
 	for_each_region(cpu, cell->fpga_region_set) {
 		clear_bit(cpu, root_cell.fpga_region_set->bitmap);
 	}
-#endif
 
 	/*
 	 * Unmap the cell's memory regions from the root cell and map them to
@@ -790,9 +778,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	unsigned int cpu, n;
 	struct cell *cell;
 	int err;
-#if defined(CONFIG_OMNV_FPGA)
 	unsigned long fpga_base_addr;
-#endif
 
 	err = cell_management_prologue(CELL_START, cpu_data, id, &cell);
 	if (err)
@@ -841,11 +827,12 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 		arch_reset_cpu(cpu);
 	}
 
-#if defined(CONFIG_OMNV_FPGA)
-    fpga_base_addr = system_config->platform_info.fpga_configuration_base;
-	// DEBUG PRINT
-	// printk("FPGA base address: 0x%lx\r\n", fpga_base_addr);
+
 	if(cell->config->fpga_regions_size > 0){
+    	fpga_base_addr = system_config->platform_info.fpga_configuration_base;
+		// DEBUG PRINT
+		// printk("FPGA base address: 0x%lx\r\n", fpga_base_addr);
+		
 		//for each region, start if it has to be started
 		for_each_region(cpu,cell->fpga_region_set){
 			printk("Starting FPGA region %d\r\n", cpu);
@@ -865,7 +852,6 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 			} 
 		}
 	}
-#endif
 
 	printk("Started cell \"%s\"\n", cell->config->name);
 

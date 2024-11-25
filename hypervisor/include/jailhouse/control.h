@@ -146,7 +146,6 @@ static inline bool cell_owns_rcpu(struct cell *cell, unsigned int rcpu_id)
 		test_bit(rcpu_id, cell->rcpu_set->bitmap));
 }
 
-#if defined (CONFIG_OMNV_FPGA)
 /**
  * Check if the region is assigned to the specified cell.
  * @param cell		Cell the rCPU may belong to.
@@ -160,7 +159,6 @@ static inline bool cell_owns_fpga_region(struct cell *cell, unsigned int fpga_re
 		test_bit(fpga_region, cell->fpga_region_set->bitmap));
 }
 
-#endif /* CONFIG_OMNV_FPGA */
 bool cpu_id_valid(unsigned long cpu_id);
 
 int cell_init(struct cell *cell);

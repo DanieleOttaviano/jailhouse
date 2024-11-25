@@ -200,6 +200,20 @@ by appending this define:
 ```c
 #define CONFIG_OMNV_FPGA 1
 ```
+
+FPGA drivers must be enabled at compiling time in the Linux kernel used
+e.g., for the kria zynqmp:
+
+```c
+CONFIG_FPGA=y
+CONFIG_XILINX_AFI_FPGA=y
+CONFIG_FPGA_BRIDGE=y
+CONFIG_XILINX_PR_DECOUPLER=y
+CONFIG_FPGA_REGION=y
+CONFIG_OF_FPGA_REGION=y
+CONFIG_FPGA_MGR_ZYNQMP_FPGA=y
+```
+
 Compile with the new configuration as described before, then start the hypervisor using 
 a configuration that includes FPGA regions (e.g ```zynqmp-kv260-omnv.cell```)
 

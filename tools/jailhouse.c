@@ -435,7 +435,7 @@ static int cell_shutdown_load(int argc, char *argv[],
 		while (arg_num < argc &&
 			match_opt(argv[arg_num], "-r", "--rcpu")) {
 			if (omnv){
-				printf("Error: no rcpus avaiable\n");
+				printf("Error: no rcpus available\n");
 				exit(1);
 			}
 			if (arg_num + 2 >= argc)
