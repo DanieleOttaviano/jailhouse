@@ -30,8 +30,6 @@
 #include "pci.h"
 #include "sysfs.h"
 
-#include <asm/smc.h>
-
 #if defined(CONFIG_OMNV_FPGA)
 #include <linux/fpga/fpga-mgr.h>
 #include <linux/fpga/fpga-region.h>
