@@ -484,19 +484,27 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 		if (max_rcpus > UINT_MAX)
 			return -EINVAL;
 	}
+	else{
+		max_rcpus = 0;
+	}
 
 	// DEBUG PRINT
 	// pr_err("max_cpus : %ld\n",max_cpus);
 	// pr_err("max_rcpus : %ld\n",max_rcpus);
 
 #if defined(CONFIG_OMNV_FPGA)
-	max_fpga_regions = get_max_fpga_regions(config_header.root_cell.fpga_regions_size, arg);
-	if (max_fpga_regions < 0)
-		return max_fpga_regions;
-	if (max_fpga_regions > UINT_MAX)
-		return -EINVAL;
-	// DEBUG PRINT
-	//pr_err("max_fpga_regions : %ld\n",max_fpga_regions);
+	if (config_header.root_cell.fpga_regions_size > 0) {
+		max_fpga_regions = get_max_fpga_regions(config_header.root_cell.fpga_regions_size, arg);
+		if (max_fpga_regions < 0)
+			return max_fpga_regions;
+		if (max_fpga_regions > UINT_MAX)
+			return -EINVAL;
+		// DEBUG PRINT
+		//pr_err("max_fpga_regions : %ld\n",max_fpga_regions);
+	}
+	else{
+		max_fpga_regions = 0;
+	}
 #endif /* CONFIG_OMNV_FPGA */
 
 	if (mutex_lock_interruptible(&jailhouse_lock) != 0)
