@@ -13,10 +13,12 @@
 *
 */
 
+#include "fpga.h"
+
+#ifdef CONFIG_OMNV_FPGA
 #include <linux/fpga/fpga-mgr.h>
 #include <linux/fpga/fpga-region.h>
 
-#include "fpga.h"
 
 
 static long fpga_flags; 
@@ -107,3 +109,5 @@ int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream __user 
 
    return ret;
 }
+
+#endif /* CONFIG_OMNV_FPGA */

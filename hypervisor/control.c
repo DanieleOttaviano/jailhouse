@@ -465,6 +465,8 @@ static void cell_destroy_internal(struct cell *cell)
 	const struct jailhouse_memory *mem;
 	unsigned int cpu, n;
 	struct unit *unit;
+	volatile unsigned long* fpga_start;
+	unsigned long fpga_base_addr;
 
 	cell->comm_page.comm_region.cell_state = JAILHOUSE_CELL_SHUT_DOWN;
 
@@ -486,12 +488,13 @@ static void cell_destroy_internal(struct cell *cell)
 	}
 
 	if (cell->config->fpga_regions_size > 0){
+		fpga_base_addr = system_config->platform_info.fpga_configuration_base;
 		for_each_region(cpu, cell->fpga_region_set){
 			//if soft core, power off
 			set_bit(cpu,root_cell.fpga_region_set->bitmap);
 			// If the FPGA is non loaded (only create is performed) this can cause a crash
 			if (fpga_started){
-				volatile u32* fpga_start = (u32*)system_config->platform_info.fpga_configuration_base;
+				fpga_start = (unsigned long*)fpga_base_addr;
 				fpga_start[cpu] = 1;
 			}
 			// Reset for region <cpu> must be up.
@@ -779,6 +782,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	struct cell *cell;
 	int err;
 	unsigned long fpga_base_addr;
+	volatile unsigned long* fpga_start;
 
 	err = cell_management_prologue(CELL_START, cpu_data, id, &cell);
 	if (err)
@@ -846,7 +850,7 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 			else{
 				fpga_started = 1;
 				// Reset the core
-				volatile u32* fpga_start = (u32*)fpga_base_addr;
+				fpga_start = (unsigned long*)fpga_base_addr;
 				fpga_start[cpu] = 1;
 				fpga_start[cpu] = 0;
 			} 

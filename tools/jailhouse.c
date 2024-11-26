@@ -382,14 +382,44 @@ static int cell_list(int argc, char *argv[])
 	}
 
 	if (num_entries > 0){
+#if defined(CONFIG_OMNIVISOR)
+	#if defined(CONFIG_OMNV_FPGA)
 		printf("%-8s%-24s%-18s%-24s%-24s%-24s%-24s\n",
-		       "ID", "Name", "State", "Assigned CPUs", "Assigned rCPUs", "Assigned FPGA reg", "Failed CPUs");
+		       "ID", "Name", "State", "Assigned CPUs", "Assigned rCPUs", "Assigned FPGA regions", "Failed CPUs");
+	#else
+		printf("%-8s%-24s%-18s%-24s%-24s%-24s\n",
+		       "ID", "Name", "State", "Assigned CPUs", "Assigned rCPUs", "Failed CPUs");
+	#endif /* CONFIG_OMNV_FPGA*/
+#else
+	#if defined(CONFIG_OMNV_FPGA)
+		printf("%-8s%-24s%-18s%-24s%-24s%-24s\n",
+		       "ID", "Name", "State", "Assigned CPUs", "Assigned FPGA regions", "Failed CPUs");
+	#else
+		printf("%-8s%-24s%-18s%-24s%-24s\n",
+		       "ID", "Name", "State", "Assigned CPUs", "Failed CPUs");
+	#endif /* CONFIG_OMNV_FPGA */
+#endif /* CONFIG_OMNIVISOR */
 	}
 	for (i = 0; i < num_entries; i++) {
 		id = (unsigned int)strtoul(namelist[i]->d_name, NULL, 10);
 		cinfo = get_cell_info(id);
+#if defined(CONFIG_OMNIVISOR)	
+	#if defined(CONFIG_OMNV_FPGA)
 		printf("%-8d%-24s%-18s%-24s%-24s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
 		       cinfo->state, cinfo->cpus_assigned_list, cinfo->rcpus_assigned_list, cinfo->fpga_regions_assigned_list, cinfo->cpus_failed_list);
+	#else
+		printf("%-8d%-24s%-18s%-24s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
+		       cinfo->state, cinfo->cpus_assigned_list, cinfo->rcpus_assigned_list, cinfo->cpus_failed_list);
+	#endif /*CONFIG_OMNV_FPGA*/	
+#else
+	#if defined(CONFIG_OMNV_FPGA)
+		printf("%-8d%-24s%-18s%-24s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
+		       cinfo->state, cinfo->cpus_assigned_list, cinfo->fpga_regions_assigned_list,cinfo->cpus_failed_list);
+	#else
+		printf("%-8d%-24s%-18s%-24s%-24s\n", cinfo->id.id, cinfo->id.name,
+		       cinfo->state, cinfo->cpus_assigned_list, cinfo->cpus_failed_list);
+	#endif /* CONFIG_OMNV_FPGA*/
+#endif /* CONFIG_OMNIVISOR */
 		cell_info_free(cinfo);
 		free(namelist[i]);
 	}

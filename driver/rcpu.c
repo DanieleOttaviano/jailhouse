@@ -12,12 +12,15 @@
 * the COPYING file in the top-level directory.
 *
 */
+
+#include "rcpu.h"
+
+#ifdef CONFIG_OMNIVISOR
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/remoteproc.h>
 #include <linux/slab.h>
 
-#include "rcpu.h"
 
 static const struct of_device_id rproc_of_match[] = {
 	{ .compatible = "xlnx,zynqmp-r5-remoteproc", },
@@ -246,3 +249,5 @@ int jailhouse_rcpus_remove(){
 	pr_info("Freed rproc array\n");
 	return 0;
 }
+
+#endif /* CONFIG_OMNIVISOR */
