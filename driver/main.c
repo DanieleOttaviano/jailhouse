@@ -41,9 +41,6 @@
 #include <asm/smp.h>
 #include <asm/cacheflush.h>
 #include <asm/tlbflush.h>
-#ifdef CONFIG_OMNV_FPGA
-#include <linux/fpga/fpga-mgr.h>
-#endif
 #ifdef CONFIG_ARM
 #include <asm/virt.h>
 #endif
@@ -56,6 +53,8 @@
 #include <asm/cpu_ops.h>
 #endif
 
+#include "rcpu.h"
+#include "fpga.h"
 #include "cell.h"
 #include "jailhouse.h"
 #include "main.h"
@@ -131,10 +130,6 @@ static typeof(__boot_cpu_mode) *__boot_cpu_mode_sym;
 #if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
 static typeof(__hyp_stub_vectors) *__hyp_stub_vectors_sym;
 #endif
-
-#if defined(CONFIG_OMNV_FPGA)
-	u32 fpga_flags; //to see if we have to do partial or full
-#endif /* CONFIG_OMNV_FPGA */
 
 /* last_console contains three members:
  *   - valid: indicates if content in the page member is present
@@ -218,7 +213,6 @@ static long get_max_cpus(u32 cpu_set_size,
 	return -EINVAL;
 }
 
-#if defined(CONFIG_OMNIVISOR)
 static long get_max_rcpus(u32 rcpu_set_size,
 			 const struct jailhouse_system __user *system_config)
 {
@@ -241,9 +235,7 @@ static long get_max_rcpus(u32 rcpu_set_size,
 	}
 	return -EINVAL;
 }
-#endif /* CONFIG_OMNIVISOR */
 
-#if defined (CONFIG_OMNV_FPGA)
 static long get_max_fpga_regions(u32 fpga_regions_size,
 			const struct jailhouse_system __user *system_config)
 {
@@ -266,7 +258,6 @@ static long get_max_fpga_regions(u32 fpga_regions_size,
 	}
 	return -EINVAL;
 }
-#endif /* CONFIG_OMNV_FPGA */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
 #define __get_vm_area(size, flags, start, end)			\
@@ -444,12 +435,8 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	unsigned int clock_gates;
 	const char *fw_name;
 	long max_cpus;
-#if defined(CONFIG_OMNIVISOR)
 	long max_rcpus;
-#endif /* CONFIG_OMNIVISOR */
-#if defined(CONFIG_OMNV_FPGA)
 	long max_fpga_regions;
-#endif /* CONFIG_OMNV_FPGA*/
 	int err;
 
 	fw_name = jailhouse_get_fw_name();
@@ -482,31 +469,29 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 		return max_cpus;
 	if (max_cpus > UINT_MAX)
 		return -EINVAL;
-	
-	//pr_err("max_cpus : %ld\n",max_cpus);
-#if defined(CONFIG_OMNIVISOR)	
-	max_rcpus = get_max_rcpus(config_header.root_cell.rcpu_set_size, arg);
-	if (max_rcpus < 0)
-		return max_rcpus;
-	if (max_rcpus > UINT_MAX)
-		return -EINVAL;
 
-	// DEBUG PRINT
-	
-	//pr_err("max_rcpus : %ld\n",max_rcpus);
-#endif /* CONFIG_OMNIVISOR */
+	if (config_header.root_cell.rcpu_set_size > 0) {
+		max_rcpus = get_max_rcpus(config_header.root_cell.rcpu_set_size, arg);
+		if (max_rcpus < 0)
+			return max_rcpus;
+		if (max_rcpus > UINT_MAX)
+			return -EINVAL;
+	}
+	else{
+		max_rcpus = 0;
+	}
 
-#if defined(CONFIG_OMNV_FPGA)
-	max_fpga_regions = get_max_fpga_regions(config_header.root_cell.fpga_regions_size, arg);
-	if (max_fpga_regions < 0)
-		return max_fpga_regions;
-	if (max_fpga_regions > UINT_MAX)
-		return -EINVAL;
-	
-	fpga_flags = config_header.platform_info.fpga_options;
-	// DEBUG PRINT
-	//pr_err("max_fpga_regions : %ld\n",max_fpga_regions);
-#endif /* CONFIG_OMNV_FPGA */
+	if (config_header.root_cell.fpga_regions_size > 0) {
+		max_fpga_regions = get_max_fpga_regions(config_header.root_cell.fpga_regions_size, arg);
+		if (max_fpga_regions < 0)
+			return max_fpga_regions;
+		if (max_fpga_regions > UINT_MAX)
+			return -EINVAL;
+		setup_fpga_flags(config_header.platform_info.fpga_options);
+	}
+	else{
+		max_fpga_regions = 0;
+	}
 
 	if (mutex_lock_interruptible(&jailhouse_lock) != 0)
 		return -EINTR;
@@ -607,6 +592,13 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	header->arm_linux_hyp_abi = HYP_STUB_ABI_OPCODE;
 #endif
 #endif
+
+	// Setup Remote Processors (rCPUs)
+	if(config_header.root_cell.rcpu_set_size > 0){
+		err = jailhouse_rcpus_setup();
+		if (err)
+			goto error_unmap;
+	}	
 
 	err = jailhouse_sysfs_core_init(jailhouse_dev, header->core_size);
 	if (err)
@@ -806,6 +798,8 @@ static int jailhouse_cmd_disable(void)
 		goto unlock_out;
 
 	jailhouse_pci_virtual_root_devices_remove();
+
+	jailhouse_rcpus_remove();
 
 	error_code = 0;
 

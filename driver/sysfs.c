@@ -14,6 +14,8 @@
  * the COPYING file in the top-level directory.
  */
 
+#include "rcpu.h"
+#include "fpga.h"
 #include "cell.h"
 #include "jailhouse.h"
 #include "main.h"
@@ -253,14 +255,14 @@ static int print_cpumask(char *buf, size_t size, cpumask_t *mask, bool as_list)
 	return written;
 }
 
-#if defined (CONFIG_OMNV_FPGA)
 
 static int print_fpgalist(char *buf, size_t size, u32 *mask){
    u32 i=0,written=0,start,end;
-	while(i<32){
+   u32 fpga_mask_size = 32;
+   while(i<fpga_mask_size){
 		if((*mask) & (1U << i)){
 			start = i;
-			 while (i < 32 && ((*mask) & (1U << i))) {
+			 while (i < fpga_mask_size && ((*mask) & (1U << i))) {
                 i++;
             }
 			end = i-1;
@@ -282,7 +284,6 @@ static int print_fpgaregions(char *buf, size_t size, u32 *mask)
 {
 	return scnprintf(buf, size, "%x\n",*mask);
 }
-#endif /* CONFIG_OMNV_FPGA*/
 
 static int print_failed_cpus(char *buf, size_t size, const struct cell *cell,
 			 bool as_list)
@@ -368,7 +369,6 @@ static ssize_t cpus_failed_list_show(struct kobject *kobj,
 	return print_failed_cpus(buf, PAGE_SIZE, cell, true);
 }
 
-#if defined(CONFIG_OMNIVISOR)
 static ssize_t rcpus_assigned_show(struct kobject *kobj,
 				  struct kobj_attribute *attr, char *buf)
 {
@@ -384,9 +384,6 @@ static ssize_t rcpus_assigned_list_show(struct kobject *kobj,
 
 	return print_cpumask(buf, PAGE_SIZE, &cell->rcpus_assigned, true);
 }
-#endif /* CONFIG_OMNIVISOR */
-
-#if defined(CONFIG_OMNV_FPGA)
 
 static ssize_t fpga_regions_assigned_show(struct kobject *kobj,
 				  struct kobj_attribute *attr, char *buf)
@@ -404,8 +401,6 @@ static ssize_t fpga_regions_assigned_list_show(struct kobject *kobj,
 	return print_fpgalist(buf, PAGE_SIZE, &cell->fpga_regions_assigned);
 }
 
-#endif /* CONFIG_OMNV_FPGA */
-
 
 static struct kobj_attribute cell_name_attr = __ATTR_RO(name);
 static struct kobj_attribute cell_state_attr = __ATTR_RO(state);
@@ -416,18 +411,14 @@ static struct kobj_attribute cell_cpus_assigned_list_attr =
 static struct kobj_attribute cell_cpus_failed_attr = __ATTR_RO(cpus_failed);
 static struct kobj_attribute cell_cpus_failed_list_attr =
 	__ATTR_RO(cpus_failed_list);
-#if defined(CONFIG_OMNIVISOR)
 static struct kobj_attribute cell_rcpus_assigned_attr =
 	__ATTR_RO(rcpus_assigned);
 static struct kobj_attribute cell_rcpus_assigned_list_attr =
 	__ATTR_RO(rcpus_assigned_list);
-#endif /* CONFIG_OMNIVISOR */
-#if defined (CONFIG_OMNV_FPGA)
 static struct kobj_attribute cell_fpga_regions_assigned_attr =
 	__ATTR_RO(fpga_regions_assigned);
 static struct kobj_attribute cell_fpga_regions_assigned_list_attr =
 	__ATTR_RO(fpga_regions_assigned_list);
-#endif /* CONFIG_OMNV_FPGA */
 
 static struct attribute *cell_attrs[] = {
 	&cell_name_attr.attr,
@@ -436,14 +427,10 @@ static struct attribute *cell_attrs[] = {
 	&cell_cpus_assigned_list_attr.attr,
 	&cell_cpus_failed_attr.attr,
 	&cell_cpus_failed_list_attr.attr,
-#if defined(CONFIG_OMNIVISOR)
 	&cell_rcpus_assigned_attr.attr,
 	&cell_rcpus_assigned_list_attr.attr,
-#endif /* CONFIG_OMNIVISOR */
-#if defined (CONFIG_OMNV_FPGA)
 	&cell_fpga_regions_assigned_attr.attr,
 	&cell_fpga_regions_assigned_list_attr.attr,
-#endif /* CONFIG_OMNV_FPGA */
 	NULL,
 };
 COMPAT_ATTRIBUTE_GROUPS(cell);

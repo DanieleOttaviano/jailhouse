@@ -28,8 +28,6 @@ lib-y += timer.o pmu.o memguard.o
 lib-y += qos.o
 # Omnivisor specific for ZYNQMP
 lib-y += xmpu.o
-lib-y += zynqmp-pm.o
-lib-y += zynqmp-r5.o
 
 ifdef CONFIG_DEBUG
 lib-y += cache_layout.o

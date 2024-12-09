@@ -1,10 +1,14 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
+ * Omnivisor branch for remote core virtualization
+ * 
  * Copyright (c) Siemens AG, 2014-2016
+ * Copyright (c) Daniele Ottaviano, 2024
  *
  * Authors:
  *  Jan Kiszka <jan.kiszka@siemens.com>
+ *  Daniele Ottaviano <danieleottaviano97@gmail.com>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
@@ -134,9 +138,6 @@ struct jailhouse_cell_desc {
 #define JAILHOUSE_MEM_COLORED_NO_COPY	0x0400
 /* Set internally for remap_to/unmap_from root ops */
 #define JAILHOUSE_MEM_TMP_ROOT_REMAP	0x0800
-#define JAILHOUSE_MEM_RPU		12 /* uses bits 12..13*/	// to do ... change to be generic
-#define JAILHOUSE_MEM_TCM_A		(1 << JAILHOUSE_MEM_RPU)
-#define JAILHOUSE_MEM_TCM_B		(2 << JAILHOUSE_MEM_RPU)
 #define JAILHOUSE_MEM_IO_UNALIGNED	0x8000
 #define JAILHOUSE_MEM_IO_WIDTH_SHIFT	16 /* uses bits 16..19 */
 #define JAILHOUSE_MEM_IO_8		(1 << JAILHOUSE_MEM_IO_WIDTH_SHIFT)
@@ -390,9 +391,9 @@ struct jailhouse_qos_device {
 } __attribute__((packed));
 
 
+/* add more flags for encrypted, compressed, authenticated ?*/
 #define JAILHOUSE_FPGA_FULL 0x0
 #define JAILHOUSE_FPGA_PARTIAL 0x1
-/* add more flags for encrypted, compressed, authenticated ?*/
 
 /**
  * General descriptor of the system.

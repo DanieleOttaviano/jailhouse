@@ -1,11 +1,15 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
+ * Omnivisor branch for remote core virtualization
+ * 
  * Copyright (c) Siemens AG, 2013-2015
+ * Copyright (c) Daniele Ottaviano, 2024
  *
  * Authors:
  *  Jan Kiszka <jan.kiszka@siemens.com>
- *
+ *  Daniele Ottaviano <danieleottaviano97@gmail.com>
+ * 
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  *
@@ -46,7 +50,8 @@
 #include <jailhouse/config.h>
 
 #define JAILHOUSE_CELL_ID_NAMELEN	31
-#define JAILHOUSE_BITSTREAM_NAME_LEN 99
+#define JAILHOUSE_RCPU_IMAGE_NAMELEN 31
+#define JAILHOUSE_BITSTREAM_NAMELEN 31
 
 struct jailhouse_cell_create {
 	__u64 config_address;
@@ -61,13 +66,18 @@ struct jailhouse_preload_image {
 	__u64 padding;
 };
 
-#if defined(CONFIG_OMNV_FPGA)
+struct jailhouse_preload_rcpu_image {
+	__u32 rcpu_id;
+	__u32 padding;
+	char name[JAILHOUSE_RCPU_IMAGE_NAMELEN + 1];
+};
+
 struct jailhouse_preload_bitstream {
 	__u32 region;
 	__u32 flags;
-	char name[JAILHOUSE_BITSTREAM_NAME_LEN+1];
+	char name[JAILHOUSE_BITSTREAM_NAMELEN + 1];
 };
-#endif /* CONFIG_OMNV_FPGA */
+
 struct jailhouse_cell_id {
 	__s32 id;
 	__u32 padding;
@@ -77,12 +87,14 @@ struct jailhouse_cell_id {
 struct jailhouse_cell_load {
 	struct jailhouse_cell_id cell_id;
 	__u32 num_preload_images;
-	#if defined(CONFIG_OMNV_FPGA)
+
+	__u32 num_rcpu_images;
+	struct jailhouse_preload_rcpu_image *rcpu_image;
+
 	__u32 num_bitstreams;
-	struct jailhouse_preload_bitstream *bitstream; 
-	 #else
 	__u32 padding;
-	#endif /* CONFIG_OMNV_FPGA */
+	struct jailhouse_preload_bitstream *bitstream; 
+
 	struct jailhouse_preload_image image[];
 };
 

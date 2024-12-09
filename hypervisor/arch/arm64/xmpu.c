@@ -20,7 +20,7 @@
 #include <asm/xmpu-board.h>
 #include <asm/xmpu.h>
 
-#if defined(CONFIG_XMPU_ACTIVE) && defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
+#if defined(CONFIG_XMPU_ACTIVE) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 
 #ifdef CONFIG_DEBUG
 #define xmpu_print(fmt, ...)			\
@@ -214,21 +214,45 @@ void print_xmpu(u32 xmpu_base){
   }
 }
 
-// Cell exit: config XMPU
-static void arm_xmpu_cell_exit(struct cell *cell){
+// Helper function to set default xmpu permissions of a cell
+static void set_default_cell_permissions(xmpu_channel *xmpu_chnl, u32 xmpu_base, struct cell *cell) { 
   u8 i = 0;
-  u8 xmpu_channel_n = 0;
   u8 valid_reg_n = 0;
   u32 region_base = 0;
+
+
+  for(i = 0; i<NR_XMPU_REGIONS; i++){
+    if(xmpu_chnl->region[i].id == cell->config->id){ 
+      // Clean regions used by the cell
+      valid_reg_n = i;
+      region_base = valid_reg_n * XMPU_REGION_OFFSET;
+
+      //DEBUG
+      // xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
+      // xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
+      // xmpu_print("XMPU region: %d\n\r", valid_reg_n);
+
+      set_xmpu_region_default(xmpu_base, region_base);
+      xmpu_chnl->region[valid_reg_n].id = 0;
+      xmpu_chnl->region[valid_reg_n].used = 0;
+    }
+  }
+}
+
+
+// Cell exit: config XMPU
+static void arm_xmpu_cell_exit(struct cell *cell){
+  u8 xmpu_channel_n = 0;
   u32 xmpu_base = 0;
   xmpu_channel *xmpu_chnl;
   unsigned int cpu;
-  //xmpu_print("Shutting down XMPU for cell %d\n\r", cell->config->id);
+  xmpu_print("Shutting down XMPU for cell %d\n\r", cell->config->id);
 
-  // todo ... Take from cell configuration and do it for all the subordinates (DDR, FPD, OCM)
-  xmpu_base = XMPU_DDR_BASE_ADDR;
-
+  // For each rCPU in the cell configuration Set the XMPU region registers to default values
   if(cell->config->rcpu_set_size != 0){
+    // todo ... Take from cell configuration and do it for all the subordinates (DDR, FPD, OCM)
+    xmpu_base = XMPU_DDR_BASE_ADDR;
+
     for_each_cpu(cpu, cell->rcpu_set) {
       if(cpu == 0){           // RPU 0
         xmpu_channel_n = 0;
@@ -236,46 +260,39 @@ static void arm_xmpu_cell_exit(struct cell *cell){
       else if(cpu == 1){      // RPU 1
         xmpu_channel_n = 0;
       }
-      else if (cpu == 2){     // RISCV 0
-        xmpu_channel_n = 3; 
-      }
       else{
         xmpu_print("Error: rCPU doesn't exist\r\n");
       }
       // DEBUG
-      //xmpu_print("rCPU %d\n\r", cpu);
-    
-      //xmpu_channel_n = 0; 
+      xmpu_print("Setting rCPU %d access on channel %d to default\n\r", cpu, xmpu_channel_n);    
       xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
 
-      if(cell->config->rcpu_set_size != 0){
-        for(i = 0; i<NR_XMPU_REGIONS; i++){
-          if(xmpu_chnl->region[i].id == cell->config->id){ 
-            // Clean regions used by the cell
-            valid_reg_n = i;
-            region_base = valid_reg_n * XMPU_REGION_OFFSET;
-
-            //DEBUG
-            // xmpu_print("Cleaning memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
-            // xmpu_print("XMPU DDR Channel: %d\n\r", xmpu_channel_n);
-            // xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-            // xmpu_print("XMPU region: %d\n\r", valid_reg_n);
-
-            set_xmpu_region_default(xmpu_base, region_base);
-            xmpu_chnl->region[valid_reg_n].id = 0;
-            xmpu_chnl->region[valid_reg_n].used = 0;
-          }
-        }
-      }
-      else{
-        //xmpu_print("No rCPUs in this cell\n\r"); 
-      }
+      // Set default permissions
+      set_default_cell_permissions(xmpu_chnl, xmpu_base, cell);
     }
   } 
+  else{
+    xmpu_print("No rCPUs in this cell\n\r"); 
+  }
+
+  // For each FPGA region in the cell configuration Set the XMPU region registers to default values
+  if(cell->config->fpga_regions_size != 0){ 
+    xmpu_channel_n = 3; 
+    xmpu_base = XMPU_DDR_3_BASE_ADDR;
+    // DEBUG
+    xmpu_print("Setting FPGA access on channel %d to default\n\r", xmpu_channel_n);
+
+    xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
+    // set default permissions
+    set_default_cell_permissions(xmpu_chnl, xmpu_base, cell);
+  }
+  else{
+    xmpu_print("No FPGA regions in this cell\n\r"); 
+  }
 }
 
-// Helper function to set core/fpga permissions
-static int set_core_permissions(u8 xmpu_channel_n, u32 xmpu_base, u64 cell_master_id, u64 cell_master_mask, struct cell *cell) {
+// Helper function to set xmpu permissions to cell
+static int set_cell_permissions(u8 xmpu_channel_n, u32 xmpu_base, u64 cell_master_id, u64 cell_master_mask, struct cell *cell) {
   u8 i = 0;
   u8 valid_reg_n = 0;
   u32 region_base = 0;
@@ -372,7 +389,7 @@ static int arm_xmpu_cell_init(struct cell *cell){
       }
       // DEBUG
 	  	xmpu_print("rCPU %d permissions settings ...\n\r", cpu);
-      set_core_permissions(xmpu_channel_n, xmpu_base, cell_master_id, cell_master_mask, cell);
+      set_cell_permissions(xmpu_channel_n, xmpu_base, cell_master_id, cell_master_mask, cell);
     }
   }
   else{
@@ -388,7 +405,7 @@ static int arm_xmpu_cell_init(struct cell *cell){
     cell_master_id = 0x0280;    // 0000 00(10 1000 0000)  to do: take from cell configuration
     cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration  
     xmpu_print("FPGA region permissions settings ...\n\r");
-    set_core_permissions(xmpu_channel_n, xmpu_base, cell_master_id, cell_master_mask, cell);
+    set_cell_permissions(xmpu_channel_n, xmpu_base, cell_master_id, cell_master_mask, cell);
   }
   else{
     xmpu_print("No FPGA regions in this cell\n\r");
@@ -646,4 +663,4 @@ static int arm_xmpu_init(void){
 
 DEFINE_UNIT_MMIO_COUNT_REGIONS_STUB(arm_xmpu);
 DEFINE_UNIT(arm_xmpu, "ARM XMPU");
-#endif /* CONFIG_XMPU && CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */ 
+#endif /* CONFIG_XMPU && CONFIG_MACH_ZYNQMP_ZCU102 */ 

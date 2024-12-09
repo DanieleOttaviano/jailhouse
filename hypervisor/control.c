@@ -30,9 +30,6 @@
 /* QoS Support only provided on arm64 */
 #include <asm/qos.h>
 #endif
-#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
-#include <asm/zynqmp-r5.h>
-#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 
 enum msg_type {MSG_REQUEST, MSG_INFORMATION};
 enum failure_mode {ABORT_ON_ERROR, WARN_ON_ERROR};
@@ -48,6 +45,8 @@ static unsigned int num_cells = 1;
 
 volatile unsigned long panic_in_progress;
 unsigned long panic_cpu = -1;
+
+static int fpga_started;
 
 /**
  * CPU set iterator.
@@ -281,19 +280,15 @@ int cell_init(struct cell *cell)
 	unsigned long cpu_set_size = cell->config->cpu_set_size;
 	struct cpu_set *cpu_set;
 
-#if defined(CONFIG_OMNIVISOR)
 	const unsigned long *config_rcpu_set =
 		jailhouse_cell_rcpu_set(cell->config);
 	unsigned long rcpu_set_size = cell->config->rcpu_set_size;
 	struct cpu_set *rcpu_set;
-#endif /* CONFIG_OMNIVISOR  */
 
-#if defined(CONFIG_OMNV_FPGA)
 	const unsigned long *config_fpga_regions = 
 		jailhouse_cell_fpga_regions(cell->config);
 		unsigned long fpga_regions_size = cell->config->fpga_regions_size;
 	struct fpga_region_set *fpga_region_set;
-#endif /* CONFIG_OMNV_FPGA*/
 	int err;
 
 	if (cpu_set_size > PAGE_SIZE)
@@ -314,9 +309,6 @@ int cell_init(struct cell *cell)
 	if (err && cell->cpu_set != &cell->small_cpu_set)
 		page_free(&mem_pool, cell->cpu_set, 1);
 
-#if defined(CONFIG_OMNIVISOR)
-	// DEBUG PRINT
-	// printk("small_cpu_set->bitmap = %ld\r\n", cell->small_cpu_set.bitmap[0]);
 	if (rcpu_set_size > PAGE_SIZE)
 		return trace_error(-EINVAL);
 	if (rcpu_set_size > sizeof(cell->small_rcpu_set.bitmap)) {
@@ -330,15 +322,11 @@ int cell_init(struct cell *cell)
 	memcpy(rcpu_set->bitmap, config_rcpu_set, rcpu_set_size);
 
 	cell->rcpu_set = rcpu_set;
-	// DEBUG PRINT
-	// printk("small_rcpu_set->bitmap = %ld\r\n", cell->small_rcpu_set.bitmap[0]);
 
 	if (err && cell->rcpu_set != &cell->small_rcpu_set)
 		page_free(&mem_pool, cell->rcpu_set, 1);
 
-#endif /* CONFIG_OMNIVISOR */
 
-#if defined(CONFIG_OMNV_FPGA)
 	if(fpga_regions_size > PAGE_SIZE)
 		return trace_error(-EINVAL);
 	if (fpga_regions_size > sizeof(cell->small_fpga_region_set.bitmap)) {
@@ -357,7 +345,6 @@ int cell_init(struct cell *cell)
 
 	if (err && cell->fpga_region_set!= &cell->small_fpga_region_set)
 		page_free(&mem_pool, cell->fpga_region_set, 1);
-#endif /* CONFIG_OMNV_FPGA */
 
 	return err;
 }
@@ -478,6 +465,8 @@ static void cell_destroy_internal(struct cell *cell)
 	const struct jailhouse_memory *mem;
 	unsigned int cpu, n;
 	struct unit *unit;
+	volatile unsigned long* fpga_start;
+	unsigned long fpga_base_addr;
 
 	cell->comm_page.comm_region.cell_state = JAILHOUSE_CELL_SHUT_DOWN;
 
@@ -491,38 +480,26 @@ static void cell_destroy_internal(struct cell *cell)
 		       sizeof(public_per_cpu(cpu)->stats));
 	}
 
-#if defined(CONFIG_OMNIVISOR)	
 	// For each rCPU, power them off
 	if (cell->config->rcpu_set_size > 0) {
 		for_each_cpu(cpu, cell->rcpu_set) {
-			// to do ... call platform and architectueral specific arch_park_rcpu and modify public_per_rcpu stats
-#if defined(CONFIG_MACH_ZYNQMP_ZCU102)
-			if(cpu == 0){
-				zynqmp_r5_stop(NODE_RPU_0);
-			}
-			else if(cpu == 1){
-				zynqmp_r5_stop(NODE_RPU_1);
-			}
-			else{
-				printk("rCPU doesn't exist\r\n");
-			}
-#endif /* CONFIG_MACH_ZYNQMP_ZCU102 */
 			set_bit(cpu, root_cell.rcpu_set->bitmap);
 		}	
 	}
-#endif /* CONFIG_OMNIVISOR */
 
-#if defined (CONFIG_OMNV_FPGA)
 	if (cell->config->fpga_regions_size > 0){
+		fpga_base_addr = system_config->platform_info.fpga_configuration_base;
 		for_each_region(cpu, cell->fpga_region_set){
 			//if soft core, power off
 			set_bit(cpu,root_cell.fpga_region_set->bitmap);
-			volatile u32* fpga_start = (u32*)system_config->platform_info.fpga_configuration_base; //CHECK ADDRESSS HERE
-			fpga_start[cpu] = 1;
+			// If the FPGA is non loaded (only create is performed) this can cause a crash
+			if (fpga_started){
+				fpga_start = (unsigned long*)fpga_base_addr;
+				fpga_start[cpu] = 1;
+			}
 			// Reset for region <cpu> must be up.
 		}
 	}
-#endif
 	
 	for_each_mem_region(mem, cell->config, n) {
 		if (!JAILHOUSE_MEMORY_IS_SUBPAGE(mem))
@@ -633,7 +610,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			goto err_cell_exit;
 		}
 
-#if defined(CONFIG_OMNIVISOR)
 	/* the root cell's rCPU set must be super-set of new cell's set */
 	if (cell->config->rcpu_set_size > 0) {
 		for_each_cpu(cpu, cell->rcpu_set)
@@ -642,9 +618,7 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 				goto err_cell_exit;
 			}
 	}
-#endif /* CONFIG_OMNIVISOR */
 
-#if defined (CONFIG_OMNV_FPGA)
 	if (cell->config->fpga_regions_size > 0){
 	/*the root cell's fpga region set must be super-set of new cell's set*/
 	for_each_region(cpu, cell->fpga_region_set)
@@ -653,7 +627,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			goto err_cell_exit;
 		}
 	}
-#endif
 
 	err = arch_cell_create(cell);
 	if (err)
@@ -681,7 +654,6 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 		       sizeof(public_per_cpu(cpu)->stats));
 	}
 
-#if defined(CONFIG_OMNIVISOR)
 	// to do ... public per rcpu managment	
 	if (cell->config->rcpu_set_size > 0) {
 		for_each_cpu(cpu, cell->rcpu_set) {
@@ -692,15 +664,12 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			//       sizeof(public_per_cpu(cpu)->stats));
 		}
 	}
-#endif /* CONFIG_OMNIVISOR */
 
-#if defined(CONFIG_OMNV_FPGA)
 	//publicly accessible data structure for regions?
 	if(cell->config->fpga_regions_size > 0)
 	for_each_region(cpu, cell->fpga_region_set) {
 		clear_bit(cpu, root_cell.fpga_region_set->bitmap);
 	}
-#endif
 
 	/*
 	 * Unmap the cell's memory regions from the root cell and map them to
@@ -812,6 +781,8 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	unsigned int cpu, n;
 	struct cell *cell;
 	int err;
+	unsigned long fpga_base_addr;
+	volatile unsigned long* fpga_start;
 
 	err = cell_management_prologue(CELL_START, cpu_data, id, &cell);
 	if (err)
@@ -860,51 +831,31 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 		arch_reset_cpu(cpu);
 	}
 
-#if defined(CONFIG_OMNIVISOR)
-	// For each rCPU
-	if (cell->config->rcpu_set_size > 0) {
-		for_each_cpu(cpu, cell->rcpu_set) {
-#if defined(CONFIG_MACH_ZYNQMP_ZCU102)	
-			// to do ... call platform and architectueral specific arch_reset_rcpu
-			printk("Starting rCPU %d\r\n", cpu);
-			if(cpu == 0){
-				zynqmp_r5_start(NODE_RPU_0,(u32)0x03ed0000);
-			}
-			else if(cpu == 1){
-				zynqmp_r5_start(NODE_RPU_1,(u32)0x03ad0000);
-			}
-			else{
-				printk("rCPU doesn't exist\r\n");
-				return -1;
-			}
-#endif /* CONFIG_MACH_ZYNQMP_ZCU102 */
-		}	
-	}
-#endif /* CONFIG_OMNIVISOR */
 
-#if defined(CONFIG_OMNV_FPGA)
 	if(cell->config->fpga_regions_size > 0){
+    	fpga_base_addr = system_config->platform_info.fpga_configuration_base;
+		// DEBUG PRINT
+		// printk("FPGA base address: 0x%lx\r\n", fpga_base_addr);
+		
 		//for each region, start if it has to be started
 		for_each_region(cpu,cell->fpga_region_set){
 			printk("Starting FPGA region %d\r\n", cpu);
 			//Map page where configuration port for region x is located
 			//if needed, reset the soft core and start
-			u64 fpga_config_base = system_config->platform_info.fpga_configuration_base;
-			printk("Fpga configuration base is %llx\n",fpga_config_base);
-			err = paging_create(&hv_paging_structs, fpga_config_base, PAGE_SIZE, //change address?
-				fpga_config_base, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
+			err = paging_create(&hv_paging_structs, fpga_base_addr, PAGE_SIZE,
+				fpga_base_addr, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
 			if (err){
 				printk("paging_create for fpga configuration port failed\r\n");
 			}
 			else{
+				fpga_started = 1;
 				// Reset the core
-				volatile u32* fpga_start = (u32*)fpga_config_base;
+				fpga_start = (unsigned long*)fpga_base_addr;
 				fpga_start[cpu] = 1;
 				fpga_start[cpu] = 0;
 			} 
 		}
 	}
-#endif
 
 	printk("Started cell \"%s\"\n", cell->config->name);
 
@@ -951,15 +902,6 @@ static int cell_set_loadable(struct per_cpu *cpu_data, unsigned long id)
 			if (err)
 				goto out_resume;
 		}
-#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
-		// to do ... call sram request function (platform specific)
-		if(mem->flags & JAILHOUSE_MEM_TCM_A){
-			zynqmp_r5_tcm_request(ZYNQMP_R5_TCMA_ID);
-		}
-		if(mem->flags & JAILHOUSE_MEM_TCM_B){
-			zynqmp_r5_tcm_request(ZYNQMP_R5_TCMB_ID);
-		}
-#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 	}
 
 	config_commit(NULL);
@@ -1054,15 +996,6 @@ void shutdown(void)
 		if (root_mem->flags & JAILHOUSE_MEM_COLORED) {
 			arch_unmap_memory_region(&root_cell, root_mem);
 		}
-#if defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
-		// to do ... call sram release function (platform specific)
-		if(root_mem->flags & JAILHOUSE_MEM_TCM_A){
-			zynqmp_r5_tcm_release(ZYNQMP_R5_TCMA_ID);
-		}
-		if(root_mem->flags & JAILHOUSE_MEM_TCM_B){
-			zynqmp_r5_tcm_release(ZYNQMP_R5_TCMB_ID);
-		}
-#endif /* CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
 	}
 
 	/* copy back the root cell into a non-colored phys range */

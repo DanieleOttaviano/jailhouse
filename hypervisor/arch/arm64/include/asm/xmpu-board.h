@@ -17,7 +17,7 @@
 
 #include <asm/smc.h>
 
-#if defined(CONFIG_XMPU_ACTIVE) && defined(CONFIG_OMNIVISOR) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
+#if defined(CONFIG_XMPU_ACTIVE) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 
 #define ZCU102_XMPU_READ_SMC     0x8400ff04
 #define ZCU102_XMPU_WRITE_SMC    0x8400ff05
@@ -44,6 +44,6 @@ static inline void xmpu_write32(void *addr, u32 val)
 	return;
 }
 
-#endif /* CONFIG_XMPU_ACTIVE && CONFIG_OMNIVISOR && CONFIG_MACH_ZYNQMP_ZCU102 */
+#endif /* CONFIG_XMPU_ACTIVE && CONFIG_MACH_ZYNQMP_ZCU102 */
 
 #endif /* _JAILHOUSE_ARM64_XMPU_BOARD_H */

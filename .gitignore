@@ -59,7 +59,8 @@ hypervisor/arch/arm64/asm-defines.s
 hypervisor/arch/arm64/lib.a
 hypervisor/hypervisor.lds
 hypervisor/include/generated/
-inmates/demos/armr5/baremetal-demo.elf
+inmates/demos/armr5/*/*.elf
+inmates/demos/riscv/*/*.bin
 inmates/lib/arm64/lib.a
 inmates/lib/armr5/lib/libfreertos.a
 inmates/lib/armr5/lib/libxil.a

@@ -66,16 +66,14 @@ struct {
 			.virt_start = 0xffe90000,
 			.size = 0x00010000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE | 
-				JAILHOUSE_MEM_TCM_A,
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE,
 		},
 		/* TCM 1-B */ {
 			.phys_start = 0xffeb0000,
 			.virt_start = 0xffeb0000,
 			.size = 0x00010000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
-				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE |
-				JAILHOUSE_MEM_TCM_B,
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE,
 		},	
 		/* RAM */ {
 			.phys_start = 0x3ad00000,
