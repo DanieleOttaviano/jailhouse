@@ -41,7 +41,7 @@ AS = $(COMPILER_PREFIX)as
 OBJDUMP = $(COMPILER_PREFIX)objdump
 OBJCOPY = $(COMPILER_PREFIX)objcopy
 
-all: $(patsubst %,riscv-%-demo.bin,$(INMATE))	
+all: $(patsubst %,%-demo.elf,$(INMATE)) $(patsubst %,%-demo.bin,$(INMATE))	
 
 %.o: bench/$(BENCH)/%.c
 	$(CC) -c -o $@ $< $(INC) $(CFLAGS)

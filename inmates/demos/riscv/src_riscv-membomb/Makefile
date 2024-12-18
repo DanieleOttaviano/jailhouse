@@ -40,7 +40,7 @@ AS = $(COMPILER_PREFIX)as
 OBJDUMP = $(COMPILER_PREFIX)objdump
 OBJCOPY = $(COMPILER_PREFIX)objcopy
 
-all: $(patsubst %,%-demo.bin,$(INMATE))	
+all: $(patsubst %,%-demo.elf,$(INMATE)) $(patsubst %,%-demo.bin,$(INMATE))	
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(INC) $(CFLAGS)
