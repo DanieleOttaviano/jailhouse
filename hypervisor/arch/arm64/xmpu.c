@@ -246,7 +246,37 @@ static void arm_xmpu_cell_exit(struct cell *cell){
   u32 xmpu_base = 0;
   xmpu_channel *xmpu_chnl;
   unsigned int cpu;
+  unsigned int region;
+
+  //DEBUG  
   xmpu_print("Shutting down XMPU for cell %d\n\r", cell->config->id);
+
+  // For each FPGA region in the cell configuration Set the XMPU region registers to default values
+  if(cell->config->fpga_regions_size != 0){ 
+    for_each_region(region, cell->fpga_region_set){
+
+      if(region > 2){
+        //DEBUG
+        xmpu_print("Error: FPGA region not valid\n\r");
+        continue;
+      }
+      //DEBUG
+      xmpu_print("FPGA region %d\n\r", region); 
+      xmpu_channel_n = region + 3; 
+      xmpu_base = XMPU_DDR_3_BASE_ADDR + (region * XMPU_REGION_OFFSET);
+ 
+      // DEBUG
+      xmpu_print("Setting FPGA access on channel %d to default\n\r", xmpu_channel_n);
+
+      xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
+      // set default permissions
+      set_default_cell_permissions(xmpu_chnl, xmpu_base, cell);
+    }
+  }
+  else{
+    //DEBUG
+    xmpu_print("No FPGA regions in this cell\n\r"); 
+  }
 
   // For each rCPU in the cell configuration Set the XMPU region registers to default values
   if(cell->config->rcpu_set_size != 0){
@@ -261,7 +291,9 @@ static void arm_xmpu_cell_exit(struct cell *cell){
         xmpu_channel_n = 0;
       }
       else{
-        xmpu_print("Error: rCPU doesn't exist\r\n");
+        // xmpu_print("Error: rCPU doesn't exist\r\n");
+        // soft-core
+        continue;
       }
       // DEBUG
       xmpu_print("Setting rCPU %d access on channel %d to default\n\r", cpu, xmpu_channel_n);    
@@ -272,22 +304,8 @@ static void arm_xmpu_cell_exit(struct cell *cell){
     }
   } 
   else{
+    //DEBUG
     xmpu_print("No rCPUs in this cell\n\r"); 
-  }
-
-  // For each FPGA region in the cell configuration Set the XMPU region registers to default values
-  if(cell->config->fpga_regions_size != 0){ 
-    xmpu_channel_n = 3; 
-    xmpu_base = XMPU_DDR_3_BASE_ADDR;
-    // DEBUG
-    xmpu_print("Setting FPGA access on channel %d to default\n\r", xmpu_channel_n);
-
-    xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
-    // set default permissions
-    set_default_cell_permissions(xmpu_chnl, xmpu_base, cell);
-  }
-  else{
-    xmpu_print("No FPGA regions in this cell\n\r"); 
   }
 }
 
@@ -361,9 +379,64 @@ static int arm_xmpu_cell_init(struct cell *cell){
   u64 cell_master_id = 0;
   u64 cell_master_mask = 0;
 	unsigned int cpu;
+	unsigned int region;
 
   //xmpu_print("Initializing XMPU for cell %d\n\r", cell->config->id);
   
+  // If FPGA in cell, give the requested accesses
+  // to do ... specify the FPGA regions and give the permession to the corresponding maser ID
+  if(cell->config->fpga_regions_size > 0){
+    // S_AXI_HP0_FPD (HP0) (1010, AXI ID[5:0]) DOESN'T WORK ...
+    for_each_region(region, cell->fpga_region_set){
+      // DEBUG
+      xmpu_print("FPGA region %d\n\r", region); 
+      xmpu_channel_n = region + 3; 
+      xmpu_base = XMPU_DDR_3_BASE_ADDR + (region * XMPU_DDR_OFFSET);
+
+      if(region == 0){
+        // All that is coming from TBU 3 
+        cell_master_id = 0x2000;    // 0010 00(XX XXXX XXXX)  to do: take from cell configuration
+        cell_master_mask = 0xFC00;  // 1111 11(00 0000 0000)  to do: take from cell configuration       
+
+        // S_AXI_HP0_FPD (HP0) -> 1010, AXI ID [5:0] from PL
+        // cell_master_id = 0x0280;    // 0000 00(10 1000 0000)  to do: take from cell configuration
+        // cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration   
+      }
+      else if(region == 1){
+        // All that is coming from TBU 4
+        cell_master_id = 0x4000;    // 0100 00(XX XXXX XXXX)  to do: take from cell configuration
+        cell_master_mask = 0xFC00;  // 1111 11(00 0000 0000)  to do: take from cell configuration       
+
+        // S_AXI_HP1_FPD (HP1) -> 1011, AXI ID [5:0] from PL
+        // cell_master_id = 0x02C0;    // 0000 00(10 1100 0000)  to do: take from cell configuration
+        // cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration   
+ 
+        // S_AXI_HP2_FPD (HP2) -> 1100, AXI ID [5:0] from PL
+        // cell_master_id = 0x0300;    // 0000 00(11 0000 0000)  to do: take from cell configuration
+        // cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration    
+      }
+      else if(region == 2){
+        // All that is coming from TBU 5
+        cell_master_id = 0x8000;    // 1000 00(XX XXXX XXXX)  to do: take from cell configuration
+        cell_master_mask = 0xFC00;  // 1111 11(00 0000 0000)  to do: take from cell configuration       
+
+        // S_AXI_HP3_FPD (HP3) -> 1101, AXI ID [5:0] from PL
+        // cell_master_id = 0x0340;    // 0000 00(11 0100 0000)  to do: take from cell configuration
+        // cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration    
+      }
+      else{
+        xmpu_print("Error: FPGA region doesn't exist\r\n");
+        break;
+      }
+
+      xmpu_print("FPGA region permissions settings ...\n\r");
+      set_cell_permissions(xmpu_channel_n, xmpu_base, cell_master_id, cell_master_mask, cell);
+    }
+  }
+  else{
+    xmpu_print("No FPGA regions in this cell\n\r");
+  }
+
   // If there is at least one rCPU in the configuration give the requested accesses
   // For each rCPU in the cell configuration Set the XMPU region registers
   if(cell->config->rcpu_set_size != 0){
@@ -384,8 +457,9 @@ static int arm_xmpu_cell_init(struct cell *cell){
         cell_master_mask = 0x03F0;  // 0000 00(11 1111 0000)  to do: take from cell configuration 
       }
 		  else{
-			  xmpu_print("Error: rCPU doesn't exist\r\n");
-        return 0;
+			  // xmpu_print("Error: rCPU doesn't exist\r\n");
+        // soft-core
+        continue;
       }
       // DEBUG
 	  	xmpu_print("rCPU %d permissions settings ...\n\r", cpu);
@@ -394,21 +468,6 @@ static int arm_xmpu_cell_init(struct cell *cell){
   }
   else{
     xmpu_print("No rCPUs in this cell\n\r");
-  }
-
-  // If FPGA in cell, give the requested accesses
-  // to do ... specify the FPGA regions and give the permession to the corresponding maser ID
-  if(cell->config->fpga_regions_size > 0){
-    // S_AXI_HP0_FPD (HP0) (1010, AXI ID[5:0]) DOESN'T WORK ...
-    xmpu_channel_n = 3; 
-    xmpu_base = XMPU_DDR_3_BASE_ADDR;
-    cell_master_id = 0x0280;    // 0000 00(10 1000 0000)  to do: take from cell configuration
-    cell_master_mask = 0x03C0;  // 0000 00(11 1100 0000)  to do: take from cell configuration  
-    xmpu_print("FPGA region permissions settings ...\n\r");
-    set_cell_permissions(xmpu_channel_n, xmpu_base, cell_master_id, cell_master_mask, cell);
-  }
-  else{
-    xmpu_print("No FPGA regions in this cell\n\r");
   }
 
   return 0;
@@ -556,7 +615,7 @@ static void xmpu_ddr_init(void){
     } 
   }
 
-  // Configure XMPU status registers for all ddr the channels to avoid default read/write permissions
+  // Configure XMPU status registers for all ddr the channels to remove default read/write permissions
   for(i=0 ; i<NR_XMPU_DDR; i++){
     xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET);  
     xmpu_channel_n = i;   
@@ -592,7 +651,7 @@ static void xmpu_fpd_init(void){
   fpd_xmpu_device.region[xmpu_channel_n].used =          1;
   fpd_xmpu_device.region[xmpu_channel_n].id =            0;
   set_xmpu_region(xmpu_base, R00_OFFSET, &fpd_xmpu_device.region[xmpu_channel_n]);  
-  // Configure XMPU FPD status registers to avoid default read/write permissions
+  // Configure XMPU FPD status registers to remove default read/write permissions
   fpd_xmpu_device.status.poison =        1;
   fpd_xmpu_device.status.align =         0; //4kb
   fpd_xmpu_device.status.def_wr_allowed =0;
@@ -622,7 +681,7 @@ static void xmpu_ocm_init(void){
   ocm_xmpu_device.region[xmpu_channel_n].used =          1;
   ocm_xmpu_device.region[xmpu_channel_n].id =            0;
   set_xmpu_region(xmpu_base, R00_OFFSET, &ocm_xmpu_device.region[xmpu_channel_n]);  
-  // Configure XMPU OCM status registers to avoid default read/write permissions
+  // Configure XMPU OCM status registers to remove default read/write permissions
   ocm_xmpu_device.status.poison =        1;
   ocm_xmpu_device.status.align =         0; //4kb
   ocm_xmpu_device.status.def_wr_allowed =0;
