@@ -46,6 +46,7 @@
 #include <jailhouse/console.h>
 #include <jailhouse/pci_defs.h>
 #include <jailhouse/qos-common.h>
+#include <jailhouse/fpga-common.h>
 #include <jailhouse/config.h>
 
 #ifndef ARRAY_SIZE
@@ -116,6 +117,8 @@ struct jailhouse_cell_desc {
 	__u32 num_pci_caps;
 	__u32 num_stream_ids;
 	__u32 num_qos_devices;
+	__u32 num_rcpu_devices;
+	__u32 num_fpga_devices;
 
 	__u32 vpci_irq_base;
 
@@ -391,9 +394,33 @@ struct jailhouse_qos_device {
 } __attribute__((packed));
 
 
+#define JAILHOUSE_RCPU_IMAGE_NAMELEN 31
+
+struct jailhouse_rcpu_device {
+	__u32 rcpu_id;
+	char name[JAILHOUSE_RCPU_IMAGE_NAMELEN];
+	char compatible[JAILHOUSE_RCPU_IMAGE_NAMELEN];
+} __attribute__((packed));
+
 /* add more flags for encrypted, compressed, authenticated ?*/
 #define JAILHOUSE_FPGA_FULL 0x0
 #define JAILHOUSE_FPGA_PARTIAL 0x1
+
+struct jailhouse_fpga {	
+	char fpga_base_bitstream[FPGA_BITSTREAM_NAMELEN];
+	__u64 fpga_base_addr;
+	__u8 fpga_flags;
+	__u32 fpga_max_regions;
+} __attribute__((packed)); 
+
+struct jailhouse_fpga_device {
+	char fpga_dto[FPGA_DTO_NAMELEN];
+	char fpga_module[FPGA_MODULE_NAMELEN];
+	char fpga_bitstream[FPGA_BITSTREAM_NAMELEN];
+	__u32 fpga_region_id;			//specific FPGA region used
+	__u32 fpga_rcpus_set_size;  //soft_rcpus
+	__u64 fpga_conf_addr;		//configuration address for region
+} __attribute__((packed)); 
 
 /**
  * General descriptor of the system.
@@ -416,11 +443,11 @@ struct jailhouse_system {
 		/* Disable spectre (CVE-2017-5715) mitigations */
 		__u32 no_spectre_mitigation;
 		__u64 fpga_configuration_base;
-		__u32 fpga_options;
 		struct jailhouse_iommu iommu_units[JAILHOUSE_MAX_IOMMU_UNITS];
 		struct jailhouse_coloring color;
 		struct jailhouse_memguard_config memguard;
 		struct jailhouse_qos qos;
+		struct jailhouse_fpga fpga;
 		union {
 			struct {
 				__u16 pm_timer_address;
@@ -459,7 +486,9 @@ jailhouse_cell_config_size(struct jailhouse_cell_desc *cell)
 		cell->num_pci_devices * sizeof(struct jailhouse_pci_device) +
 		cell->num_pci_caps * sizeof(struct jailhouse_pci_capability) +
 		cell->num_stream_ids * sizeof(__u32) +
-		cell->num_qos_devices * sizeof(struct jailhouse_qos_device);
+		cell->num_qos_devices * sizeof(struct jailhouse_qos_device) +
+		cell->num_rcpu_devices * sizeof(struct jailhouse_rcpu_device) +
+		cell->num_fpga_devices * sizeof(struct jailhouse_fpga_device);
 }
 
 static inline __u32
@@ -552,6 +581,22 @@ jailhouse_cell_qos_devices(const struct jailhouse_cell_desc *cell)
 	return (const struct jailhouse_qos_device *)
 		((void *)jailhouse_cell_stream_ids(cell) +
 		 cell->num_stream_ids * sizeof(union jailhouse_stream_id));
+}
+
+static inline const struct jailhouse_rcpu_device *
+jailhouse_cell_rcpu_devices(const struct jailhouse_cell_desc *cell)
+{
+	return (const struct jailhouse_rcpu_device *)
+		((void *)jailhouse_cell_qos_devices(cell) +
+		 cell->num_qos_devices * sizeof(struct jailhouse_qos_device));
+}
+
+static inline const struct jailhouse_fpga_device *
+jailhouse_cell_fpga_devices(const struct jailhouse_cell_desc *cell)
+{
+	return (const struct jailhouse_fpga_device *)
+		((void *)jailhouse_cell_rcpu_devices(cell) +
+		 cell->num_rcpu_devices * sizeof(struct jailhouse_rcpu_device));
 }
 
 #endif /* !_JAILHOUSE_CELL_CONFIG_H */

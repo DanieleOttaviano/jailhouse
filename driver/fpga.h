@@ -18,39 +18,42 @@
 
 #include "cell.h"
 
-/* first mask is subset of second?*/
-static inline int fpga_subset(u32 *src1, u32 *src2)
-{	
-	return (*src1 & *src2) == *src1;
-}
 
-/* unset in src2 bits that are set in src1*/
-static inline void remove_regions_from_cell(u32 *src1, u32 *src2)
-{
-	*src2 &= ~(*src1);
-}
-
-/* set bits in src1 are set in src2 */
-static inline void give_regions_to_cell(u32 *src1, u32 *src2)
-{
-	*src2 |= (*src1);
-}
+#define for_each_region(region, set) \
+	for_each_cpu(region, set)
 
 #ifdef CONFIG_OMNV_FPGA
 
-void setup_fpga_flags(long flags);
-int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream __user *bitstream);
+int load_root_bitstream(char *bitstream_name, long flags);
+int load_bitstream(unsigned int region_id,
+			const char *bitstream);
+int jailhouse_fpga_regions_setup(struct cell *cell, 
+			const struct jailhouse_cell_desc *config);
+int jailhouse_fpga_regions_remove(struct cell *cell);
 
 #else /* !CONFIG_OMNV_FPGA */
 
-static inline void setup_fpga_flags(long flags)
+static inline int load_root_bitstream(char *bitstream_name)
 {
+	return 0;
 }
 
-static inline int load_bitstream(struct cell *cell, struct jailhouse_preload_bitstream __user *bitstream)
+static inline int load_bitstream(unsigned int region_id,
+			char *bitstream_name)
 {
-    pr_err("ERROR: CONFIG_OMNV_FPGA is not set in Jailhouse\n");
-    return -1;
+	pr_err("ERROR: CONFIG_OMNV_FPGA is not set in Jailhouse\n");
+	return -1;
+}
+
+static inline int jailhouse_fpga_regions_setup(struct cell *cell, 
+			const struct jailhouse_cell_desc *config)
+{
+	return 0;
+}
+
+static inline int jailhouse_fpga_regions_remove(struct cell *cell)
+{
+	return 0;
 }
 
 #endif /* CONFIG_OMNV_FPGA */

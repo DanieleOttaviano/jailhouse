@@ -742,9 +742,9 @@ else:
 
     cell = JailhouseCell(config)
  
-    if args.bitstream:
-        for bitstream, region in args.bitstream:
-            cell.load_bitstream(bitstream,int(region))
+    # if args.bitstream:
+    #     for bitstream, region in args.bitstream:
+    #         cell.load_bitstream(bitstream,int(region))
 
 
     cell.load_image(open(linux_loader, mode='rb').read(), arch.loader_address())

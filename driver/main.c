@@ -470,6 +470,7 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	if (max_cpus > UINT_MAX)
 		return -EINVAL;
 
+	// remove max_rcpus or adjust adding fpga rcpus
 	if (config_header.root_cell.rcpu_set_size > 0) {
 		max_rcpus = get_max_rcpus(config_header.root_cell.rcpu_set_size, arg);
 		if (max_rcpus < 0)
@@ -487,12 +488,18 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 			return max_fpga_regions;
 		if (max_fpga_regions > UINT_MAX)
 			return -EINVAL;
-		setup_fpga_flags(config_header.platform_info.fpga_options);
 	}
 	else{
 		max_fpga_regions = 0;
 	}
 
+	//Load FPGA base bitstream with void regions
+	if(config_header.platform_info.fpga.fpga_base_bitstream[0] != '\0'){
+		if (load_root_bitstream(config_header.platform_info.fpga.fpga_base_bitstream,config_header.platform_info.fpga.fpga_flags) != 0)
+			return -EINVAL;	
+		pr_info("jailhouse: FPGA bitstream %s loaded\n", config_header.platform_info.fpga.fpga_base_bitstream);
+	}
+	
 	if (mutex_lock_interruptible(&jailhouse_lock) != 0)
 		return -EINTR;
 
@@ -592,13 +599,6 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 	header->arm_linux_hyp_abi = HYP_STUB_ABI_OPCODE;
 #endif
 #endif
-
-	// Setup Remote Processors (rCPUs)
-	if(config_header.root_cell.rcpu_set_size > 0){
-		err = jailhouse_rcpus_setup();
-		if (err)
-			goto error_unmap;
-	}	
 
 	err = jailhouse_sysfs_core_init(jailhouse_dev, header->core_size);
 	if (err)
@@ -798,8 +798,6 @@ static int jailhouse_cmd_disable(void)
 		goto unlock_out;
 
 	jailhouse_pci_virtual_root_devices_remove();
-
-	jailhouse_rcpus_remove();
 
 	error_code = 0;
 

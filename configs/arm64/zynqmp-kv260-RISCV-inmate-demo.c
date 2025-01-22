@@ -19,9 +19,12 @@
 struct {
 	struct jailhouse_cell_desc cell;
 	__u64 cpus[1];
+	__u64 rcpus[1];
 	__u64 fpga_regions[1];
 	struct jailhouse_memory mem_regions[4];
 	union jailhouse_stream_id stream_ids[1];
+	struct jailhouse_rcpu_device rcpu_devices[1];
+	struct jailhouse_fpga_device fpga_devices[1];
 } __attribute__((packed)) config = {
 	.cell = {
 		.signature = JAILHOUSE_CELL_DESC_SIGNATURE,
@@ -31,11 +34,14 @@ struct {
 		.flags = JAILHOUSE_CELL_PASSIVE_COMMREG,
 
 		.cpu_set_size = sizeof(config.cpus),
+		.rcpu_set_size = sizeof(config.rcpus),
 		.fpga_regions_size = sizeof(config.fpga_regions),
 		.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 		.num_irqchips = 0,
 		.num_pci_devices = 0,
 		.num_stream_ids = ARRAY_SIZE(config.stream_ids),
+		.num_rcpu_devices = ARRAY_SIZE(config.rcpu_devices),
+		.num_fpga_devices = ARRAY_SIZE(config.fpga_devices),
 
 		.console = {
 			.address = 0xff010000,
@@ -47,6 +53,10 @@ struct {
 
 	.cpus = {
 		0x0,
+	},
+
+	.rcpus = {
+		0x4, // Third core is a soft-core on the FPGA
 	},
 
     .fpga_regions = {
@@ -89,4 +99,26 @@ struct {
 			.mmu500.mask_out = 0x3f, // Mask out bits 0..5
 		},	
 	},
+
+	.rcpu_devices = {
+		{
+			.rcpu_id = 2,
+			.name = "pico32",
+			.compatible = "dottavia,pico32-remoteproc",
+		},
+	},
+
+	.fpga_devices = {
+
+		{
+			.fpga_dto = "pico32.dtbo",						// load device tree overlay pico32_overlay
+			.fpga_module = "pico32_remoteproc",				// load module pico32_remoteproc
+			.fpga_bitstream = "pico32_tg_dynamic_pico.bit",	// load bitstream pico32
+			.fpga_region_id = 0,							// load bitstream in region with id x
+			.fpga_rcpus_set_size = 1,						// add 1 rcpu
+			.fpga_conf_addr = 0x80000000,					// configuration address for region
+		},
+
+	},
+
 };

@@ -84,7 +84,6 @@ static void __attribute__((noreturn)) help(char *prog, int exit_status)
 	       "   cell load { ID | [--name] NAME } { IMAGE | { -s | --string } \"STRING\" }\n"
 		   "             [-a | --address ADDRESS] ...\n" 
 		   "             [-r | --rcpu RCPU_IMAGE_NAME RCPU_MASK] ...\n"
-		   "             [-b | --bitstream BITSTREAM_NAME REGION_ID] ...\n"
 	       "   cell start { ID | [--name] NAME }\n"
 	       "   cell shutdown { ID | [--name] NAME }\n"
 	       "   cell destroy { ID | [--name] NAME }\n",
@@ -435,7 +434,6 @@ static int cell_shutdown_load(int argc, char *argv[],
 {
 	struct jailhouse_preload_image *image;
 	struct jailhouse_preload_rcpu_image *rcpu_image;
-	struct jailhouse_preload_bitstream *bitstream;
 	struct jailhouse_cell_info * cinfo;
 	struct jailhouse_cell_load *cell_load;
 	struct jailhouse_cell_id cell_id;
@@ -443,8 +441,6 @@ static int cell_shutdown_load(int argc, char *argv[],
 	unsigned int images, n;
 	unsigned int omnv = 0;
 	unsigned int rcpu_images = 0;
-	unsigned int omnv_fpga = 0;
-	unsigned int bitstreams = 0;
 	size_t size;
 	char *endp;
 
@@ -460,7 +456,6 @@ static int cell_shutdown_load(int argc, char *argv[],
 	// Check if there are any rcpus or fpga regions
 	cinfo = get_cell_info(cell_id.id);
 	omnv = strlen(cinfo->rcpus_assigned_list) == 0;
-	omnv_fpga = strlen(cinfo->fpga_regions_assigned_list) == 0;
 	cell_info_free(cinfo);
 	
 	while (arg_num < argc) {
@@ -478,20 +473,6 @@ static int cell_shutdown_load(int argc, char *argv[],
 		}
 		if(arg_num >= argc)
 			break;
-		// Check for FPGA bitstreams 	
-		while(arg_num < argc &&
-			match_opt(argv[arg_num], "-b", "--bitstream")) {
-				if (omnv_fpga){
-					printf("Error: no fpga regions avaiable\n");
-					exit(1);
-				}
-				if (arg_num + 2 >= argc)
-					help(argv[0], 1);
-				arg_num+=3; // -b|--bitstream {bitstream} {region} 
-				bitstreams++;
-		}
-		if(arg_num >= argc)
-			break; 
 		// Check for images
 		if (match_opt(argv[arg_num], "-s", "--string")) {
 			if (arg_num + 1 >= argc)
@@ -506,10 +487,7 @@ static int cell_shutdown_load(int argc, char *argv[],
 			if (arg_num + 1 >= argc)
 				help(argv[0], 1);
 			arg_num+=2;
-		}
-		if (bitstreams > 0 && images == 0) {
-			help(argv[0], 1);	
-		}
+		}	
 	}
 
 	cell_load = malloc(sizeof(*cell_load) + sizeof(*image) * images);
@@ -560,20 +538,6 @@ static int cell_shutdown_load(int argc, char *argv[],
 		rcpu_image->rcpu_id = atoi(argv[arg_num++]);
 	}
 
-	cell_load->num_bitstreams = bitstreams;
-	cell_load->bitstream = malloc(sizeof(struct jailhouse_preload_bitstream) * bitstreams);
-	if (!cell_load->bitstream) {
-		fprintf(stderr, "insufficient memory\n");
-		exit(1);
-	}
-	
-	for (n = 0, bitstream = cell_load->bitstream; n < bitstreams; n++, bitstream++) {
-		arg_num++; //skip '-b'
-		strncpy(bitstream->name, argv[arg_num++], JAILHOUSE_BITSTREAM_NAMELEN);
-		bitstream->region = atoi(argv[arg_num++]);
-		bitstream->flags = 0;
-	}
-
 	fd = open_dev();
 
 	err = ioctl(fd, JAILHOUSE_CELL_LOAD, cell_load);
@@ -583,7 +547,6 @@ static int cell_shutdown_load(int argc, char *argv[],
 	for (n = 0, image = cell_load->image; n < images; n++, image++)
 		free((void *)(unsigned long)image->source_address);
 	free(cell_load->rcpu_image);
-	free(cell_load->bitstream);
 	free(cell_load);
 	return err;
 }

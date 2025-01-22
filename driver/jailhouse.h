@@ -51,7 +51,6 @@
 
 #define JAILHOUSE_CELL_ID_NAMELEN	31
 #define JAILHOUSE_RCPU_IMAGE_NAMELEN 31
-#define JAILHOUSE_BITSTREAM_NAMELEN 31
 
 struct jailhouse_cell_create {
 	__u64 config_address;
@@ -72,11 +71,6 @@ struct jailhouse_preload_rcpu_image {
 	char name[JAILHOUSE_RCPU_IMAGE_NAMELEN + 1];
 };
 
-struct jailhouse_preload_bitstream {
-	__u32 region;
-	__u32 flags;
-	char name[JAILHOUSE_BITSTREAM_NAMELEN + 1];
-};
 
 struct jailhouse_cell_id {
 	__s32 id;
@@ -90,10 +84,6 @@ struct jailhouse_cell_load {
 
 	__u32 num_rcpu_images;
 	struct jailhouse_preload_rcpu_image *rcpu_image;
-
-	__u32 num_bitstreams;
-	__u32 padding;
-	struct jailhouse_preload_bitstream *bitstream; 
 
 	struct jailhouse_preload_image image[];
 };

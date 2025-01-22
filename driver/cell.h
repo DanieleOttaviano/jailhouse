@@ -36,8 +36,10 @@ struct cell {
 	char name[JAILHOUSE_CELL_ID_NAMELEN+1];
 	cpumask_t cpus_assigned;
 	cpumask_t rcpus_assigned;
-	u32 fpga_regions_assigned;
+	cpumask_t fpga_regions_assigned;
 	u32 num_memory_regions;
+	struct rcpu_info **soft_rcpus_info;
+	u32 *fpga_overlay_ids;
 	struct jailhouse_memory *memory_regions;
 	u64 color_root_map_offset;
 #ifdef CONFIG_PCI

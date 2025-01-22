@@ -27,11 +27,11 @@ def config_omnv_fpga():
         return False
 
 
-class JailhousePreloadBitstream(ctypes.Structure):
-    _fields_ = [
-        ('region', ctypes.c_uint32),
-        ('name', ctypes.c_char * 32), 
-    ]
+# class JailhousePreloadBitstream(ctypes.Structure):
+#     _fields_ = [
+#         ('region', ctypes.c_uint32),
+#         ('name', ctypes.c_char * 32), 
+#     ]
 
 
 class JailhouseCell:
@@ -68,13 +68,13 @@ class JailhouseCell:
         fcntl.ioctl(self.dev, self.JAILHOUSE_CELL_LOAD, load)
 
     
-    def load_bitstream(self, bitstream, region):
-        bitstream = JailhousePreloadBitstream(region=region, name=bitstream)
+    # def load_bitstream(self, bitstream, region):
+    #     bitstream = JailhousePreloadBitstream(region=region, name=bitstream)
 
-        load = struct.pack('i4x32sIIPQQQ8x',
-                           JailhouseCell.JAILHOUSE_CELL_ID_UNUSED, self.name,
-                           0,1,ctypes.pointer(bitstream),0,0,0)
-        fcntl.ioctl(self.dev, self.JAILHOUSE_CELL_LOAD, load)
+    #     load = struct.pack('i4x32sIIPQQQ8x',
+    #                        JailhouseCell.JAILHOUSE_CELL_ID_UNUSED, self.name,
+    #                        0,1,ctypes.pointer(bitstream),0,0,0)
+    #     fcntl.ioctl(self.dev, self.JAILHOUSE_CELL_LOAD, load)
     
     def start(self):
         start = struct.pack('i4x32s', JailhouseCell.JAILHOUSE_CELL_ID_UNUSED,

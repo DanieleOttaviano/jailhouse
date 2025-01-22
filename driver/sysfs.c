@@ -255,36 +255,6 @@ static int print_cpumask(char *buf, size_t size, cpumask_t *mask, bool as_list)
 	return written;
 }
 
-
-static int print_fpgalist(char *buf, size_t size, u32 *mask){
-   u32 i=0,written=0,start,end;
-   u32 fpga_mask_size = 32;
-   while(i<fpga_mask_size){
-		if((*mask) & (1U << i)){
-			start = i;
-			 while (i < fpga_mask_size && ((*mask) & (1U << i))) {
-                i++;
-            }
-			end = i-1;
-			if(written > 0)
-				written+=snprintf(buf + written,size-written, ",");
-			if (start == end)
-        		written+=snprintf(buf + written,size-written, "%d", start);
-			else
-       			written+=snprintf(buf + written,size-written, "%d-%d", start, end);
-    		}
-		else
-			i++;
-		}
-		written+=snprintf(buf + written,size-written, "\n");
-		return written;
-}
-
-static int print_fpgaregions(char *buf, size_t size, u32 *mask)
-{
-	return scnprintf(buf, size, "%x\n",*mask);
-}
-
 static int print_failed_cpus(char *buf, size_t size, const struct cell *cell,
 			 bool as_list)
 {
@@ -390,7 +360,8 @@ static ssize_t fpga_regions_assigned_show(struct kobject *kobj,
 {
 	struct cell *cell = container_of(kobj, struct cell, kobj);
 
-	return print_fpgaregions(buf, PAGE_SIZE, &cell->fpga_regions_assigned);
+	//return print_fpgaregions(buf, PAGE_SIZE, &cell->fpga_regions_assigned);
+	return print_cpumask(buf, PAGE_SIZE, &cell->fpga_regions_assigned, false);
 }
 
 static ssize_t fpga_regions_assigned_list_show(struct kobject *kobj,
@@ -398,7 +369,8 @@ static ssize_t fpga_regions_assigned_list_show(struct kobject *kobj,
 {
 	struct cell *cell = container_of(kobj, struct cell, kobj);
 
-	return print_fpgalist(buf, PAGE_SIZE, &cell->fpga_regions_assigned);
+	//return print_fpgalist(buf, PAGE_SIZE, &cell->fpga_regions_assigned);
+	return print_cpumask(buf, PAGE_SIZE, &cell->fpga_regions_assigned, true);
 }
 
 

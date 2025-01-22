@@ -92,16 +92,27 @@ retry:
 	// DEBUG PRINT
 	//pr_err("cpus->assigned %ld\nrcpus->assigned %ld\n",cell->cpus_assigned, cell->rcpus_assigned);
 
-	cell->fpga_regions_assigned = (cell_desc->fpga_regions_size > 0) ? 
-							*(jailhouse_cell_fpga_regions(cell_desc)) : 0;
+	bitmap_copy(cpumask_bits(&cell->fpga_regions_assigned),
+		    jailhouse_cell_fpga_regions(cell_desc),
+		    min((unsigned int)nr_cpumask_bits,
+		        cell_desc->fpga_regions_size * 8));
+	
 	//DEBUG PRINT
-	//pr_err("regions assigned %x\n",cell->fpga_regions_assigned);
+	// pr_err("fpga regions size %x\n",cell_desc->fpga_regions_size);
+	// pr_err("num fpga devices %d\n",cell_desc->num_fpga_devices);
+	// pr_err("regions assigned %ld\n",cell->fpga_regions_assigned);
 
-	err = jailhouse_rcpus_check(cell);
-	if (err) {
-		kfree(cell);
-		return ERR_PTR(err);
+	if(cell_desc->num_rcpu_devices > 0 && cell->id != 0){
+		cell->soft_rcpus_info = vmalloc(cell_desc->num_rcpu_devices * sizeof(struct soft_rcpus_info *));
+		if (!cell->soft_rcpus_info) {
+			pr_err("Failed to allocate memory for soft rcpus\n");
+			kfree(cell);
+			return ERR_PTR(-ENOMEM);
+		}
 	}
+	else{
+		cell->soft_rcpus_info = NULL;
+	}	
 
 	cell->num_memory_regions = cell_desc->num_memory_regions;
 	cell->memory_regions = vmalloc(sizeof(struct jailhouse_memory) *
@@ -119,6 +130,8 @@ retry:
 
 	err = jailhouse_pci_cell_setup(cell, cell_desc);
 	if (err) {
+		jailhouse_rcpus_remove(cell);
+		jailhouse_fpga_regions_remove(cell);
 		vfree(cell->memory_regions);
 		kfree(cell);
 		return ERR_PTR(err);
@@ -162,6 +175,11 @@ int jailhouse_cell_prepare_root(const struct jailhouse_cell_desc *cell_desc)
 	if (IS_ERR(root_cell))
 		return PTR_ERR(root_cell);
 
+	// Does the root cell need to load the fpga devices in this way? 
+	//jailhouse_fpga_regions_setup(root_cell, cell_desc);
+	pr_info("root cell rcpus setup stated ...\n");
+	jailhouse_root_rcpus_setup(root_cell, cell_desc);
+
 	return 0;
 }
 
@@ -173,6 +191,7 @@ void jailhouse_cell_register_root(void)
 
 void jailhouse_cell_delete_root(void)
 {
+	jailhouse_root_rcpus_remove();
 	cell_delete(root_cell);
 	root_cell = NULL;
 }
@@ -185,7 +204,6 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 	void __user *user_config;
 	struct cell *cell;
 	unsigned int cpu;
-	unsigned int rcpu;
 	int err = 0;
 
 	if (copy_from_user(&cell_params, arg, sizeof(cell_params)))
@@ -254,12 +272,13 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 		goto error_cell_delete;
 	}
 
-	if (!cpumask_subset(&cell->rcpus_assigned, &root_cell->rcpus_assigned)) {
-		err = -EBUSY;
-		goto error_cell_delete;
-	}
+	// to do ... check if the rcpus + soft_rcpus are subset of the root cell rcpus
+	// if (!cpumask_subset(&cell->rcpus_assigned, &root_cell->rcpus_assigned)) {
+	// 	err = -EBUSY;
+	// 	goto error_cell_delete;
+	// }
 
-	if (!fpga_subset(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned)) {
+	if (!cpumask_subset(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned)) {
 		err = -EBUSY;
 		goto error_cell_delete;
 	}
@@ -288,15 +307,11 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 		cpumask_clear_cpu(cpu, &root_cell->cpus_assigned);
 	}
 
-	// For each rCPUs check if they are online and shutdown them (to do ...)
-	// remove it from root_cell 
-	for_each_cpu(rcpu, &cell->rcpus_assigned) {
-		cpumask_clear_cpu(rcpu, &root_cell->rcpus_assigned);	
-	}
-
-	//remove each region from root cell
-	pr_info("Removing FPGA region from rootcell.\n");
-	remove_regions_from_cell(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned);
+	//to do ... error management
+	jailhouse_fpga_regions_setup(cell, config);
+	
+	//to do ... error management
+	jailhouse_rcpus_setup(cell, config);
 
 	jailhouse_pci_do_all_devices(cell, JAILHOUSE_PCI_TYPE_DEVICE,
 	                             JAILHOUSE_PCI_ACTION_CLAIM);
@@ -443,7 +458,6 @@ int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 {
 	struct jailhouse_preload_image __user *image = arg->image;
 	struct jailhouse_preload_rcpu_image __user * rcpu_image = arg->rcpu_image;
-	struct jailhouse_preload_bitstream __user * bitstream = arg->bitstream;
 	struct jailhouse_cell_load cell_load;
 	struct cell *cell;
 	unsigned int n;
@@ -463,21 +477,10 @@ int jailhouse_cmd_cell_load(struct jailhouse_cell_load __user *arg)
 	// DEBUG PRINT
 	pr_info("Preparing to load %d images for Remote Processors...\n",cell_load.num_rcpu_images);
 	for (n = cell_load.num_rcpu_images; n > 0; n--, rcpu_image++) {
-		pr_info("Loading image: %s on RCPU: %d \n", rcpu_image->name, rcpu_image->rcpu_id);
+		pr_info("Loading image: %s on rCPU: %d \n", rcpu_image->name, rcpu_image->rcpu_id);
 		err = jailhouse_load_rcpu_image(cell, rcpu_image);
 		if (err){
 			pr_err("Unable to load rcpu image %s\n",rcpu_image->name);
-			goto unlock_out;
-		}
-	}
-
-	//bitstreams first, then images
-	// DEBUG PRINT
-	pr_err("cell_load.num_bitstreams: %d\n",cell_load.num_bitstreams);
-	for (n = cell_load.num_bitstreams; n > 0; n--, bitstream++) {
-		err = load_bitstream(cell,bitstream);
-		if (err){
-			pr_err("Unable to load bitstream in region %d\n",bitstream->region);
 			goto unlock_out;
 		}
 	}
@@ -501,7 +504,6 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 	struct jailhouse_cell_id cell_id;
 	struct cell *cell;
 	int err;
-	unsigned int rcpu;
 
 	if (copy_from_user(&cell_id, arg, sizeof(cell_id)))
 		return -EFAULT;
@@ -510,15 +512,9 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 	if (err)
 		return err;
 
-
-	for_each_cpu(rcpu, &cell->rcpus_assigned) {
-		//DEBUG
-		pr_info("Starting rcpu %d\n",rcpu);
-		err = jailhouse_start_rcpu(rcpu);
-		if (err) {
-			pr_err("Failed to start rcpu %d\n", rcpu);		
-		}	
-	}
+	err = jailhouse_start_rcpu(cell);
+	if (err)
+		pr_err("Failed to start rcpus\n");
 
 	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_START, cell->id);
 	
@@ -530,24 +526,20 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 static int cell_destroy(struct cell *cell)
 {
 	unsigned int cpu;
-	unsigned int rcpu;
 	int err;
 
 	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_DESTROY, cell->id);
 	if (err)
 		return err;
 
-	for_each_cpu(rcpu, &cell->rcpus_assigned) {
-		err = jailhouse_stop_rcpu(rcpu);
-		if (err){
-			pr_err("Failed to stop rcpu %d\n", rcpu);
-		}
-		cpumask_set_cpu(rcpu, &root_cell->rcpus_assigned);
-	}
-	
-	pr_info("Give FPGA region to rootcell.\n");
-	give_regions_to_cell(&cell->fpga_regions_assigned, &root_cell->fpga_regions_assigned);
+	err = jailhouse_rcpus_remove(cell);
+	if (err)
+		pr_err("Jailhouse: failed to remove rcpus\n");
 
+	err = jailhouse_fpga_regions_remove(cell);
+	if (err)
+		pr_err("Jailhouse: failed to remove fpga regions\n");
+		
 	for_each_cpu(cpu, &cell->cpus_assigned) {
 		if (cpumask_test_cpu(cpu, &offlined_cpus)) {
 			if (add_cpu(cpu) != 0)

@@ -53,7 +53,6 @@ struct {
 			.pci_domain = -1,
 
 			.fpga_configuration_base = 0x80000000,
-			.fpga_options = JAILHOUSE_FPGA_FULL,			
 			
 			.color = {
 				.way_size = 0x10000,

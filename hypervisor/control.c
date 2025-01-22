@@ -610,14 +610,15 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			goto err_cell_exit;
 		}
 
+	// to do ... check rcpu and soft-rcpus
 	/* the root cell's rCPU set must be super-set of new cell's set */
-	if (cell->config->rcpu_set_size > 0) {
-		for_each_cpu(cpu, cell->rcpu_set)
-			if (!cell_owns_rcpu(&root_cell, cpu)) {
-				err = trace_error(-EBUSY);
-				goto err_cell_exit;
-			}
-	}
+	// if (cell->config->rcpu_set_size > 0) {
+	// 	for_each_cpu(cpu, cell->rcpu_set)
+	// 		if (!cell_owns_rcpu(&root_cell, cpu)) {
+	// 			err = trace_error(-EBUSY);
+	// 			goto err_cell_exit;
+	// 		}
+	// }
 
 	if (cell->config->fpga_regions_size > 0){
 	/*the root cell's fpga region set must be super-set of new cell's set*/
@@ -781,8 +782,8 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 	unsigned int cpu, n;
 	struct cell *cell;
 	int err;
-	unsigned long fpga_base_addr;
-	volatile unsigned long* fpga_start;
+	// unsigned long fpga_base_addr;
+	// volatile unsigned long* fpga_start;
 
 	err = cell_management_prologue(CELL_START, cpu_data, id, &cell);
 	if (err)
@@ -833,28 +834,28 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 
 
 	if(cell->config->fpga_regions_size > 0){
-    	fpga_base_addr = system_config->platform_info.fpga_configuration_base;
+    	// fpga_base_addr = system_config->platform_info.fpga_configuration_base;
 		// DEBUG PRINT
 		// printk("FPGA base address: 0x%lx\r\n", fpga_base_addr);
 		
 		//for each region, start if it has to be started
-		for_each_region(cpu,cell->fpga_region_set){
-			printk("Starting FPGA region %d\r\n", cpu);
-			//Map page where configuration port for region x is located
-			//if needed, reset the soft core and start
-			err = paging_create(&hv_paging_structs, fpga_base_addr, PAGE_SIZE,
-				fpga_base_addr, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
-			if (err){
-				printk("paging_create for fpga configuration port failed\r\n");
-			}
-			else{
-				fpga_started = 1;
-				// Reset the core
-				fpga_start = (unsigned long*)fpga_base_addr;
-				fpga_start[cpu] = 1;
-				fpga_start[cpu] = 0;
-			} 
-		}
+		// for_each_region(cpu,cell->fpga_region_set){
+		// 	printk("Starting FPGA region %d\r\n", cpu);
+		// 	//Map page where configuration port for region x is located
+		// 	//if needed, reset the soft core and start
+		// 	err = paging_create(&hv_paging_structs, fpga_base_addr, PAGE_SIZE,
+		// 		fpga_base_addr, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
+		// 	if (err){
+		// 		printk("paging_create for fpga configuration port failed\r\n");
+		// 	}
+		// 	else{
+		// 		fpga_started = 1;
+		// 		// Reset the core
+		// 		fpga_start = (unsigned long*)fpga_base_addr;
+		// 		fpga_start[cpu] = 1;
+		// 		fpga_start[cpu] = 0;
+		// 	} 
+		// }
 	}
 
 	printk("Started cell \"%s\"\n", cell->config->name);

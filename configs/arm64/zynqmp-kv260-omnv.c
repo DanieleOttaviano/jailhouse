@@ -39,6 +39,7 @@ struct {
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
 	struct jailhouse_qos_device qos_devices[35];
+	struct jailhouse_rcpu_device rcpu_devices[2];
 } __attribute__((packed)) config = {
 	.header = {
 		.signature = JAILHOUSE_SYSTEM_SIGNATURE,
@@ -61,7 +62,6 @@ struct {
 			.pci_mmconfig_end_bus = 0,
 
 			.fpga_configuration_base = 0x80000000,
-			.fpga_options = JAILHOUSE_FPGA_FULL,
 			
 			.pci_is_virtual = 1,
 			.pci_domain = 1,
@@ -108,6 +108,12 @@ struct {
 				/* 1MiB Aperture */
 				.nic_size = 0x100000,
 			},
+			.fpga = {
+				.fpga_base_bitstream = "pico32_tg_wrapper.bit",//"bitstream_base.bit",
+				.fpga_base_addr = 0x80000000,
+				.fpga_flags = JAILHOUSE_FPGA_PARTIAL,
+				.fpga_max_regions = 3,
+			},
 		},
 
 		.root_cell = {
@@ -121,7 +127,7 @@ struct {
 			.num_pci_devices = ARRAY_SIZE(config.pci_devices),
 			.num_stream_ids = ARRAY_SIZE(config.stream_ids),
 			.num_qos_devices = ARRAY_SIZE(config.qos_devices),
-
+			.num_rcpu_devices = ARRAY_SIZE(config.rcpu_devices),
 			.vpci_irq_base = 136-32,
 		},
 	},
@@ -135,7 +141,7 @@ struct {
 	},
 
 	.fpga_regions = {
-		0x1
+		0x7, // 3 FPGA regions
 	},
 
 	.mem_regions = {
@@ -448,4 +454,18 @@ struct {
 			.base = ISS_IB6_BASE,
 		},
 	},
+
+	.rcpu_devices = {
+		{
+			.rcpu_id = 0,
+			.name = "r5f_0",
+			.compatible = "xlnx,zynqmp-r5-remoteproc",
+		},
+		{
+			.rcpu_id = 1,
+			.name = "r5f_1",
+			.compatible = "xlnx,zynqmp-r5-remoteproc",
+		},
+	},
+
 };
