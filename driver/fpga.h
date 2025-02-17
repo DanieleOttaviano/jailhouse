@@ -1,7 +1,7 @@
 /*
 * Jailhouse, a Linux-based partitioning hypervisor
 *
-* Omnivisor remote core virtualization support
+* Omnivisor FPGA regions virtualization support
 *
 * Copyright (c) Daniele Ottaviano, 2024
 *

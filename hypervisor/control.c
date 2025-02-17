@@ -46,7 +46,7 @@ static unsigned int num_cells = 1;
 volatile unsigned long panic_in_progress;
 unsigned long panic_cpu = -1;
 
-static int fpga_started;
+// static int fpga_started;
 
 /**
  * CPU set iterator.
@@ -465,8 +465,8 @@ static void cell_destroy_internal(struct cell *cell)
 	const struct jailhouse_memory *mem;
 	unsigned int cpu, n;
 	struct unit *unit;
-	volatile unsigned long* fpga_start;
-	unsigned long fpga_base_addr;
+	// volatile unsigned long* fpga_start;
+	// unsigned long fpga_base_addr;
 
 	cell->comm_page.comm_region.cell_state = JAILHOUSE_CELL_SHUT_DOWN;
 
@@ -488,15 +488,15 @@ static void cell_destroy_internal(struct cell *cell)
 	}
 
 	if (cell->config->fpga_regions_size > 0){
-		fpga_base_addr = system_config->platform_info.fpga_configuration_base;
+		// fpga_base_addr = system_config->platform_info.fpga_configuration_base;
 		for_each_region(cpu, cell->fpga_region_set){
 			//if soft core, power off
 			set_bit(cpu,root_cell.fpga_region_set->bitmap);
 			// If the FPGA is non loaded (only create is performed) this can cause a crash
-			if (fpga_started){
-				fpga_start = (unsigned long*)fpga_base_addr;
-				fpga_start[cpu] = 1;
-			}
+			// if (fpga_started){
+			// 	fpga_start = (unsigned long*)fpga_base_addr;
+			// 	fpga_start[cpu] = 1;
+			// }
 			// Reset for region <cpu> must be up.
 		}
 	}
@@ -610,15 +610,15 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 			goto err_cell_exit;
 		}
 
-	// to do ... check rcpu and soft-rcpus
-	/* the root cell's rCPU set must be super-set of new cell's set */
-	// if (cell->config->rcpu_set_size > 0) {
-	// 	for_each_cpu(cpu, cell->rcpu_set)
-	// 		if (!cell_owns_rcpu(&root_cell, cpu)) {
-	// 			err = trace_error(-EBUSY);
-	// 			goto err_cell_exit;
-	// 		}
-	// }
+	/* the root cell's rCPU set must be super-set of new cell's set (if not soft-rcpu) */
+	if (cell->config->rcpu_set_size > 0) {
+		for_each_cpu(cpu, cell->rcpu_set) {
+			if (!cell_owns_rcpu(&root_cell, cpu) && cpu < root_cell.config->num_rcpu_devices) {
+				err = trace_error(-EBUSY);
+				goto err_cell_exit;
+			}
+		}
+	}
 
 	if (cell->config->fpga_regions_size > 0){
 	/*the root cell's fpga region set must be super-set of new cell's set*/

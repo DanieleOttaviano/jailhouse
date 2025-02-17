@@ -391,8 +391,8 @@ int jailhouse_start_rcpu(struct cell *cell){
 	unsigned int rcpu_id;
 	unsigned int soft_rcpu_id;
 
-	pr_info("Starting rcpus of cell %d\n", cell->id);
 	for_each_rcpu(rcpu_id, &cell->rcpus_assigned) {		
+		pr_info("Starting rcpus %d of cell %d\n", rcpu_id, cell->id);
 		// distinguish between asic rcpus and soft-core rcpus
 		if(rcpu_id < num_root_rcpus){
 			if(start_rcpu_state(root_rcpus_info[rcpu_id]) < 0){
@@ -441,8 +441,8 @@ int jailhouse_rcpus_remove(struct cell *cell){
 	unsigned int rcpu_id;
 	unsigned int soft_rcpu_id;
 	
-	pr_info("Removing rcpus from cell %d\n", cell->id);
 	for_each_rcpu(rcpu_id, &cell->rcpus_assigned) {	
+		pr_info("Removing rcpus %d from cell %d\n", rcpu_id, cell->id);
 		// distinguish between asic rcpus and soft-core rcpus
 		if(rcpu_id < num_root_rcpus){
 			// Check if the rproc is NULL

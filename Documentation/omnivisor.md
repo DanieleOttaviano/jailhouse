@@ -11,7 +11,7 @@ cores and soft-cores on FPGA.
 
 ### Motivation
 With the increasing trend of building highly heterogeneous MPSoCs that feature
-asymmetric cores, such as Cortex-A and Cortex-R/M and soft-cores on FPGA, there 
+asymmetric cores, such as Cortex-A, Cortex-R/M, and soft-cores on FPGA, there 
 is a need for advanced management solutions. The Omnivisor project seeks to 
 extend Jailhouse's capabilities to effectively manage these asymmetric cores, 
 enabling the execution of isolated cells on them. 
@@ -37,6 +37,7 @@ by appending these defines:
 ```c
 #define CONFIG_OMNIVISOR      1
 #define CONFIG_XMPU_ACTIVE    1
+#define CONFIG_OMNV_FPGA      1
 ```
 
 Specifically, for zynqmp platform this is the suggested configuration:
@@ -48,31 +49,50 @@ Specifically, for zynqmp platform this is the suggested configuration:
 #define CONFIG_DEBUG              1
 #define CONFIG_OMNIVISOR          1
 #define CONFIG_XMPU_ACTIVE        1
+#define CONFIG_OMNV_FPGA          1
 ```
 
 - `CONFIG_OMNIVISOR`: Enables the Omnivisor capability to create, load, and 
                       start on remote CPUs, such as the RPUs in the ZynqMP 
-                      platforms.
+                      platforms, or soft-cores in FPGA.
 - `CONFIG_XMPU_ACTIVE`: Enables spatial isolation between asymmetric cores 
-                      by allowing the run-time configuration of the system-MPUs 
-                      (XMPUs in Xilinx terminology).
+                      by allowing the run-time configuration of the system
+                      Memory Protection Units (SMPUs, or XMPUs in Xilinx 
+                      terminology).
+- `CONFIG_OMNV_FPGA`: Enable the runtime loading of bitstreams in the FPGA
+                      during the create phase of a cell that need an accelerator
+                      or a soft-core on FPGA. 
 
-#### 2) Configure remoteproc the Linux Kernel
+#### 2) Enable remoteproc in the Linux Kernel
 Remoteproc drivers must be enabled in the kernel configuration
+
 ```c
 CONFIG_REMOTEPROC=y
 ```
 
 According to the used platform , enable the specific remoteproc driver.
-
 e.g., for the zynqmp platform:
+
 ```c
 CONFIG_ZYNQMP_R5_REMOTEPROC=y
 ```
 
-#### 3) Configure the devicetree to export the remote cores
+FPGA drivers must be enabled at compiling time in the Linux kernel used
+e.g., for the kria zynqmp:
+
+```c
+CONFIG_FPGA=y
+CONFIG_XILINX_AFI_FPGA=y
+CONFIG_FPGA_BRIDGE=y
+CONFIG_XILINX_PR_DECOUPLER=y
+CONFIG_FPGA_REGION=y
+CONFIG_OF_FPGA_REGION=y
+CONFIG_FPGA_MGR_ZYNQMP_FPGA=y
+```
+
+#### 3) Configure the devicetree to expose the remote cores
 As required by the remoteproc driver, the remote cores need to be exposed
-in the device tree. Specific guides are usually alread offered for each 
+in the device tree. Specific guides are usually already offered for each 
 platform.
 
 e.g., for the two Cortex-R5F in the zynqmp platform: 
@@ -136,6 +156,186 @@ reserved-memory {
 };
 ```
 
+#### 4) Write the configuration file of the root cell
+The Omnivisor cell configuration file needs some modifications as you can see
+in the example configuration: `zynqmp-kv260-omnv.cell`
+
+You need to insert the rcpu_devices structure with a number of instance that
+is equal to the number of remote processors in the system N. 
+Then for each instance you have to specify 
+1) the rcpu_id (from 0 to N-1). 
+2) The remoteproc name, which have to be the same defined in the device tree.
+3) The compatible driver, which also have to be the same as the one defined in the device tree.
+
+```c
+struct{
+    ...
+    struct jailhouse_rcpu_device rcpu_devices[2];
+    ...
+} __attribute__((packed)) config = {
+    ...
+	.rcpu_devices = {
+		{
+			.rcpu_id = 0,
+			.name = "r5f_0",
+			.compatible = "xlnx,zynqmp-r5-remoteproc",
+		},
+		{
+			.rcpu_id = 1,
+			.name = "r5f_1",
+			.compatible = "xlnx,zynqmp-r5-remoteproc",
+		},
+	},
+}
+```
+
+Then similarly as it is done for the cpus, you need to define the rcpus struct,
+initialize the rcpu_set_size and define a mask for the rcpus.
+
+```c
+struct{
+    ...
+	__u64 rcpus[1];
+    ...
+} __attribute__((packed)) config = {
+    .header = {
+        ...
+        .root_cell = {
+            ...
+            .rcpu_set_size = sizeof(config.rcpus), 
+            ...
+    }
+    ...
+    .rcpus = {
+        0x3, // RPU0, RPU1
+    },
+}
+```
+
+#### 5) Write the configuration of the cell
+A cell that wants to use one of the remote core just need to do exactly the same
+that is needed for traditional cpus: define the rcpus struct, initialize the
+rcpu_set_size and define a mask of used rcpus. (e.g., `zynqmp-kv260-RPU0-inmate-demo.cell`)
+
+```c
+struct{
+    ...
+	__u64 rcpus[1];
+    ...
+} __attribute__((packed)) config = {
+    .header = {
+        ...
+        .root_cell = {
+            ...
+            .rcpu_set_size = sizeof(config.rcpus), 
+            ...
+    }
+    ...
+    .rcpus = {
+        0x1, // RPU0
+    },
+}
+```
+
+### soft-core on FPGA
+To enable also the FPGA, and a soft-core managed as a remoteproc these are the steps to follow.
+
+These are the artifact needed to run the soft-core:
+1) FPGA full design with one or more riconfigurable sections. (e.g., `base.bit`)
+2) FPGA partial design with a soft-core that can be dynamically integrated into the full design. (e.g., `partial.bit`) 
+3) A Linux remoteproc module for the soft-core. (e.g., `softcore_remoteproc`)
+4) A device tree overlay for the soft-core which is compatible with the module, (e.g., `softcore.dtbo`)
+
+
+#### 1) Write the root-cell configuration
+The root-cell have to define an .fpga in the header that explicitly define the base bitstream name,
+the starting address of the FPGA, the flags and the number of reconfigurable regions.
+```c
+struct{
+    ...
+} __attribute__((packed)) config = {
+    .header = {
+        ...
+        .fpga = {
+            .fpga_base_bitstream = "base.bit",
+            .fpga_base_addr = 0x80000000,
+            .fpga_flags = JAILHOUSE_FPGA_FULL, 
+            .fpga_max_regions = 3,
+        },
+    }
+}
+```
+
+Then you can define an FPGA mask, exactly as is done for the cpus and the rcpus
+
+```c
+struct{
+    ...
+	__u64 fpga_regions[1];
+    ...
+} __attribute__((packed)) config = {
+    .header = {
+        ...
+        .root_cell = {
+            ...
+            .fpga_region_size = sizeof(config.fpga_regions), 
+            ...
+    }
+    ...
+    .fpga_regions = {
+		0x7, // 3 FPGA regions
+    },
+}
+```
+
+#### 2) Write the non root-cell configuration
+The non root-cell configuration have to contain the FPGA mask of the used regions,
+similarly as for the cpus.
+
+```c
+struct{
+    ...
+	__u64 fpga_regions[1];
+    ...
+} __attribute__((packed)) config = {
+    .header = {
+        ...
+        .root_cell = {
+            ...
+            .fpga_region_size = sizeof(config.fpga_regions), 
+            ...
+    }
+    ...
+    .fpga_regions = {
+		0x1, // 1 FPGA regions
+    },
+}
+```
+
+For each FPGA region we need to descrive the FPGA_device struct that indicate the
+bitstream name, the kernel module to use, the devicetree overlay, the id of the
+device (from 0 to N-1), the number of soft-core in the region, and the conf. addr
+
+```c
+struct{
+    ...
+	struct jailhouse_fpga_device fpga_devices[1];
+    ...
+} __attribute__((packed)) config = {
+    ...
+    .fpga_devices = {
+        {
+			.fpga_dto = "softcore.dtbo",
+			.fpga_module = "softcore_remoteproc",
+			.fpga_bitstream = "partial.bit",
+			.fpga_region_id = 0,
+			.fpga_rcpus_set_size = 1,
+			.fpga_conf_addr = 0x80000000,
+		},
+	},
+}
+```
+
 
 ### Test Omnivisor
 To test the Omnivisor, compile the hypervisor with the current configuration 
@@ -146,11 +346,19 @@ make -C "${jailhouse_dir}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" KDIR=
 ```
 
 To compile the remote CPUs inmates demos, manually compile for the desired 
-architecture. For example, for the Cortex-R5:
+architecture. 
+e.g., for the Cortex-R5:
 
 ```sh
 export REMOTE_COMPILE=arm-none-eabi-
 make -C "${jailhouse_dir}" remote_armr5 REMOTE_COMPILE="${REMOTE_COMPILE}"
+```
+
+e.g., for the riscv32 soft-core:
+
+```sh
+export REMOTE_COMPILE=arm-none-eabi-
+make -C "${jailhouse_dir}" remote_riscv32 REMOTE_COMPILE="${REMOTE_COMPILE}"
 ```
 
 Then, on the platform, start the hypervisor using the root-cell configuration 
@@ -161,13 +369,13 @@ jailhouse enable ${JAILHOUSE_DIR}/configs/arm64/zynqmp-kv260-omnv.cell
 ```
 
 Once enabled, check the cell list to verify that the hypervisor can see both 
-CPUs and remote CPUs (rCPUs):
+CPUs, remote CPUs (rCPUs), and FPGA regions:
 
 ```sh
 jailhouse cell list
 
 ID      Name                    State             Assigned CPUs           Assigned rCPUs       Assigned FPGA regions          Failed CPUs             
-0       ZynqMP-KV260            running           0-3                     0-2   
+0       ZynqMP-KV260            running           0-3                     0-1                  0-2
 ```
 
 To test a cell on a remote core, first copy the image of the remote core in the lib/firmware directory:
@@ -180,7 +388,7 @@ Then use the traditional jailhouse commands to create, load, and start the cell.
 To load an elf file for the remote processor use the following notation:
 
 ```sh
-jailhouse cell load ${CELL_ID} [-r|--rpu] ${ELF_NAME} ${CORE}
+jailhouse cell load ${CELL_ID} [-r|--rcpu] ${ELF_NAME} ${CORE_ID}
 ```
 
 e.g., for the kria zynqmp platform:
@@ -191,60 +399,16 @@ jailhouse cell load inmate-demo-RPU -r rpu-bm-demo.elf 0
 jailhouse cell start inmate-demo-RPU
 ```
 
-## FPGA support
-The Omnivisor also enables the use of FPGA regions as additional resources for the cells. 
-
-To enable FPGA support, modify the config file `include/jailhouse/config.h` 
-by appending this define:
-
-```c
-#define CONFIG_OMNV_FPGA 1
-```
-
-FPGA drivers must be enabled at compiling time in the Linux kernel used
-e.g., for the kria zynqmp:
-
-```c
-CONFIG_FPGA=y
-CONFIG_XILINX_AFI_FPGA=y
-CONFIG_FPGA_BRIDGE=y
-CONFIG_XILINX_PR_DECOUPLER=y
-CONFIG_FPGA_REGION=y
-CONFIG_OF_FPGA_REGION=y
-CONFIG_FPGA_MGR_ZYNQMP_FPGA=y
-```
-
-Compile with the new configuration as described before, then start the hypervisor using 
-a configuration that includes FPGA regions (e.g ```zynqmp-kv260-omnv.cell```)
-
-```sh
-jailhouse enable ${JAILHOUSE_DIR}/configs/arm64/zynqmp-kv260-omnv.cell
-```
-Once enabled, check the cell list to verify that the hypervisor can see the FPGA:
-
-```sh
-jailhouse cell list
-
-ID      Name                    State             Assigned CPUs           Assigned rCPUs       Assigned FPGA regions   Failed CPUs             
-0       ZynqMP-KV260            running           0-3                     0-2                  0
-```
-
-Now, after a cell creation, you can load a bitstream along with traditional images, 
-specifying the FPGA region to be loaded in:
-```sh
-jailhouse cell load ${CELL_ID} ${IMAGE} [-b|--bitstream] ${BITSTREAM_NAME} ${REGION_ID}
-```
-
-To test a cell with a FPGA region on the kria zynqmp platform, use the following command:
+The same exact procedure is neede if the core is a soft-core on FPGA:
 
 ```sh
 jailhouse cell create ${JAILHOUSE_DIR}/configs/arm64/zynqmp-kv260-RISCV-inmate-demo.cell
-jailhouse cell load inmate-demo-RISCV ${JAILHOUSE_DIR}/inmates/demos/riscv/riscv-demo.bin -b pico32_tg.bit 0
+jailhouse cell load inmate-demo-RISCV -r riscv-bm-demo.elf 0
 jailhouse cell start inmate-demo-RISCV
 ```
+
 
 ### Notes about the bitstream
 * The bitstream to be loaded has to be under ```/lib/firmware```.
 * Each region can have a configuration port for reset
-    * The base address for the configuration ports is specified in the root cell configuration
-    * The configuration port for region ```n``` is at ```base_address + 4 * n```
+    * The base address for the configuration ports is specified in the cell configuration

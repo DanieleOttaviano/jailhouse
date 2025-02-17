@@ -109,9 +109,9 @@ struct {
 				.nic_size = 0x100000,
 			},
 			.fpga = {
-				.fpga_base_bitstream = "pico32_tg_wrapper.bit",//"bitstream_base.bit",
+				.fpga_base_bitstream = "base_pico32_tg.bit", //"bitstream_base.bit",
 				.fpga_base_addr = 0x80000000,
-				.fpga_flags = JAILHOUSE_FPGA_PARTIAL,
+				.fpga_flags = JAILHOUSE_FPGA_FULL, 
 				.fpga_max_regions = 3,
 			},
 		},
