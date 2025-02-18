@@ -88,6 +88,13 @@ CONFIG_XILINX_PR_DECOUPLER=y
 CONFIG_FPGA_REGION=y
 CONFIG_OF_FPGA_REGION=y
 CONFIG_FPGA_MGR_ZYNQMP_FPGA=y
+CONFIG_OF_OVERLAY=y
+```
+
+For having Jailhouse working correctly we need also the export the ksyms
+
+```c
+CONFIG_KALLSYMS_ALL
 ```
 
 #### 3) Configure the devicetree to expose the remote cores
