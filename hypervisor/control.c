@@ -488,16 +488,11 @@ static void cell_destroy_internal(struct cell *cell)
 	}
 
 	if (cell->config->fpga_regions_size > 0){
-		// fpga_base_addr = system_config->platform_info.fpga_configuration_base;
+		// TODO: Daniele Ottaviano
+		// The Hypevisor can stop and clean the FPGA here if we don't have 
+		// a kernel module that does it for us
 		for_each_region(cpu, cell->fpga_region_set){
-			//if soft core, power off
 			set_bit(cpu,root_cell.fpga_region_set->bitmap);
-			// If the FPGA is non loaded (only create is performed) this can cause a crash
-			// if (fpga_started){
-			// 	fpga_start = (unsigned long*)fpga_base_addr;
-			// 	fpga_start[cpu] = 1;
-			// }
-			// Reset for region <cpu> must be up.
 		}
 	}
 	
@@ -834,28 +829,9 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 
 
 	if(cell->config->fpga_regions_size > 0){
-    	// fpga_base_addr = system_config->platform_info.fpga_configuration_base;
-		// DEBUG PRINT
-		// printk("FPGA base address: 0x%lx\r\n", fpga_base_addr);
-		
-		//for each region, start if it has to be started
-		// for_each_region(cpu,cell->fpga_region_set){
-		// 	printk("Starting FPGA region %d\r\n", cpu);
-		// 	//Map page where configuration port for region x is located
-		// 	//if needed, reset the soft core and start
-		// 	err = paging_create(&hv_paging_structs, fpga_base_addr, PAGE_SIZE,
-		// 		fpga_base_addr, PAGE_DEFAULT_FLAGS | PAGE_FLAG_DEVICE, PAGING_NON_COHERENT | PAGING_NO_HUGE);
-		// 	if (err){
-		// 		printk("paging_create for fpga configuration port failed\r\n");
-		// 	}
-		// 	else{
-		// 		fpga_started = 1;
-		// 		// Reset the core
-		// 		fpga_start = (unsigned long*)fpga_base_addr;
-		// 		fpga_start[cpu] = 1;
-		// 		fpga_start[cpu] = 0;
-		// 	} 
-		// }
+		// TODO: Daniele Ottaviano
+		// The Hypevisor can start the FPGA here if we don't have a kernel
+		// module that does it for us
 	}
 
 	printk("Started cell \"%s\"\n", cell->config->name);
