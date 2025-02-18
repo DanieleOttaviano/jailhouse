@@ -28,7 +28,7 @@ Supported Boards:
 - [x] zcu104
 - [ ] ...
 
-### Enable Omnivisor
+### Enable Omnivisor 
 
 #### 1) Set the Jailhouse Config File
 To enable the Omnivisor, modify the config file `include/jailhouse/config.h` 
@@ -156,7 +156,9 @@ reserved-memory {
 };
 ```
 
-#### 4) Write the configuration file of the root cell
+### Omnivisor Cell Configurations
+
+#### Root-cell configuration
 The Omnivisor cell configuration file needs some modifications as you can see
 in the example configuration: `zynqmp-kv260-omnv.cell`
 
@@ -212,7 +214,7 @@ struct{
 }
 ```
 
-#### 5) Write the configuration of the cell
+#### Non root-cell configuration
 A cell that wants to use one of the remote core just need to do exactly the same
 that is needed for traditional cpus: define the rcpus struct, initialize the
 rcpu_set_size and define a mask of used rcpus. (e.g., `zynqmp-kv260-RPU0-inmate-demo.cell`)
@@ -237,17 +239,17 @@ struct{
 }
 ```
 
-### soft-core on FPGA
-To enable also the FPGA, and a soft-core managed as a remoteproc these are the steps to follow.
+### Omnivisor FPGA soft-core Cell Configurations
+To enable also the FPGA, and a soft-core managed as a remoteproc there are more informations
+to include into the configurations.
 
-These are the artifact needed to run the soft-core:
+This configurations to run the soft-core are based on the hypotesys of having the following artifacts:
 1) FPGA full design with one or more riconfigurable sections. (e.g., `base.bit`)
 2) FPGA partial design with a soft-core that can be dynamically integrated into the full design. (e.g., `partial.bit`) 
 3) A Linux remoteproc module for the soft-core. (e.g., `softcore_remoteproc`)
 4) A device tree overlay for the soft-core which is compatible with the module, (e.g., `softcore.dtbo`)
 
-
-#### 1) Write the root-cell configuration
+#### Root-cell configuration
 The root-cell have to define an .fpga in the header that explicitly define the base bitstream name,
 the starting address of the FPGA, the flags and the number of reconfigurable regions.
 ```c
@@ -288,7 +290,7 @@ struct{
 }
 ```
 
-#### 2) Write the non root-cell configuration
+#### Non root-cell configuration
 The non root-cell configuration have to contain the FPGA mask of the used regions,
 similarly as for the cpus.
 
@@ -336,6 +338,42 @@ struct{
 }
 ```
 
+if the FPGA device contains one or more remote cores, the non root cell have to
+contains also the description of the rcpu as explained before.
+N.B. tha ID and the the mask of the rcpu have to be higher than the one of physical
+rcpus. e.g., in the zynqmp there are two Cortex-R5, then the soft-cores ID will start
+from 2.
+The name and compatible field have to be compliant with the name and compatible
+described in the device tree overlay.
+
+```c
+struct{
+    ...
+	__u64 rcpus[1];
+    ...
+    struct jailhouse_rcpu_device rcpu_devices[1];
+    ...
+} __attribute__((packed)) config = {
+    .header = {
+        ...
+        .root_cell = {
+            ...
+            .rcpu_set_size = sizeof(config.rcpus), 
+            ...
+    }
+    ...
+    .rcpus = {
+		0x4, // Third core is a soft-core on the FPGA
+    },
+    ...
+	.rcpu_devices = {
+		{
+			.rcpu_id = 2,
+			.name = "pico32",
+			.compatible = "dottavia,pico32-remoteproc",
+		},
+}
+```
 
 ### Test Omnivisor
 To test the Omnivisor, compile the hypervisor with the current configuration 
