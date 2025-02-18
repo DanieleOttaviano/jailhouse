@@ -331,7 +331,6 @@ struct{
 			.fpga_module = "softcore_remoteproc",
 			.fpga_bitstream = "partial.bit",
 			.fpga_region_id = 0,
-			.fpga_rcpus_set_size = 1,
 			.fpga_conf_addr = 0x80000000,
 		},
 	},
@@ -446,7 +445,8 @@ jailhouse cell start inmate-demo-RISCV
 ```
 
 
-### Notes about the bitstream
-* The bitstream to be loaded has to be under ```/lib/firmware```.
-* Each region can have a configuration port for reset
-    * The base address for the configuration ports is specified in the cell configuration
+### Notes about the bitstream and elf files
+* The elf files to be loaded on rcpus has to be under ```/lib/firmware```.
+* The bitstream to be loaded on FPGA has to be under ```/lib/firmware```.
+* The base bitstream and each reconfigurable region have a configuration port for reset
+    * The base address for the configuration ports is specified in the cell configurations

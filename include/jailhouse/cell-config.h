@@ -417,7 +417,7 @@ struct jailhouse_fpga_device {
 	char fpga_dto[FPGA_DTO_NAMELEN];
 	char fpga_module[FPGA_MODULE_NAMELEN];
 	char fpga_bitstream[FPGA_BITSTREAM_NAMELEN];
-	__u32 fpga_region_id;			//specific FPGA region used
+	__u32 fpga_region_id;		//specific FPGA region used
 	__u32 fpga_rcpus_set_size;  //soft_rcpus
 	__u64 fpga_conf_addr;		//configuration address for region
 } __attribute__((packed)); 
