@@ -21,8 +21,8 @@ ccflags-y := -I$(src)/../hypervisor/arch/$(SRCARCH)/include \
 	     -I$(src)/../include
 
 jailhouse-y := cell.o main.o sysfs.o
-jailhouse-$(CONFIG_FPGA_MGR_ZYNQMP_FPGA) += fpga.o	# TODO: should depend on CONFIG_OMNV_FPGA
-jailhouse-$(CONFIG_REMOTEPROC) += rcpu.o			# TODO: should depend on CONFIG_OMNIVISOR
+jailhouse-$(CONFIG_FPGA_MGR_ZYNQMP_FPGA) += fpga.o	# TODO: Daniele Ottaviano should depend on CONFIG_OMNV_FPGA
+jailhouse-$(CONFIG_REMOTEPROC) += rcpu.o			# TODO: Daniele Ottaviano should depend on CONFIG_OMNIVISOR
 jailhouse-$(CONFIG_PCI) += pci.o
 jailhouse-$(CONFIG_OF) += vpci_template.dtb.o
 

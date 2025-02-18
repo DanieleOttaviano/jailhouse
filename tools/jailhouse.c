@@ -434,12 +434,10 @@ static int cell_shutdown_load(int argc, char *argv[],
 {
 	struct jailhouse_preload_image *image;
 	struct jailhouse_preload_rcpu_image *rcpu_image;
-	struct jailhouse_cell_info * cinfo;
 	struct jailhouse_cell_load *cell_load;
 	struct jailhouse_cell_id cell_id;
 	int err, fd, id_args, arg_num;
 	unsigned int images, n;
-	unsigned int omnv = 0;
 	unsigned int rcpu_images = 0;
 	size_t size;
 	char *endp;
@@ -453,19 +451,13 @@ static int cell_shutdown_load(int argc, char *argv[],
 
 	images = 0;
 
-	// Check if there are any rcpus or fpga regions
-	cinfo = get_cell_info(cell_id.id);
-	omnv = strlen(cinfo->rcpus_assigned_list) == 0;
-	cell_info_free(cinfo);
 	
 	while (arg_num < argc) {
 		// Check for rcpu images	
 		while (arg_num < argc &&
 			match_opt(argv[arg_num], "-r", "--rcpu")) {
-			if (omnv){
-				printf("Error: no rcpus available\n");
-				exit(1);
-			}
+			// TODO: Daniele Ottaviano
+			// Exit if no rcpus in the configuration.
 			if (arg_num + 2 >= argc)
 				help(argv[0], 1);
 			arg_num += 3; // -r|--rcpu {image.elf} {rcpu}
