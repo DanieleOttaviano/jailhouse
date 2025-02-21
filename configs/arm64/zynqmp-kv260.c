@@ -3,12 +3,10 @@
  *
  * Configuration for Xilinx ZynqMP Kria KV260 board
  *
- * Copyright (c) Siemens AG, 2016
- * Copyright (c) Daniele Ottaviano, 2024
+ * Copyright (C) Technical University of Munich, 2024
  *
  * Authors:
- *  Jan Kiszka <jan.kiszka@siemens.com>
- *  Daniele Ottaviano <danieleottaviano97@gmail.com>
+ *  Daniele Ottaviano <daniele.ottaviano@tum.de>
  * 
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.

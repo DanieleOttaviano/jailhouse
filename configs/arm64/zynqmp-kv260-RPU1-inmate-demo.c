@@ -1,13 +1,12 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for demo inmate on Xilinx ZynqMP ZCU102 eval board:
- * 1 CPU, 64K RAM, 1 serial port
+ * Configuration for RPU0 demo inmate on Xilinx Kria kv260
  *
- * Copyright (c) Siemens AG, 2016
+ * Copyright (C) Technical University of Munich, 2024
  *
  * Authors:
- *  Jan Kiszka <jan.kiszka@siemens.com>
+ *  Daniele Ottaviano <daniele.ottaviano@tum.de>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.

@@ -1,13 +1,12 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for demo inmate on Xilinx ZynqMP KRIA kV260 eval board:
- * 1 Soft-Core RISCV CPU on FPGA
+ * Configuration for RISC-V soft-core demo inmate on Xilinx Kria kv260
  *
- * Copyright (c) Siemens AG, 2016
+ * Copyright (C) Technical University of Munich, 2024
  *
  * Authors:
- *  Jan Kiszka <jan.kiszka@siemens.com>
+ *  Daniele Ottaviano <daniele.ottaviano@tum.de>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
