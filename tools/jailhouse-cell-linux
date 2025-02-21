@@ -697,8 +697,8 @@ parser.add_argument('-i', '--initrd', metavar='INITRD',
                     help='initrd/initramfs for the kernel')
 parser.add_argument('-c', '--cmdline', metavar='"CMDLINE"',
                     help='kernel command line')
-parser.add_argument('-b','--bitstream',nargs=2,metavar=('BITSTREAM','REGION'),type=str,action='append', #so you can give multiple bitstreams
-                    help=' bitstream to load followed by region number')
+# parser.add_argument('-b','--bitstream',nargs=2,metavar=('BITSTREAM','REGION'),type=str,action='append', #so you can give multiple bitstreams
+#                     help=' bitstream to load followed by region number')
 # also information for accelerator images
 parser.add_argument('-l','--load',nargs='+',metavar=('IMAGE','ADDRESS'),action='append',
                     help=' additional image to load, followed by optional target address')
