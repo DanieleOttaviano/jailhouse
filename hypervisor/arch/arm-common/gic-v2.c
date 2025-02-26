@@ -300,6 +300,7 @@ static int gicv2_inject_irq(u16 irq_id, u16 sender)
 	int first_free = -1;
 	u32 lr;
 	unsigned long elsr[2];
+	u8 prio;
 
 	elsr[0] = mmio_read32(gich_base + GICH_ELSR0);
 	elsr[1] = mmio_read32(gich_base + GICH_ELSR1);
@@ -323,6 +324,10 @@ static int gicv2_inject_irq(u16 irq_id, u16 sender)
 	/* Inject group 0 interrupt (seen as IRQ by the guest) */
 	lr = irq_id;
 	lr |= GICH_LR_PENDING_BIT;
+
+	/* Fetch interrupt priority from gicd and insert into lr entry */
+	prio = mmio_read8(gicd_base + GICD_IPRIORITYR + irq_id);
+	lr |= (u32)(prio & 0xF8) << 20;
 
 	if (is_sgi(irq_id)) {
 		lr |= (sender & 0x7) << GICH_LR_CPUID_SHIFT;
