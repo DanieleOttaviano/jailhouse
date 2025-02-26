@@ -72,6 +72,11 @@ restrict_bitmask_access(struct mmio_access *mmio, unsigned int reg_index,
 		if (irqchip_irq_in_cell(cell, first_irq + irq))
 			access_mask |= irq_bits << (irq * bits_per_irq);
 
+	if (mmio->address & 0b11) {
+		assert(mmio->size == 1 || mmio->size == 2);
+		access_mask = access_mask >> (mmio->address & 0b11)*8;
+	}	
+
 	if (!mmio->is_write) {
 		/* Restrict the read value */
 		mmio_perform_access(gicd_base, mmio);
@@ -167,8 +172,14 @@ static enum mmio_result gic_handle_dist_access(void *arg,
 		break;
 
 	case REG_RANGE(GICD_IPRIORITYR, 255, 4):
-		ret = restrict_bitmask_access(mmio, (reg & 0x3ff) / 4, 8,
-					      false);
+		// ret = restrict_bitmask_access(mmio, (reg & 0x3ff) / 4, 8,
+		// 			      false);
+		/* only byte or word accesses are allowed for GICD_IPRIORITYR */
+		if (mmio->size == 1 || mmio->size == 4)
+			ret = restrict_bitmask_access(mmio, (reg & 0x3ff) / 4,
+								8, false);
+		else
+			ret = MMIO_ERROR;
 		break;
 
 	default:
