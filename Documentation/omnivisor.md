@@ -447,7 +447,7 @@ The same exact procedure is neede if the core is a soft-core on FPGA:
 
 ```sh
 jailhouse cell create ${JAILHOUSE_DIR}/configs/arm64/zynqmp-kv260-RISCV-inmate-demo.cell
-jailhouse cell load inmate-demo-RISCV -r riscv-bm-demo.elf 0
+jailhouse cell load inmate-demo-RISCV -r riscv-bm-demo.elf 2
 jailhouse cell start inmate-demo-RISCV
 ```
 
