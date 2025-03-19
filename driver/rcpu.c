@@ -306,6 +306,11 @@ int jailhouse_rcpus_setup(struct cell *cell, const struct jailhouse_cell_desc *c
 	for_each_rcpu(rcpu_id, &cell->rcpus_assigned) {
 		// distinguish between asic rcpus and soft-core rcpus
 		if(rcpu_id < num_root_rcpus){ 
+			// Check if the region is already assigned to a different cell
+			if (!cpumask_test_cpu(rcpu_id, &root_cell->rcpus_assigned)) {
+				pr_err("ERROR: rCPU %d is already assigned to a different cell\n", rcpu_id);
+				return -1;
+			}
 			// remove the rcpu from the root cell (they are already initialized by the rootcell)
 			pr_info("Removing rCPU %d from rootcell.\n", rcpu_id);
 			cpumask_clear_cpu(rcpu_id, &root_cell->rcpus_assigned);
@@ -341,6 +346,7 @@ int jailhouse_rcpus_setup(struct cell *cell, const struct jailhouse_cell_desc *c
 // load the rcpu image
 int jailhouse_load_rcpu_image(struct cell *cell, struct jailhouse_preload_rcpu_image __user *rcpu_uimage){
 	struct jailhouse_preload_rcpu_image rcpu_image;
+	struct rcpu_info *rcpu;
 	int rcpu_id;
 	int err;
 
@@ -363,25 +369,20 @@ int jailhouse_load_rcpu_image(struct cell *cell, struct jailhouse_preload_rcpu_i
 		return err;
 	}
 
-	// Load the rcpu image. distinguish between asic rcpus and soft-core rcpus
 	if(rcpu_id < num_root_rcpus){
-		pr_info("Loading Firmware %s on rCPU %d\n", rcpu_image.name, rcpu_id);
-		err = rproc_set_firmware(root_rcpus_info[rcpu_id]->rproc, rcpu_image.name);
-		if (err) {
-			pr_err("Failed to set firmware for rcpu %d\n", rcpu_id);
-			return err;
-		}
-		pr_info("Loaded Firmware %s on rCPU %d\n", rcpu_image.name, rcpu_id);
+		rcpu = root_rcpus_info[rcpu_id];
 	}
-	else{// soft-core
-		pr_info("Loading Firmware %s on soft-rCPU %d\n", rcpu_image.name, rcpu_id);
-		err = rproc_set_firmware(cell->soft_rcpus_info[rcpu_id - num_root_rcpus]->rproc, rcpu_image.name);
-		if (err) {
-			pr_err("Failed to set firmware for rcpu %d\n", rcpu_id);
-			return err;
-		}
-		pr_info("Loaded Firmware %s on soft-rCPU %d\n", rcpu_image.name, rcpu_id);
+	else{
+		rcpu = cell->soft_rcpus_info[rcpu_id - num_root_rcpus];
 	}
+
+	pr_info("Loading Firmware %s on rCPU %d\n", rcpu_image.name, rcpu_id);
+	err = rproc_set_firmware(rcpu->rproc, rcpu_image.name);
+	if (err) {
+		pr_err("Failed to set firmware for rcpu %d\n", rcpu_id);
+		return err;
+	}
+	pr_info("Loaded Firmware %s on rCPU %d\n", rcpu_image.name, rcpu_id);
 
 	return 0;
 }

@@ -229,6 +229,12 @@ int jailhouse_fpga_regions_setup(struct cell *cell, const struct jailhouse_cell_
 		}
 
 		if(device_found){
+			// Check if the region is already assigned to a different cell
+			if (!cpumask_test_cpu(region_id, &root_cell->fpga_regions_assigned)) {
+				pr_err("ERROR: region %d is already assigned to a different cell\n", region_id);
+				return -1;
+			}
+
 			pr_info("Loading bitstream %s in FPGA region %d.\n", devices[device_id].fpga_bitstream ,region_id);
 
 			// Map the physical FPGA configuration address to virtual address space

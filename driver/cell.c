@@ -308,10 +308,15 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 	}
 
 	//to do ... error management
-	jailhouse_fpga_regions_setup(cell, config);
+	err = jailhouse_fpga_regions_setup(cell, config);
+	if(err < 0)
+		goto unlock_out;
 	
 	//to do ... error management
-	jailhouse_rcpus_setup(cell, config);
+	err = jailhouse_rcpus_setup(cell, config);
+	if(err < 0)
+		goto unlock_out;
+	
 
 	jailhouse_pci_do_all_devices(cell, JAILHOUSE_PCI_TYPE_DEVICE,
 	                             JAILHOUSE_PCI_ACTION_CLAIM);
