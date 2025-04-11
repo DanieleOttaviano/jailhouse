@@ -20,7 +20,7 @@
 #include <linux/of_platform.h>
 #include <linux/remoteproc.h>
 #include <linux/slab.h>
-
+#include <linux/remoteproc.h>
 
 static struct rcpu_info **root_rcpus_info;
 static int num_root_rcpus;
@@ -58,7 +58,41 @@ static int check_image(const char *name)
 	return err;
 }
 
-int stop_rcpu_state(struct rcpu_info *rcpu)
+static void unprepare_subdevices(struct rproc *rproc)
+{
+	struct rproc_subdev *subdev;
+
+	list_for_each_entry_reverse(subdev, &rproc->subdevs, node) {
+		if (subdev->unprepare)
+			subdev->unprepare(subdev);
+	}
+}
+
+static int start_subdevices(struct rproc *rproc)
+{
+	struct rproc_subdev *subdev;
+	int ret;
+
+	list_for_each_entry(subdev, &rproc->subdevs, node) {
+		if (subdev->start) {
+			ret = subdev->start(subdev);
+			if (ret)
+				goto unroll_registration;
+		}
+	}
+
+	return 0;
+
+unroll_registration:
+	list_for_each_entry_continue_reverse(subdev, &rproc->subdevs, node) {
+		if (subdev->stop)
+			subdev->stop(subdev, true);
+	}
+
+	return ret;
+}
+
+static int stop_rcpu_state(struct rcpu_info *rcpu)
 {
 	if (!rcpu || !rcpu->rproc) {
 		pr_err("rCPU is not initialized\n");
@@ -77,7 +111,7 @@ int stop_rcpu_state(struct rcpu_info *rcpu)
 	return 0;
 }
 
-int detach_rcpu_state(struct rcpu_info *rcpu)
+static int detach_rcpu_state(struct rcpu_info *rcpu)
 {
 	if (!rcpu || !rcpu->rproc) {
 		pr_err("rCPU is not initialized\n");
@@ -96,35 +130,84 @@ int detach_rcpu_state(struct rcpu_info *rcpu)
 	return 0;
 }
 
-int start_rcpu_state(struct rcpu_info *rcpu)
+// Start remoteproc and subdevices
+static int start_rcpu(struct rproc *rproc){
+	int err = 0;
+
+	err = mutex_lock_interruptible(&rproc->lock);
+	if(err){
+		pr_err("Failed to lock rproc mutex\n");
+		return err;
+	}
+	
+	err = rproc->ops->start(rproc);
+	if(err){
+		pr_err("Failed to start rCPU\n");
+		goto unprepare_subdevices;
+	}
+	
+	err = start_subdevices(rproc);
+	if(err){
+		pr_err("Failed to start subdevices\n");
+		goto stop_rproc;
+	}
+	
+	rproc->state = RPROC_RUNNING;
+
+stop_rproc:
+	if(err)
+		rproc->ops->stop(rproc);
+unprepare_subdevices:
+	if(err){
+		unprepare_subdevices(rproc);
+		rproc->table_ptr = rproc->cached_table;
+	}	
+	
+	mutex_unlock(&rproc->lock);
+	return err;
+}
+
+static int start_rcpu_state(struct rcpu_info *rcpu)
 {
 	if (!rcpu || !rcpu->rproc) {
 		pr_err("rCPU is not initialized\n");
 		return -1;
 	}
 
-	// detach the rcpu if it is attached
-	if(detach_rcpu_state(rcpu) < 0){
-		return -1;
-	}
-
-	// stop the rcpu if it is running
-	if(stop_rcpu_state(rcpu) < 0){
-		return -1;
-	}
-
 	// Start the rcpu
 	pr_info("Starting rCPU %s\n", rcpu->name);
-	if (rproc_boot(rcpu->rproc) < 0) {
+	if(start_rcpu(rcpu->rproc)){
 		pr_err("Failed to start rCPU %s\n", rcpu->name);
 		return -1;
 	}
+	pr_info("rCPU %s is now up\n", rcpu->name);
 
 	return 0;
 }
 
+static int load_rcpu_firmware(struct rcpu_info *rcpu)
+{
+	int err = 0;
+
+	/* Load the firmware via remoteproc. 
+	 * Stop just before booting the remote processor. 
+	 * remoteproc OMNV patch is required for this to work.
+	*/
+	err = rproc_boot(rcpu->rproc);
+	if(err){
+		pr_err("Failed to load rCPU %s\n", rcpu->name);
+		goto shutdown_rproc;
+	} 
+
+	return 0;
+
+shutdown_rproc:
+	rproc_shutdown(rcpu->rproc);
+	return err;
+}
+
 // Fetch rproc pointer from device
-int fetch_rproc_from_device(struct device_node *dev_node, struct rcpu_info *rcpu)
+static int fetch_rproc_from_device(struct device_node *dev_node, struct rcpu_info *rcpu)
 {		
 	//DEBUG
 	pr_info("Remote Processor: %s, phandle: %d\n", dev_node->name, dev_node->phandle);
@@ -139,7 +222,7 @@ int fetch_rproc_from_device(struct device_node *dev_node, struct rcpu_info *rcpu
 }
 
 // Fetch rproc pointer from rCPU name and compatible
-int fetch_rproc(struct rcpu_info *rcpu)
+static int fetch_rproc(struct rcpu_info *rcpu)
 {
 	struct device_node *dev_node;
 	struct platform_device *pdev;
@@ -205,7 +288,8 @@ int fetch_rproc(struct rcpu_info *rcpu)
 }
 
 // Setup the rCPU from the cell device description
-int setup_rcpu(struct rcpu_info **rcpu_array, unsigned int rcpu_id , const struct jailhouse_rcpu_device *rcpu_devices, unsigned int rcpu_device_id)
+static int setup_rcpu(struct rcpu_info **rcpu_array, unsigned int rcpu_id , 
+				const struct jailhouse_rcpu_device *rcpu_devices, unsigned int rcpu_device_id)
 {
 	// allocate memory for the rproc struct
 	rcpu_array[rcpu_id] = vmalloc(sizeof(struct rcpu_info));
@@ -218,7 +302,8 @@ int setup_rcpu(struct rcpu_info **rcpu_array, unsigned int rcpu_id , const struc
 	rcpu_array[rcpu_id]->id = rcpu_devices[rcpu_device_id].rcpu_id;
 	strncpy(rcpu_array[rcpu_id]->name, rcpu_devices[rcpu_device_id].name, JAILHOUSE_RCPU_IMAGE_NAMELEN);
 	strncpy(rcpu_array[rcpu_id]->compatible, rcpu_devices[rcpu_device_id].compatible, JAILHOUSE_RCPU_IMAGE_NAMELEN);
-	pr_info("rCPU id: %d, name: %s, compatible: %s\n", rcpu_array[rcpu_id]->id, rcpu_array[rcpu_id]->name, rcpu_array[rcpu_id]->compatible);
+	pr_info("rCPU id: %d, name: %s, compatible: %s\n", rcpu_array[rcpu_id]->id, 
+							rcpu_array[rcpu_id]->name, rcpu_array[rcpu_id]->compatible);
 
 	// Find the device node in the device tree
 	if(fetch_rproc(rcpu_array[rcpu_id]) < 0){
@@ -380,6 +465,11 @@ int jailhouse_load_rcpu_image(struct cell *cell, struct jailhouse_preload_rcpu_i
 	err = rproc_set_firmware(rcpu->rproc, rcpu_image.name);
 	if (err) {
 		pr_err("Failed to set firmware for rcpu %d\n", rcpu_id);
+		return err;
+	}
+	err = load_rcpu_firmware(rcpu);
+	if(err){
+		pr_err("Failed to load firmware for rcpu %d\n", rcpu_id);
 		return err;
 	}
 	pr_info("Loaded Firmware %s on rCPU %d\n", rcpu_image.name, rcpu_id);
