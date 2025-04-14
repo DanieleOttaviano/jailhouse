@@ -105,10 +105,10 @@ struct {
 				.nic_size = 0x100000,
 			},
 			.fpga = {
-				.fpga_base_bitstream = "base_pico32_tg.bit", //"bitstream_base.bit",
-				.fpga_base_addr = 0x80000000,
-				.fpga_flags = JAILHOUSE_FPGA_FULL, 
-				.fpga_max_regions = 3,
+				.fpga_base_bitstream = "dfx_wrapper.bit", 	// "base_pico32_tg.bit", //"bitstream_base.bit",
+				.fpga_base_addr = 0x80000000,				// FPGA base address
+				.fpga_flags = JAILHOUSE_FPGA_FULL, 			// flags for the FPGA base
+				.fpga_max_regions = 3,						// there will be 3 reconfigurable regions
 			},
 		},
 
@@ -148,7 +148,7 @@ struct {
 		/* FPGA configuration ports */ {
 			.phys_start = 0x80000000,
 			.virt_start = 0x80000000,
-			.size = 0x00100000,
+			.size = 0x20000000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
 		},
@@ -184,7 +184,8 @@ struct {
 			.phys_start = 0xffe00000,
 			.virt_start = 0xffe00000,
 			.size = 0xC0000,
-			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | JAILHOUSE_MEM_EXECUTE,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE | 
+				JAILHOUSE_MEM_EXECUTE,
 		},	
 	},
 

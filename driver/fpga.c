@@ -36,7 +36,7 @@ static long fpga_flags;
  * 
  * Return: None.
  */
-void setup_fpga_flags(long flags)
+static void setup_fpga_flags(long flags)
 {
 	if(flags &= JAILHOUSE_FPGA_PARTIAL){
 		fpga_flags  = FPGA_MGR_PARTIAL_RECONFIG;
@@ -61,35 +61,6 @@ void setup_fpga_flags(long flags)
 	 */
 }
 
-/**
- * load_root_bitstream - Load the root cell bitstream.
- * @bitstream_name: Name of the bitstream file to load.
- * @flags: Flags for loading the bitstream (e.g., partial reconfiguration).
- * 
- * This function loads the root cell bitstream into the FPGA region
- * by setting up the FPGA flags and calling the load_bitstream()
- * function.
- * 
- * Return: 0 on success, or a negative error code on failure.
- */
-int load_root_bitstream(char *bitstream_name, long flags)
-{
-	int err = 0;
-
-	/* The root cell load bitstream with void regions */
-	setup_fpga_flags(flags);
-	err = load_bitstream(0,bitstream_name);
-	if (err){
-		pr_err("jailhouse: failed to load root bitstream\n");
-	}
-
-	/* TODO: Daniele Ottaviano
-	 * Consider to do an & with the flags selected by the rootcell config
-	 */
-	setup_fpga_flags(JAILHOUSE_FPGA_PARTIAL);
-	return err;
-}
-
 /** 
  * load_bitstream - Load a bitstream into the specified FPGA region.
  * @region_id: ID of the FPGA region to load the bitstream into.
@@ -102,13 +73,16 @@ int load_root_bitstream(char *bitstream_name, long flags)
  * 
  * Return: 0 on success, or a negative error code on failure.
  */
-int load_bitstream(unsigned int region_id, const char *bitstream_name)
+static int load_bitstream(unsigned int region_id, const char *bitstream_name, long flags)
 {
 	struct fpga_image_info *info = NULL;
 	struct fpga_region *fpga_region = NULL;
 	char name[10];
 	unsigned int len;
 	int err = 0;
+
+	/* Set up the FPGA flags */
+	setup_fpga_flags(flags);
 
 	/* Find the FPGA region device in the sysfs */
 	sprintf(name, "region%d", region_id);
@@ -181,7 +155,7 @@ out:
  *
  * Return: 0 on success, or a negative error code on failure.
  */
-int apply_overlay(unsigned int *overlay_id, const char *dto_name)
+static int apply_overlay(unsigned int *overlay_id, const char *dto_name)
 {
 	struct file *file;
 	char path[256];
@@ -248,6 +222,29 @@ out:
 	return err;
 }
 
+/**
+ * jailhouse_root_bitstream - Load the root cell bitstream.
+ * @bitstream_name: Name of the bitstream file to load.
+ * @flags: Flags for loading the bitstream (e.g., partial reconfiguration).
+ * 
+ * This function loads the root cell bitstream into the FPGA region
+ * by setting up the FPGA flags and calling the load_bitstream()
+ * function.
+ * 
+ * Return: 0 on success, or a negative error code on failure.
+ */
+int jailhouse_root_bitstream(char *bitstream_name, long flags)
+{
+	int err = 0;
+
+	/* The root cell load bitstream with void regions */
+	err = load_bitstream(0,bitstream_name, flags);
+	if (err){
+		pr_err("jailhouse: failed to load root bitstream\n");
+	}
+
+	return err;
+}
 
 /**
  * jailhouse_fpga_regions_setup - Configures FPGA regions for a given cell
@@ -318,7 +315,7 @@ int jailhouse_fpga_regions_setup(struct cell *cell, const struct jailhouse_cell_
 			}
 
 			/* Load the bitstream of the region using dfx */
-			err = load_bitstream(region_id + 1, devices[device_id].fpga_bitstream);
+			err = load_bitstream(region_id + 1, devices[device_id].fpga_bitstream, devices[device_id].fpga_flags);
 			if (err) {
 				pr_err("Failed to load bitstream %s in FPGA region %d\n", devices[device_id].fpga_bitstream, region_id);
 				goto unmap_fpga;

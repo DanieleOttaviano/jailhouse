@@ -419,6 +419,7 @@ struct jailhouse_fpga_device {
 	char fpga_bitstream[FPGA_BITSTREAM_NAMELEN];
 	__u32 fpga_region_id;		//specific FPGA region used
 	__u64 fpga_conf_addr;		//configuration address for region
+	__u8 fpga_flags;
 } __attribute__((packed)); 
 
 /**

@@ -495,7 +495,7 @@ static int jailhouse_cmd_enable(struct jailhouse_system __user *arg)
 
 	//Load FPGA base bitstream with void regions
 	if(config_header.platform_info.fpga.fpga_base_bitstream[0] != '\0'){
-		if (load_root_bitstream(config_header.platform_info.fpga.fpga_base_bitstream,config_header.platform_info.fpga.fpga_flags) != 0)
+		if (jailhouse_root_bitstream(config_header.platform_info.fpga.fpga_base_bitstream,config_header.platform_info.fpga.fpga_flags) != 0)
 			return -EINVAL;	
 		pr_info("jailhouse: FPGA bitstream %s loaded\n", config_header.platform_info.fpga.fpga_base_bitstream);
 	}

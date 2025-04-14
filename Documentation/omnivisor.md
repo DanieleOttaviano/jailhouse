@@ -142,7 +142,7 @@ rf5ss@ff9a0000 {
 };
 ```
 
-The processor need defined memory regions.
+The remote processors need defined memory regions.
 e.g., for the zynqmp platform: 
 
 ```c
@@ -323,7 +323,8 @@ struct{
 
 For each FPGA region we need to descrive the FPGA_device struct that indicate the
 bitstream name, the kernel module to use, the devicetree overlay, the id of the
-device (from 0 to N-1), the number of soft-core in the region, and the conf. addr
+device (from 0 to N-1), the number of soft-core in the region, the conf. addr, and
+the fpga flags
 
 ```c
 struct{
@@ -339,6 +340,7 @@ struct{
 			.fpga_bitstream = "partial.bit",
 			.fpga_region_id = 0,
 			.fpga_conf_addr = 0x80000000,
+			.fpga_flags = JAILHOUSE_FPGA_PARTIAL,	
 		},
 	},
 }
@@ -439,7 +441,7 @@ e.g., for the kria zynqmp platform:
 
 ```sh
 jailhouse cell create ${JAILHOUSE_DIR}/configs/arm64/zynqmp-kv260-RPU0-inmate-demo.cell
-jailhouse cell load inmate-demo-RPU -r rpu-bm-demo.elf 0
+jailhouse cell load inmate-demo-RPU -r rpu0-bm-demo.elf 0
 jailhouse cell start inmate-demo-RPU
 ```
 
