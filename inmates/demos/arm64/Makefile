@@ -12,7 +12,7 @@
 
 include $(INMATES_LIB)/Makefile.lib
 
-INMATES := gic-demo.bin uart-demo.bin ivshmem-demo.bin boot-demo.bin
+INMATES := gic-demo.bin uart-demo.bin ivshmem-demo.bin boot-demo.bin oracle-demo.bin
 INMATES += mem-bomb.bin
 
 gic-demo-y	:= ../arm/gic-demo.o
@@ -20,5 +20,6 @@ uart-demo-y	:= ../arm/uart-demo.o
 ivshmem-demo-y	:= ../ivshmem-demo.o
 mem-bomb-y	:= ../arm/mem-bomb.o
 boot-demo-y	:= ../arm/boot-demo.o
+oracle-demo-y	:= ../arm/oracle-demo.o
 
 $(eval $(call DECLARE_TARGETS,$(INMATES)))
