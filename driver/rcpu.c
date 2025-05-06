@@ -315,7 +315,7 @@ static int fetch_rproc(struct rcpu_info *rcpu)
 		err = fetch_rproc_from_device(dev_node, rcpu);
 		if (err < 0) {
 			pr_err("Failed to fetch rproc for rCPU %s\n", rcpu->name);
-			goto out;
+			goto put_node;
 		}
 		found = 1;
 	} else {
@@ -325,7 +325,7 @@ static int fetch_rproc(struct rcpu_info *rcpu)
 		if (!pdev) {
 			pr_err("Failed to find platform device\n");
 			err = -ENODEV;
-			goto out;
+			goto put_node;
 		}	
 		dev = &pdev->dev;
 		
@@ -335,7 +335,7 @@ static int fetch_rproc(struct rcpu_info *rcpu)
 				err = fetch_rproc_from_device(dev_node, rcpu);
 				if (err < 0) {
 					pr_err("Failed to fetch rproc for rCPU %d\n", rcpu->id);
-					goto out;
+					goto put_node;
 				}
 				found = 1;
 				break;
@@ -346,21 +346,23 @@ static int fetch_rproc(struct rcpu_info *rcpu)
 	if (!found) {
 		pr_err("Failed to find rCPU %s\n", rcpu->name);
 		err = -ENODEV;
-		goto out;
+		goto put_node;
 	}
 	
 	/* Detach the rcpu if it is attached */
 	err = detach_rcpu_state(rcpu);
 	if (err < 0) {
-		goto out;
+		goto put_node;
 	}
 
 	/* Stop the rcpu if it is running */
 	err = stop_rcpu_state(rcpu);
 	if (err < 0) {
-		goto out;
+		goto put_node;
 	}
 
+put_node:
+	of_node_put(dev_node); 
 out:
 	return err;	
 }

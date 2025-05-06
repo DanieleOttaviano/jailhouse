@@ -338,6 +338,7 @@ int jailhouse_fpga_regions_setup(struct cell *cell, const struct jailhouse_cell_
 					pr_err("Failed to apply device tree overlay %s\n", devices[device_id].fpga_dto);
 					goto release_overlay_ids;
 				}
+				pr_info("Device tree overlay applied with ID: %d\n", cell->fpga_overlay_ids[device_id]);
 			} else {
 				cell->fpga_overlay_ids[device_id] = -1;
 			}
@@ -405,6 +406,7 @@ int jailhouse_fpga_regions_remove(struct cell *cell)
 			/* TODO: Daniele Ottaviano
 			 * Solve the OF memory leak error
 			 */
+			pr_info("Removing device tree overlay with ID: %d\n", cell->fpga_overlay_ids[region_id]);
 			if (of_overlay_remove(&cell->fpga_overlay_ids[region_id])) {
 				pr_err("Failed to remove overlay\n");
 				err = -EINVAL;
