@@ -1,6 +1,6 @@
 #include <inmate.h>
 
-#define SWITCH 5000
+#define SWITCH 300000
 
 struct shared_page {
     /*
@@ -50,9 +50,9 @@ struct shared_page {
 void inmate_main(void)
 {
 	volatile struct shared_page* shared_memory  = (struct shared_page*) 0x46d00000;
-	u8 last_counter;
+	double last_counter, new_counter;
 	double tmp0, tmp1, tmp2;
-
+    double counter = 0;
 	tmp0 = 0;
 	tmp1 = 1;
 	tmp2 = 2;
@@ -60,21 +60,23 @@ void inmate_main(void)
 	map_range((void *)shared_memory, sizeof(struct shared_page), MAP_UNCACHED);
 
 	last_counter = shared_memory->input_counter;
-
+    new_counter = last_counter;
     printk("Starting Oracle\n");
 	while (1) {
-		if (last_counter != shared_memory->input_counter) {
+        new_counter = shared_memory->input_counter;
+        if (new_counter != last_counter) {
+            last_counter = new_counter;
 			for (int i = 0; i < 29; i++) {
 				tmp2 = tmp0 * shared_memory->data.ip + tmp2 * shared_memory->data.gaps[i];
 				tmp0 = shared_memory->data.gaps[i] + tmp1 * shared_memory->data.gaps[i / 2];
 				tmp1 += i * shared_memory->data.vs3;
 			}
 
-            if( shared_memory->input_counter >= (u8)SWITCH && shared_memory->oracle_decision == 0) {
+            if( counter >= SWITCH && shared_memory->oracle_decision == 0) {
                 printk("##########SWITCH#########\n");
 				shared_memory->oracle_decision = 0x01;
-                while(1);
 			}
+            counter ++;
 		}
 	}
 }
