@@ -1,7 +1,7 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Omnivisor demo RPU
+ * Omnivisor demo RPU: write the memory belonging to RPU1
  *
  * Copyright (c) Daniele Ottaviano, 2024
  *

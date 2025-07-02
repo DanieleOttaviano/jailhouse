@@ -3,16 +3,14 @@
  *
  * Configuration for APU demo inmate on Xilinx Kria kv260
  *
- * Copyright (C) Technical University of Munich, 2024
+ * Copyright (C) Daniele Ottaviano, 2024
  *
  * Authors:
- *  Daniele Ottaviano <daniele.ottaviano@tum.de>
+ *  Daniele Ottaviano <danieleottaviano97@gmail.com>
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
- */
-
-/* 
+ * 
  * jailhouse cell create jailhouse/configs/arm64/zynqmp-kv260-bm.cell 
  * jailhouse cell load inmate-demo-APU jailhouse/inmates/tools/arm64/linux-loader.bin -a 0x0 -s "kernel=0x47000000" -a 0x1000 kernel.bin -a 0x47000000
  * jailhouse cell start inmate-demo-APU

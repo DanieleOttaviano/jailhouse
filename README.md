@@ -67,6 +67,10 @@ The extensions have been evaluated in multiple academic publications such as:
 > Heterogeneous Core Virtualization over MPSoCs,"
 > 2024 Euromicro Conference on Real-Time Systems (ECRTS), 2024 
 
+> Daniele Ottaviano, Marco Barletta, Francesco Boccola,
+> "Zero-Interference Containers: A Framework to Orchestrate Mixed-Criticality Applications"
+> 2025 IEEE/IFIP International Conference on Dependable Systems and Networks (DSN), 2025
+
 There is an ongoing effort to integrate some of the features of this
 repository in the mainline [Jailhouse project](https://github.com/siemens/jailhouse),
 but please note at the moment, the Jailhouse project does not provide

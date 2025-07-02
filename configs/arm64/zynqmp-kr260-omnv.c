@@ -1,12 +1,12 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for Xilinx ZynqMP Kria KV260 board Omnivisor enabled
+ * Configuration for Xilinx ZynqMP Kria KR260 board Omnivisor enabled
  *
- * Copyright (C) Technical University of Munich, 2024
+ * Copyright (C) Daniele Ottaviano, 2024
  *
  * Authors:
- *  Daniele Ottaviano <daniele.ottaviano@tum.de>
+ *  Daniele Ottaviano <danieleottaviano97@gmail.com>
  * 
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
@@ -18,10 +18,11 @@
  *		ranges;
  *		jailhouse_reserved: jailhouse@7e000000 {
  *			no-map;
- *			reg = <0x0 0x7e000000 0x0 0x2000000>;
+ *			reg = <0x0 0x7e000000 0x0 0x1000000>;
  *		}; 
  *	};
  */
+
 #include <jailhouse/types.h>
 #include <jailhouse/cell-config.h>
 #include <asm/qos-400.h>

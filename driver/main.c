@@ -11,6 +11,8 @@
  *  Jan Kiszka <jan.kiszka@siemens.com>
  *  Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
  *  Daniele Ottaviano <danieleottaviano97@gmail.com>
+ * 
+ * dottavia, 2024-07-01: Omnivisor support
  *
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.

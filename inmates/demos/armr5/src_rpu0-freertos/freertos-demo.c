@@ -10,19 +10,6 @@
 
     1 tab == 4 spaces!
 */
-/*
- * Jailhouse, a Linux-based partitioning hypervisor
- *
- * Omnivisor demo RPU
- *
- * Copyright (c) Daniele Ottaviano, 2024
- *
- * Authors:
- *   Daniele Ottaviano <danieleottaviano97@gmail.com>
- *
- * This work is licensed under the terms of the GNU GPL, version 2.  See
- * the COPYING file in the top-level directory.
- */
 
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"

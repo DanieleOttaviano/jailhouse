@@ -13,6 +13,7 @@
  *
  * Reservation via device tree: 0x800000000..0x83fffffff
  */
+
 #include <jailhouse/types.h>
 #include <jailhouse/cell-config.h>
 #include <asm/qos-400.h>

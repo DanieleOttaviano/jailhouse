@@ -56,7 +56,6 @@
 #define PERIOD 	  30 	// 30 us
 
 static u32* base_address = (u32*)0x3ED00000;	// RPU0 memory
-static u32* RPU0_base_address = (u32*)0x3ED00000;	// RPU0 memory
 static u32 memory_size = 4 * 1024 * 1024; 		// 4Mb
 
 
@@ -66,7 +65,7 @@ static u32 memory_size = 4 * 1024 * 1024; 		// 4Mb
 // 	u32 offset = 0;
 // 	u32 bit_position = 0;
 	
-// 	xil_printf("[RPU1] base address: 0x%x\n\r", RPU0_base_address);
+// 	xil_printf("[RPU1] base address: 0x%x\n\r", base_address);
 // 	xil_printf("[RPU1] memory size: %d\n\r", memory_size);
 
 // 	for(int i = 0; i < REP_TIME; i++ ){
@@ -74,14 +73,14 @@ static u32 memory_size = 4 * 1024 * 1024; 		// 4Mb
 // 		XTime_GetTime(&start);
 
 // 		// Write all the memory
-// 		// RPU0_base_address[i] = 0xFF;
+// 		// base_address[i] = 0xFF;
 
 // 		// Generate a random offset within the memory region
 // 		offset = (u32)start % memory_size;
 // 		// Generate a random bit position within the selected byte
 // 		bit_position = (u32)start % 8;
 // 		// Toggle the randomly chosen bit at the specified offset
-// 		RPU0_base_address[offset] ^= (1 << bit_position);
+// 		base_address[offset] ^= (1 << bit_position);
 // 		xil_printf("accessing offset: %d, bit position:%d\r\n",offset, bit_position);
 
 // 		XTime_GetTime(&end);
@@ -133,16 +132,14 @@ void membomb(){
 int main()
 {
 	// Initialize the Platform
-	init_platform();
+	init_platform();	
+	Xil_DCacheDisable();
+	Xil_ICacheDisable();
 	
-	// DEBUG
-	// xil_printf("[RPU1] Start RPU1!\n\r");
-
-	
+	xil_printf("[RPU1] Start RPU1!\n\r");
 	membomb();
-	
-	// DEBUG
-	//xil_printf("[RPU1] Successfully ran the application\n\r");
+	xil_printf("[RPU1] Successfully ran the application\n\r");
+
 	cleanup_platform();
 	return 0;
 }

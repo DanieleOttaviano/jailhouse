@@ -1,15 +1,15 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  * 
- * Omnivisor branch for remote core virtualization 
- * 
  * Copyright (c) Siemens AG, 2013-2016
- * Copyright (c) Daniele Ottaviano, 2024
+ * Copyright (C) Daniele Ottaviano, 2024
  * 
  * Authors:
  *  Jan Kiszka <jan.kiszka@siemens.com>
  *  Daniele Ottaviano <danieleottaviano97@gmail.com>
  *
+ * dottavia, 2024-07-01: Omnivisor support
+ * 
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  */

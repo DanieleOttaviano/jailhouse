@@ -1,7 +1,7 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for Xilinx ZynqMP ZCU104 eval board Colored Root cell with OMNIVISOR patch
+ * Configuration for Xilinx ZynqMP ZCU104 eval board Colored Root cell Omnivisor enabled
  *
  * Copyright (c) Minerva Systems, 2022
  * Copyright (c) Daniele Ottaviano, 2024
@@ -14,6 +14,8 @@
  *   Fabio Spanò <fabio.spano@minervasys.tech>
  *   Filippo Fontana <filippo.fontana@minervasys.tech>
  *	 Daniele Ottaviano <danieleottaviano97@gmail.com>
+ * 
+ * dottavia, 2024-07-01: Omnivisor enabled configuration
  * 
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.

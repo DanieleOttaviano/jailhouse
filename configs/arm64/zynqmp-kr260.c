@@ -1,27 +1,23 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Configuration for Xilinx ZynqMP Kria KV260 board
+ * Configuration for Xilinx ZynqMP Kria KR260 board
  *
- * Copyright (C) Technical University of Munich, 2024
+ * Copyright (c) Siemens AG, 2016
+ * Copyright (C) Daniele Ottaviano, 2024
  *
  * Authors:
- *  Daniele Ottaviano <daniele.ottaviano@tum.de>
+ *  Jan Kiszka <jan.kiszka@siemens.com>
+ *  Daniele Ottaviano <danieleottaviano97@gmail.com>
+ * 
+ * dottavia, 2024-07-01: Porting to run on Kria KVR60 board from ZCU102
  * 
  * This work is licensed under the terms of the GNU GPL, version 2.  See
  * the COPYING file in the top-level directory.
  *
- * Reservation via device tree: 
- * 	reserved-memory {
- *		#address-cells = <2>;
- *		#size-cells = <2>;
- *		ranges;
- *		jailhouse_reserved: jailhouse@7e000000 {
- *			no-map;
- *			reg = <0x0 0x7e000000 0x0 0x2000000>;
- *		}; 
- *	};
+ * Reservation via device tree: 0x7e000000..0x7effffff 
  */
+
 #include <jailhouse/types.h>
 #include <jailhouse/cell-config.h>
 #include <asm/qos-400.h>

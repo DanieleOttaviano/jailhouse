@@ -26,9 +26,9 @@ INC += -Ibench/$(BENCH)
 INC += -DBENCHNAME=$(BENCH)
 
 # Flags
-LDFLAGS = -Wl,-T -Wl,$(LD_SRCS) -L$(LIBARMR5)/lib
+LDFLAGS = -Wl,-T -Wl,$(LD_SRCS) -L$(LIBARMR5)/lib 
 CFLAGS = -mcpu=cortex-r5  -mfloat-abi=hard  -mfpu=vfpv3-d16 
-EXT_CFLAGS = -DARMR5 -Wall -O0 -g3 -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -MT"$@" 
+EXT_CFLAGS = -DARMR5 -Wall -O2 -DNDEBUG -g3 -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -MT"$@" 
 LIBS = 	-Wl,--start-group,-lxil,-lfreertos,-lgcc,-lc,--end-group
 
 # Toolchain

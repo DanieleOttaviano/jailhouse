@@ -1,7 +1,7 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Omnivisor demo RPU
+ * Omnivisor demo RPU: execution time latency 
  *
  * Copyright (c) Daniele Ottaviano, 2024
  *
@@ -22,7 +22,7 @@
 #define DIM 12 * NPAGES // 123*32(size fo int)=4096 bytes= 4KB(size of one page)
 #define REP 10
 #define REP_TIME 100
-#define FREQUENCY 8  // 8 MHz
+#define FREQUENCY COUNTS_PER_USECOND // ~= 9.86 MHz
 #define PERIOD 200000 // 200 ms
 
 void test_memory_protection(){
@@ -120,7 +120,7 @@ int main()
     
     shared_memory[k] = time_us;
     // xil_printf("time(us): ");
-    xil_printf("[RPU-1] %llu\n\r", time_us);
+    xil_printf("[RPU-1] time(us): %llu\n\r", time_us);
     
     // wait until the end of the period
     while (time_us < PERIOD){

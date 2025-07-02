@@ -1,7 +1,7 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Omnivisor demo RPU
+ * Omnivisor demo RPU: execution time latency 
  *
  * Copyright (c) Daniele Ottaviano, 2024
  *
@@ -22,7 +22,7 @@
 #define DIM 12 * NPAGES // 123*32(size fo int)=4096 bytes= 4KB(size of one page)
 #define REP 10
 #define REP_TIME 100
-#define FREQUENCY 8  // 8 MHz
+#define FREQUENCY COUNTS_PER_USECOND // ~= 9.86 MHz
 #define PERIOD 200000 // 200 ms
 
 void test_memory_protection(){
@@ -86,12 +86,11 @@ int main()
   Xil_DCacheDisable();
   Xil_ICacheDisable();
   
-  // DEBUG
-  //xil_printf("Start!\n\r");
-  //xil_printf("The Test will last %d s\n\r", (PERIOD*REP_TIME)/1000000);
-  //xil_printf("Repetitions: %d\n\r", REP_TIME);
-  //xil_printf("Task Period: %d us\n\r", PERIOD);
-  //xil_printf("Timer Frequency: %d MHz\n\r", FREQUENCY);
+  xil_printf("[RPU-0] Start!\n\r");
+  xil_printf("[RPU-0] The Test will last %d s\n\r", (PERIOD*REP_TIME)/1000000);
+  xil_printf("[RPU-0] Repetitions: %d\n\r", REP_TIME);
+  xil_printf("[RPU-0] Task Period: %d us\n\r", PERIOD);
+  xil_printf("[RPU-0] Timer Frequency: %d MHz\n\r", FREQUENCY);
 
   // DEBUG
   // test_memory_protection();
@@ -123,7 +122,7 @@ int main()
     shared_memory[k] = time_us;
     
     // DEBUG
-    // xil_printf("%llu\n\r", time_us);
+    xil_printf("[RPU-0] time(us): %llu\n\r", time_us);
     
     // wait until the end of the period
     while (time_us < PERIOD){
@@ -133,8 +132,7 @@ int main()
     }
   }
 
-  // DEBUG
-  // xil_printf("Successfully ran the application\n\r");
+  xil_printf("[RPU-0] Successfully ran the application\n\r");
 
   cleanup_platform();
   return 0;

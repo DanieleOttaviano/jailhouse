@@ -1,7 +1,7 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Omnivisor demo RPU
+ * Omnivisor demo RPU: execution of the taclebench suite.
  *
  * Copyright (c) Daniele Ottaviano, 2024
  *
