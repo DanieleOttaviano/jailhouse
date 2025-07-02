@@ -307,9 +307,9 @@ int jailhouse_fpga_regions_setup(struct cell *cell, const struct jailhouse_cell_
 			}
 
 			/* Initiate safe shutdown of the DFX region and wait for it to complete */
-			iowrite8(1, (uint8_t *)fpga_start + 1);
+			iowrite8(1, (uint8_t *)fpga_start);
 			while (true) {
-				if (ioread16(((uint16_t *)fpga_start + 1)) == 0x0003) {
+				if (ioread8(((uint8_t *)fpga_start)) == 0x01) {
 					break;
 				}
 			}
@@ -322,9 +322,9 @@ int jailhouse_fpga_regions_setup(struct cell *cell, const struct jailhouse_cell_
 			}
 
 			/* Initiate safe connection of the DFX region and wait for it to complete */
-			iowrite8(0, (uint8_t *)fpga_start + 1);
+			iowrite8(0, (uint8_t *)fpga_start);
 			while (true) {
-				if (ioread16(((uint16_t *)fpga_start + 1)) == 0x0) {
+				if (ioread8(((uint8_t *)fpga_start)) == 0x0) {
 					break;
 				}
 			}
