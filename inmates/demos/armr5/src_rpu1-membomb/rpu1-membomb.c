@@ -33,7 +33,7 @@
 /*
  * Jailhouse, a Linux-based partitioning hypervisor
  *
- * Omnivisor demo RPU
+ * Omnivisor demo RPU: memory bandwidth bomb. Writes in the memory assigned to RPU0 and RISCV PICO32
  *
  * Copyright (c) Daniele Ottaviano, 2024
  *
@@ -52,10 +52,11 @@
 #include "xil_cache.h"
 
 #define REP_TIME 100000	// 10s
-#define FREQUENCY 8  	// 8 MHz
-#define PERIOD 	  30 	// 30 us
+#define FREQUENCY COUNTS_PER_USECOND  // ~8.83 Mhz
+#define PERIOD 	30 	// 30 us
 
 static u32* base_address = (u32*)0x3ED00000;	// RPU0 memory
+static u32* base_address_pico32 = (u32*)0x70000000; // Pico32 memory
 static u32 memory_size = 4 * 1024 * 1024; 		// 4Mb
 
 
@@ -102,11 +103,12 @@ void membomb(){
 	XTime start, end, diff;
 	u32 time_us = 0;
 	while(1){
-    	for(int i = 0 ; i < memory_size ; i=i+4){
+    	for(int i = 0 ; i < memory_size/sizeof(u32) ; i++){
 
 			XTime_GetTime(&start);
     		
 			base_address[i] = 0xFFFFFFFF;
+			base_address_pico32[i] = 0xFFFFFFFF;
 			//asm_clean_inval_dc_line_mva_poc((u32)&base_address[i]);
 			//Xil_DCacheStoreLine((u32)&base_address[i]);
 			
@@ -136,9 +138,9 @@ int main()
 	Xil_DCacheDisable();
 	Xil_ICacheDisable();
 	
-	xil_printf("[RPU1] Start RPU1!\n\r");
+	xil_printf("[RPU-1] Start RPU1!\n\r");
 	membomb();
-	xil_printf("[RPU1] Successfully ran the application\n\r");
+	xil_printf("[RPU-1] Successfully ran the application\n\r");
 
 	cleanup_platform();
 	return 0;
