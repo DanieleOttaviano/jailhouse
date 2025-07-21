@@ -228,8 +228,7 @@ unlock:
  * using the remoteproc framework. It stops just before booting the remote
  * processor.
  *  
- * WARNING: Note that a specific remoteproc OMNV patch is required for this
- * functionality to work correctly.
+ * WARNING: The Start of the rCPU is not done here, it is blocked by the hypervisor
  *
  * Return: 0 on success, or a negative error code on failure.
  */
@@ -349,18 +348,6 @@ static int fetch_rproc(struct rcpu_info *rcpu)
 		goto put_node;
 	}
 	
-	/* Detach the rcpu if it is attached */
-	err = detach_rcpu_state(rcpu);
-	if (err < 0) {
-		goto put_node;
-	}
-
-	/* Stop the rcpu if it is running */
-	err = stop_rcpu_state(rcpu);
-	if (err < 0) {
-		goto put_node;
-	}
-
 put_node:
 	of_node_put(dev_node); 
 out:
@@ -460,7 +447,7 @@ int jailhouse_root_rcpus_setup(struct cell *cell, const struct jailhouse_cell_de
 	num_root_rcpus = config->num_rcpu_devices;
 
 	/* Allocate memory needed for remote processors */
-	root_rcpus_info = vmalloc(config->num_rcpu_devices * sizeof(struct rcpu_info *));
+	root_rcpus_info = vmalloc(num_root_rcpus * sizeof(struct rcpu_info *));
 	if (!root_rcpus_info) {
 		pr_err("Failed to allocate memory for rcpu_info\n");
 		err = -ENOMEM;
@@ -557,6 +544,13 @@ int jailhouse_rcpus_setup(struct cell *cell, const struct jailhouse_cell_desc *c
 			if (!cpumask_test_cpu(rcpu_id, &root_cell->rcpus_assigned)) {
 				pr_err("ERROR: rCPU %d is already assigned to a different cell\n", rcpu_id);
 				err = -EINVAL;
+				goto out;
+			}
+
+			/* Shutdown the rCPU if it is running */
+			err = stop_rcpu_state(root_rcpus_info[rcpu_id]);
+			if (err < 0) {
+				pr_err("Failed to stop rCPU %d\n", rcpu_id);
 				goto out;
 			}
 

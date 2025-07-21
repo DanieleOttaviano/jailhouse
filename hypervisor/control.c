@@ -28,6 +28,7 @@
 #include <asm/control.h>
 #include <asm/spinlock.h>
 #include <asm/coloring.h>
+#include <asm/omnv.h>
 #ifdef __aarch64__
 /* QoS Support only provided on arm64 */
 #include <asm/qos.h>
@@ -493,8 +494,8 @@ static void cell_destroy_internal(struct cell *cell)
 		// TODO: Daniele Ottaviano
 		// The Hypevisor can stop and clean the FPGA here if we don't have 
 		// a kernel module that does it for us
-		for_each_region(cpu, cell->fpga_region_set){
-			set_bit(cpu,root_cell.fpga_region_set->bitmap);
+		for_each_region(cpu, cell->fpga_region_set) {
+			set_bit(cpu, root_cell.fpga_region_set->bitmap);
 		}
 	}
 	
@@ -829,6 +830,11 @@ static int cell_start(struct per_cpu *cpu_data, unsigned long id)
 		arch_reset_cpu(cpu);
 	}
 
+	if (cell->config->rcpu_set_size > 0) {
+		for_each_cpu(cpu, cell->rcpu_set) {
+			enable_rcpu_start(cpu);
+		}
+	}
 
 	if(cell->config->fpga_regions_size > 0){
 		// TODO: Daniele Ottaviano
@@ -864,7 +870,9 @@ static int cell_set_loadable(struct per_cpu *cpu_data, unsigned long id)
 		arch_park_cpu(cpu);
 	}
 
-	// to do ... unconditionally park remote CPUs
+	if (cell->config->rcpu_set_size > 0) {
+		enable_rcpu_load();
+	}
 
 	if (cell->loadable)
 		goto out_resume;

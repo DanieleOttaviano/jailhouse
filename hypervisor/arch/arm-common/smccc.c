@@ -16,6 +16,7 @@
 #include <asm/traps.h>
 #include <asm/smc.h>
 #include <asm/smccc.h>
+#include <asm/omnv.h>
 
 bool sdei_available;
 
@@ -141,7 +142,21 @@ enum trap_return handle_smc(struct trap_context *ctx)
 	case ARM_SMCCC_OWNER_SIP:
 		stats[JAILHOUSE_CPU_STAT_VMEXITS_SMCCC]++;
 #if defined(__aarch64__) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
-		regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);
+		switch (omnv_intercept_smc(ctx)) {
+		case 0:
+			printk("Passthrough SMC\n");
+			regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);
+			break;
+
+		case 1:
+			printk("Intercepted SMC\n");
+			regs[0] = ARM_SMCCC_SUCCESS;
+			break;
+
+		default:
+			printk("ERROR SMCCC STOPPED\n");
+			regs[0] = ARM_SMCCC_NOT_SUPPORTED; 
+		}
 #else
 		if (this_cell() == &root_cell)
 			/*

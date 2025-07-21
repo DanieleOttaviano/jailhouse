@@ -21,5 +21,7 @@ objs-y += irqchip.o pci.o ivshmem.o uart-pl011.o uart-xuartps.o uart-mvebu.o
 objs-y += uart-hscif.o uart-scifa.o uart-imx.o uart-imx-lpuart.o uart-scif.o
 objs-y += gic-v2.o gic-v3.o smccc.o
 objs-y += uart-linflex.o
+# Omnivisor
+objs-y += omnv.o
 
 common-objs-y = $(addprefix ../arm-common/,$(objs-y))

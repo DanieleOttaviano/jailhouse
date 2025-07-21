@@ -517,12 +517,12 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 	if (err)
 		return err;
 
+	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_START, cell->id);
+	
 	err = jailhouse_start_rcpu(cell);
 	if (err)
 		pr_err("Failed to start rcpus\n");
 
-	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_START, cell->id);
-	
 	mutex_unlock(&jailhouse_lock);
 
 	return err;

@@ -512,6 +512,8 @@ static void xmpu_ddr_init(void){
   } 
 
   // Configure XMPU region registers for all ddr the channels
+  // TODO: Daniele Ottaviano
+  // Give RPUs access to the DDR memory (these are part of the rootcell at the beginning) ... 
   for(j=0; j<NR_XMPU_DDR; j++){
     xmpu_base = XMPU_DDR_BASE_ADDR + (j*XMPU_DDR_OFFSET);  
     xmpu_channel_n = j;               

@@ -61,7 +61,6 @@ static inline long smc_arg2(unsigned long id, unsigned long par1,
 	return __id;
 }
 
-/* Needed for Omnivisor Power Management on ZYNQMP */
 static inline int smc_arg3(unsigned long id, unsigned long par1,
 			   unsigned long par2, unsigned long par3,
 			   struct arm_smccc_res_values *res)
