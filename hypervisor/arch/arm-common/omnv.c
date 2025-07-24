@@ -65,6 +65,7 @@ static int get_rcpu_from_smc_arg(unsigned long val)
  */
 int omnv_intercept_smc(struct trap_context *ctx)
 {
+	struct cell *cell = this_cell();
 	unsigned long *regs = ctx->regs;
 	unsigned long fid = regs[0] & SMC_FID_MASK;
 	int rcpu = get_rcpu_from_smc_arg(regs[1] & SMC_FID_MASK);
@@ -74,20 +75,20 @@ int omnv_intercept_smc(struct trap_context *ctx)
 	if (rcpu == -1)
 		goto out;
 
-	/* Only the root cell can handle rCPU SMCs */
-	if (this_cell() != &root_cell) {
-		panic_printk("[ERROR] OMNV: Non-root cell tried to access rCPU\n");
-		err = -1;
-		goto out;
-	}
-
 	/*
-	 * If the rootcell owns the rCPU, passthrough
+	 * If the cell owns the rCPU, passthrough
 	 * N.B. The powerdown is done after the rCPU ownership is given to the root cell
 	 * 	    so we can safely passthrough the powerdown here.
 	 */
-	if (test_bit(rcpu, root_cell.rcpu_set->bitmap))
+	if (test_bit(rcpu, cell->rcpu_set->bitmap))
 		goto out;
+	
+	/* Only the root cell can handle rCPU SMCs */
+	if (this_cell() != &root_cell) {
+		panic_printk("[ERROR] OMNV: Non-root_cell tried to access not owned rCPU\n");
+		err = -1;
+		goto out;
+	}
 
 	/* If the rootcell does not own the rCPU, handle the PM_WAKEUP_RCPU and PM_POWERDOWN_RCPU */
 	if (fid == PM_WAKEUP_RCPU) {
