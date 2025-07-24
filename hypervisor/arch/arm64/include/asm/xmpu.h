@@ -50,11 +50,25 @@
 #define XMPU_IDS_OFFSET           0x1CU
 #define XMPU_LOCK_OFFSET          0x20U
 
+/* XMPU Default status register values*/
+#define XMPU_DDR_DEFAULT_CTRL    0x0000000bU
+#define XMPU_DDR_DEFAULT_POISON  0x00000000U
+#define XMPU_FPD_DEFAULT_CTRL    0x00000007U
+#define XMPU_FPD_DEFAULT_POISON  0x000fd4f0U
+#define XMPU_OCM_DEFAULT_CTRL    0x00000003U
+#define XMPU_OCM_DEFAULT_POISON  0x00000000U
+
 /* XMPU region field offset */
 #define RX_START_OFFSET    0x100U
 #define RX_END_OFFSET      0x104U
 #define RX_MASTER_OFFSET   0x108U
 #define RX_CONFIG_OFFSET   0x10CU
+
+/* XMPU Default region field values*/
+#define XMPU_DEFAULT_START  0x00000000U
+#define XMPU_DEFAULT_END    0x00000000U
+#define XMPU_DEFAULT_MASTER 0x00000000U
+#define XMPU_DEFAULT_CONFIG 0x00000008U
 
 /* Region offset */
 #define XMPU_REGION_OFFSET        0x10U
@@ -93,7 +107,7 @@ typedef struct xmpu_region_config{
   bool wrallowed;
   bool rdallowed;
   bool enable;
-  // Jailhouse specific
+  // Jailhouse-Omnivisor specific configurations
   u16 id;
   bool used;
 }xmpu_region_config;
