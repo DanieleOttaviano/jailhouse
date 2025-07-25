@@ -67,8 +67,7 @@ static xmpu_channel fpd_xmpu_device;
 static xmpu_channel ocm_xmpu_device;
 
 /* Master Devices */
-
- // RPU0 ( 0000, 00, AXI ID[3:0] )
+// RPU0 ( 0000, 00, AXI ID[3:0] )
 #define RPU0      0
 #define RPU0_ID   0x0000
 #define RPU0_MASK 0x03F0
@@ -285,6 +284,16 @@ static void set_xmpu_default(u32 xmpu_base){
 
 }
 
+// Setup status to poison (align 1->1Mb, 0->4Kb alignment)
+static void setup_xmpu_status_to_poison(u32 xmpu_base, xmpu_channel *xmpu_chnl, bool align){
+  xmpu_chnl->status.poison =        1;
+  xmpu_chnl->status.align =         align;
+  xmpu_chnl->status.def_wr_allowed =0;
+  xmpu_chnl->status.def_rd_allowed =0;
+  xmpu_chnl->status.lock =          0;
+  set_xmpu_status(xmpu_base, &xmpu_chnl->status);
+}
+
 // Setup region configuration
 static void setup_region_configuration(xmpu_region_config *config, 
                               u64 addr_start, u64 addr_end, 
@@ -373,7 +382,6 @@ static int set_cell_permissions(struct master_device *dev, struct cell *cell) {
   unsigned int n;
   
   for (xmpu_channel_n = 0; mask; xmpu_channel_n++, mask >>= 1) {
-    xmpu_print("mask = 0x%05x, xmpu_channel_n = %d\n\r", mask, xmpu_channel_n);
     if (!(mask & 0x1))
       continue;
     xmpu_base = XMPU_DDR_0_BASE_ADDR + (xmpu_channel_n * XMPU_DDR_OFFSET);
@@ -566,10 +574,9 @@ static void arm_xmpu_shutdown(void){
 
 // DDR XMPU init
 static void xmpu_ddr_init(void){
-  u8 i,j = 0;
-  u8 xmpu_channel_n = 0;
-  u32 xmpu_base = 0;
-  
+  u8 i = 0;
+  u32 xmpu_base = XMPU_DDR_BASE_ADDR;
+
   // Configure all XMPU DDR registers to default values
   for(i=0 ; i<NR_XMPU_DDR; i++){
     xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET);
@@ -577,22 +584,15 @@ static void xmpu_ddr_init(void){
   } 
 
   // Configure XMPU DDR region registers for each device
-  for( j=0; j < NR_MASTER_DEVICES; j++){
-    xmpu_print("Setting XMPU permissions for master device %d (ID: 0x%04llx, Mask: 0x%04llx)\n\r", j, master_device_list[j].id, master_device_list[j].mask);
-    set_cell_permissions(&master_device_list[j], &root_cell);
+  for(i=0; i < NR_MASTER_DEVICES; i++){
+    xmpu_print("Setting XMPU permissions for master device %d (ID: 0x%04llx, Mask: 0x%04llx)\n\r", i, master_device_list[i].id, master_device_list[i].mask);
+    set_cell_permissions(&master_device_list[i], &root_cell);
   }
 
-  // Configure XMPU status registers for all ddr the channels to remove default read/write permissions
+  // Configure XMPU status registers for all DDR the channels to remove default read/write permissions
   for(i=0 ; i<NR_XMPU_DDR; i++){
     xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET);  
-    xmpu_channel_n = i;   
-    
-    ddr_xmpu_device[xmpu_channel_n].status.poison =        1;
-    ddr_xmpu_device[xmpu_channel_n].status.align =         1; //1Mb
-    ddr_xmpu_device[xmpu_channel_n].status.def_wr_allowed =0;
-    ddr_xmpu_device[xmpu_channel_n].status.def_rd_allowed =0;
-    ddr_xmpu_device[xmpu_channel_n].status.lock =          0;
-    set_xmpu_status(xmpu_base, &ddr_xmpu_device[xmpu_channel_n].status);    
+    setup_xmpu_status_to_poison(xmpu_base, &ddr_xmpu_device[i], 1);
   }
 }
 
@@ -608,12 +608,7 @@ static void xmpu_fpd_init(void){
   set_xmpu_region(xmpu_base, R00_OFFSET, &fpd_xmpu_device.region[0]);  
   
   // Configure XMPU FPD status registers to remove default read/write permissions
-  fpd_xmpu_device.status.poison =        1;
-  fpd_xmpu_device.status.align =         0; //4kb
-  fpd_xmpu_device.status.def_wr_allowed =0;
-  fpd_xmpu_device.status.def_rd_allowed =0;
-  fpd_xmpu_device.status.lock =          0;
-  set_xmpu_status(xmpu_base, &fpd_xmpu_device.status);
+  setup_xmpu_status_to_poison(xmpu_base, &fpd_xmpu_device, 0);
 }
 
 // OCM XMPU init
@@ -632,12 +627,7 @@ static void xmpu_ocm_init(void){
   set_xmpu_region(xmpu_base, R02_OFFSET, &ocm_xmpu_device.region[2]);
 
   // Configure XMPU OCM status registers to remove default read/write permissions
-  ocm_xmpu_device.status.poison =        1;
-  ocm_xmpu_device.status.align =         0; //4kb
-  ocm_xmpu_device.status.def_wr_allowed =0;
-  ocm_xmpu_device.status.def_rd_allowed =0;
-  ocm_xmpu_device.status.lock =          0;
-  set_xmpu_status(xmpu_base, &ocm_xmpu_device.status);
+  setup_xmpu_status_to_poison(xmpu_base, &ocm_xmpu_device, 0);
 }
 
 // Initialize the XMPU
