@@ -20,9 +20,6 @@
 
 #if defined(CONFIG_XMPU_ACTIVE) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 
-#define NR_XMPU_REGIONS 16
-#define NR_XMPU_DDR     6
-
 /* XMPU configiguration register addresses */
 #define XMPU_DDR_OFFSET           0x00010000U
 #define XMPU_DDR_BASE_ADDR        0xFD000000U
@@ -34,6 +31,7 @@
 #define XMPU_DDR_5_BASE_ADDR      (XMPU_DDR_4_BASE_ADDR + XMPU_DDR_OFFSET)//0xFD050000U
 #define XMPU_FPD_BASE_ADDR        0xFD5D0000U
 #define XMPU_OCM_BASE_ADDR        0xFFA70000U
+#define NR_XMPU_DDR     6
 
 /* XPPU configiguration register addresses */
 #define XPPU_BASE_ADDR            0xFF980000U
@@ -88,6 +86,54 @@
 #define R13_OFFSET  (R12_OFFSET + XMPU_REGION_OFFSET)//0xD0U
 #define R14_OFFSET  (R13_OFFSET + XMPU_REGION_OFFSET)//0xE0U
 #define R15_OFFSET  (R14_OFFSET + XMPU_REGION_OFFSET)//0xF0U
+#define NR_XMPU_REGIONS 16
+
+/* Master Devices */
+// RPU0 ( 0000, 00, AXI ID[3:0] )
+#define RPU0      0
+#define RPU0_ID   0x0000
+#define RPU0_MASK 0x03F0
+// RPU1 ( 0000, 01, AXI ID[3:0] )
+#define RPU1      1
+#define RPU1_ID   0x0010
+#define RPU1_MASK 0x03F0
+// SATA, GPU, DAP AXI CoreSight, PCIe ( 0011, 0x, xxxx )
+#define GROUP0      2
+#define GROUP0_ID   0x00C0 
+#define GROUP0_MASK 0x03E0
+// PMU processor, CSU processor, CSU-DMA, USB0, USB1, DAP APB control,
+// LPD DMA, SD0, SD1, NAND, QSPI, GEM0, GEM1, GEM2, GEM3 ( 0001, xx, xxxx )
+#define GROUP1      3
+#define GROUP1_ID   0x0040
+#define GROUP1_MASK 0x03C0
+// CCI-400, SMMU TCU ( 0000, 00, 0000 )
+#define GROUP2      4
+#define GROUP2_ID   0x0000
+#define GROUP2_MASK 0x03FF
+// APU ( 0010, AXI ID [5:0] )
+#define APU         5
+#define APU_ID      0x0080
+#define APU_MASK    0x03C0
+// DysplayPort ( 0011, 10, 0xxx DMA{0:5} )
+#define DISPLAYPORT      6
+#define DISPLAYPORT_ID   0x00E0
+#define DISPLAYPORT_MASK 0x03F8
+// FPD DMA ( 0011, 10, 1xxx CH{0:7} )
+#define FPD_DMA      7
+#define FPD_DMA_ID   0x00E8
+#define FPD_DMA_MASK 0x03F8
+// TBU 3 ( 0010 00XX XXXX XXXX )
+#define TBU3        8
+#define TBU3_ID     0x2000
+#define TBU3_MASK   0xFC00
+// TBU 4 ( 0100 00XX XXXX XXXX )
+#define TBU4        9
+#define TBU4_ID     0x4000
+#define TBU4_MASK   0xFC00
+// TBU 5 ( 1000 00XX XXXX XXXX )
+#define TBU5        10
+#define TBU5_ID     0x8000
+#define TBU5_MASK   0xFC00
 
 typedef struct xmpu_status_config{
   bool poison;
@@ -112,10 +158,17 @@ typedef struct xmpu_region_config{
   bool used;
 }xmpu_region_config;
 
-typedef struct xmpu_channel{
+typedef struct xmpu_dev{
+  u32 base_addr; 
   xmpu_status_config status;
   xmpu_region_config region[NR_XMPU_REGIONS];
-}xmpu_channel;
+}xmpu_dev;
+
+typedef struct master_device{
+  u64 id;
+  u64 mask;
+  u8  xmpu_dev_mask;
+}master_device;
 
 
 //Debug Print

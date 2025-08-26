@@ -62,76 +62,31 @@ Function like macro that sums up the base address and register offset
 #define XMPU_CONFIG_REGISTER(xmpu_base, region)     XMPU_REGION_REGISTER(xmpu_base, region, RX_CONFIG_OFFSET)
 
 /* XMPU board specific devices */
-static xmpu_channel ddr_xmpu_device[NR_XMPU_DDR];
-static xmpu_channel fpd_xmpu_device;
-static xmpu_channel ocm_xmpu_device;
-
-/* Master Devices */
-// RPU0 ( 0000, 00, AXI ID[3:0] )
-#define RPU0      0
-#define RPU0_ID   0x0000
-#define RPU0_MASK 0x03F0
-// RPU1 ( 0000, 01, AXI ID[3:0] )
-#define RPU1      1
-#define RPU1_ID   0x0010
-#define RPU1_MASK 0x03F0
-// SATA, GPU, DAP AXI CoreSight, PCIe ( 0011, 0x, xxxx )
-#define GROUP0      2
-#define GROUP0_ID   0x00C0 
-#define GROUP0_MASK 0x03E0
-// PMU processor, CSU processor, CSU-DMA, USB0, USB1, DAP APB control,
-// LPD DMA, SD0, SD1, NAND, QSPI, GEM0, GEM1, GEM2, GEM3 ( 0001, xx, xxxx )
-#define GROUP1      3
-#define GROUP1_ID   0x0040
-#define GROUP1_MASK 0x03C0
-// CCI-400, SMMU TCU ( 0000, 00, 0000 )
-#define GROUP2      4
-#define GROUP2_ID   0x0000
-#define GROUP2_MASK 0x03FF
-// APU ( 0010, AXI ID [5:0] )
-#define APU         5
-#define APU_ID      0x0080
-#define APU_MASK    0x03C0
-// DysplayPort ( 0011, 10, 0xxx DMA{0:5} )
-#define DISPLAYPORT      6
-#define DISPLAYPORT_ID   0x00E0
-#define DISPLAYPORT_MASK 0x03F8
-// FPD DMA ( 0011, 10, 1xxx CH{0:7} )
-#define FPD_DMA      7
-#define FPD_DMA_ID   0x00E8
-#define FPD_DMA_MASK 0x03F8
-// TBU 3 ( 0010 00XX XXXX XXXX )
-#define TBU3        8
-#define TBU3_ID     0x2000
-#define TBU3_MASK   0xFC00
-// TBU 4 ( 0100 00XX XXXX XXXX )
-#define TBU4        9
-#define TBU4_ID     0x4000
-#define TBU4_MASK   0xFC00
-// TBU 5 ( 1000 00XX XXXX XXXX )
-#define TBU5        10
-#define TBU5_ID     0x8000
-#define TBU5_MASK   0xFC00
-
-typedef struct master_device{
-  u64 id;
-  u64 mask;
-  u8 ddr_xmpu_channel_mask;
-} master_device;
+static xmpu_dev xmpu_device[] = {
+    { XMPU_DDR_0_BASE_ADDR, {0}, {{0}} },
+    { XMPU_DDR_1_BASE_ADDR, {0}, {{0}} },
+    { XMPU_DDR_2_BASE_ADDR, {0}, {{0}} },
+    { XMPU_DDR_3_BASE_ADDR, {0}, {{0}} },
+    { XMPU_DDR_4_BASE_ADDR, {0}, {{0}} },
+    { XMPU_DDR_5_BASE_ADDR, {0}, {{0}} },
+    { XMPU_FPD_BASE_ADDR,   {0}, {{0}} },
+    { XMPU_OCM_BASE_ADDR,   {0}, {{0}} }
+};
+#define NR_XMPU (sizeof(xmpu_device)/sizeof(xmpu_device[0]))
 
 /* Static master device list */
 static master_device master_device_list[] = {
-    { RPU0_ID,        RPU0_MASK,        (u8)0b000001 },
-    { RPU1_ID,        RPU1_MASK,        (u8)0b000001 },
-    { GROUP0_ID,      GROUP0_MASK,      (u8)0b000110 },
-    { GROUP1_ID,      GROUP1_MASK,      (u8)0b000110 },
-    { GROUP2_ID,      GROUP2_MASK,      (u8)0b000110 },
-    { APU_ID,         APU_MASK,         (u8)0b000110 },
-    { DISPLAYPORT_ID, DISPLAYPORT_MASK, (u8)0b001000 },
-    { FPD_DMA_ID,     FPD_DMA_MASK,     (u8)0b001000 },
-    { TBU3_ID,        TBU3_MASK,        (u8)0b001000 },
-    { TBU4_ID,        TBU4_MASK,        (u8)0b010000 },
-    { TBU5_ID,        TBU5_MASK,        (u8)0b100000 }
+    { RPU0_ID,        RPU0_MASK,        (u8)0b10000001 },
+    { RPU1_ID,        RPU1_MASK,        (u8)0b10000001 },
+    { GROUP0_ID,      GROUP0_MASK,      (u8)0b00000110 },
+    { GROUP1_ID,      GROUP1_MASK,      (u8)0b00000110 },
+    { GROUP2_ID,      GROUP2_MASK,      (u8)0b00000110 },
+    { APU_ID,         APU_MASK,         (u8)0b11000110 },
+    { DISPLAYPORT_ID, DISPLAYPORT_MASK, (u8)0b00001000 },
+    { FPD_DMA_ID,     FPD_DMA_MASK,     (u8)0b00001000 },
+    { TBU3_ID,        TBU3_MASK,        (u8)0b00001000 },
+    { TBU4_ID,        TBU4_MASK,        (u8)0b00010000 },
+    { TBU5_ID,        TBU5_MASK,        (u8)0b00100000 }
 };
 #define NR_MASTER_DEVICES (sizeof(master_device_list)/sizeof(master_device_list[0]))
 
@@ -171,93 +126,95 @@ void print_xmpu(u32 xmpu_base){
 #endif // CONFIG_XMPU_DEBUG
 
 // Set the XMPU status registers of the xmpu_base
-static void set_xmpu_status(u32 xmpu_base, xmpu_status_config *config){
+static void set_xmpu_status(xmpu_dev * xmpu){
   u32 xmpu_ctrl_register;
   u32 xmpu_poison_register;
   u32 xmpu_lock_register;
   bool poison;
- 
-  poison = (xmpu_base == XMPU_FPD_BASE_ADDR) ? !(config->poison) : config->poison; // The FPD XMPU uses negative logic on the poison bit
 
-  if(xmpu_base == XMPU_FPD_BASE_ADDR){
-    xmpu_ctrl_register	  = (0x00000000 | (config->align << 3) | (1<<2) | (config->def_wr_allowed << 1) | (config->def_rd_allowed));
+  poison = (xmpu->base_addr == XMPU_FPD_BASE_ADDR) ? !(xmpu->status.poison) : xmpu->status.poison; // The FPD XMPU uses negative logic on the poison bit
+
+  if(xmpu->base_addr == XMPU_FPD_BASE_ADDR){
+    xmpu_ctrl_register	  = (0x00000000 | (xmpu->status.align << 3) | (1<<2) | (xmpu->status.def_wr_allowed << 1) | (xmpu->status.def_rd_allowed));
   }
   else{ // DDR and OCM
-    xmpu_ctrl_register	  = (0x00000000 | (config->align << 3) | (0<<2) | (config->def_wr_allowed << 1) | (config->def_rd_allowed));
+    xmpu_ctrl_register	  = (0x00000000 | (xmpu->status.align << 3) | (0<<2) | (xmpu->status.def_wr_allowed << 1) | (xmpu->status.def_rd_allowed));
   }
 
   xmpu_poison_register	=	(0x00000000 | (poison << 20));
-  xmpu_lock_register	  =	(0x00000000 | (config->lock));
+  xmpu_lock_register	  =	(0x00000000 | (xmpu->status.lock));
 
-  xmpu_write32((void *)(XMPU_CTRL_REGISTER(xmpu_base)), xmpu_ctrl_register);
-  xmpu_write32((void *)(XMPU_POISON_REGISTER(xmpu_base)), xmpu_poison_register);
-  xmpu_write32((void *)(XMPU_LOCK_REGISTER(xmpu_base)), xmpu_lock_register);
+  xmpu_write32((void *)(XMPU_CTRL_REGISTER(xmpu->base_addr)), xmpu_ctrl_register);
+  xmpu_write32((void *)(XMPU_POISON_REGISTER(xmpu->base_addr)), xmpu_poison_register);
+  xmpu_write32((void *)(XMPU_LOCK_REGISTER(xmpu->base_addr)), xmpu_lock_register);
 }
 
-// Set the XMPU region_offset registers of the xmpu_base
-static void set_xmpu_region(u32 xmpu_base, u32 region_offset, xmpu_region_config *config){
+// Set the XMPU region to the value of the input xmpu_dev
+static void set_xmpu_region(xmpu_dev *xmpu, u32 reg_num){
   u32 tmp_addr;
   u32 xmpu_start_register;
   u32 xmpu_end_register;
   u32 xmpu_master_register;
   u32 xmpu_config_register;
+  u32 region_offset = reg_num * XMPU_REGION_OFFSET;
 
-  if(xmpu_base == XMPU_FPD_BASE_ADDR){
-    tmp_addr = config->addr_start >> 12;
+  if(xmpu->base_addr == XMPU_FPD_BASE_ADDR){
+    tmp_addr = xmpu->region[reg_num].addr_start >> 12;
     xmpu_start_register = tmp_addr; 
-    tmp_addr = config->addr_end >> 12;
+    tmp_addr = xmpu->region[reg_num].addr_end >> 12;
     xmpu_end_register = tmp_addr;	
-  } else if(xmpu_base == XMPU_OCM_BASE_ADDR){
-    tmp_addr = config->addr_start;
+  } else if(xmpu->base_addr == XMPU_OCM_BASE_ADDR){
+    tmp_addr = xmpu->region[reg_num].addr_start;
     xmpu_start_register = tmp_addr; 
-    tmp_addr = config->addr_end;
+    tmp_addr = xmpu->region[reg_num].addr_end;
     xmpu_end_register = tmp_addr;	 
   } else {
-    tmp_addr = config->addr_start >> 20;
+    tmp_addr = xmpu->region[reg_num].addr_start >> 20;
     xmpu_start_register = tmp_addr << 8;
-    tmp_addr = config->addr_end >> 20;
+    tmp_addr = xmpu->region[reg_num].addr_end >> 20;
     xmpu_end_register = tmp_addr << 8;
   }
-  xmpu_master_register = (0x00000000 | (config->master_mask << 16) | (config->master_id));
-  xmpu_config_register = (0x00000000 | (config->ns_checktype << 4) | (config->region_ns << 3) | (config->wrallowed << 2) | (config->rdallowed << 1) | (config->enable)); 
+  xmpu_master_register = (0x00000000 | (xmpu->region[reg_num].master_mask << 16) | (xmpu->region[reg_num].master_id));
+  xmpu_config_register = (0x00000000 | (xmpu->region[reg_num].ns_checktype << 4) | (xmpu->region[reg_num].region_ns << 3) | (xmpu->region[reg_num].wrallowed << 2) | (xmpu->region[reg_num].rdallowed << 1) | (xmpu->region[reg_num].enable));
 
-  xmpu_write32((void *)(XMPU_START_REGISTER(xmpu_base, region_offset)), xmpu_start_register);
-  xmpu_write32((void *)(XMPU_END_REGISTER(xmpu_base, region_offset)), xmpu_end_register);
-  xmpu_write32((void *)(XMPU_MASTER_REGISTER(xmpu_base, region_offset)), xmpu_master_register);
-  xmpu_write32((void *)(XMPU_CONFIG_REGISTER(xmpu_base, region_offset)), xmpu_config_register);
+  xmpu_write32((void *)(XMPU_START_REGISTER(xmpu->base_addr, region_offset)), xmpu_start_register);
+  xmpu_write32((void *)(XMPU_END_REGISTER(xmpu->base_addr, region_offset)), xmpu_end_register);
+  xmpu_write32((void *)(XMPU_MASTER_REGISTER(xmpu->base_addr, region_offset)), xmpu_master_register);
+  xmpu_write32((void *)(XMPU_CONFIG_REGISTER(xmpu->base_addr, region_offset)), xmpu_config_register);
 }
 
-// Set the XMPU region registers of the xmpu_base to default values
-static void set_xmpu_region_default(u32 xmpu_base, u32 region_offset){
+// Set the XMPU region registers to default values
+static void set_xmpu_region_default(xmpu_dev *xmpu, u32 reg_num){
   u32 xmpu_start_register   = XMPU_DEFAULT_START;
   u32 xmpu_end_register     = XMPU_DEFAULT_END;
   u32 xmpu_master_register  = XMPU_DEFAULT_MASTER;
   u32 xmpu_config_register  = XMPU_DEFAULT_CONFIG;
+  u32 region_offset = reg_num * XMPU_REGION_OFFSET;
 
-  xmpu_write32((void *)(XMPU_START_REGISTER(xmpu_base, region_offset)), xmpu_start_register);
-  xmpu_write32((void *)(XMPU_END_REGISTER(xmpu_base, region_offset)), xmpu_end_register);
-  xmpu_write32((void *)(XMPU_MASTER_REGISTER(xmpu_base, region_offset)), xmpu_master_register);
-  xmpu_write32((void *)(XMPU_CONFIG_REGISTER(xmpu_base, region_offset)), xmpu_config_register);
+  xmpu_write32((void *)(XMPU_START_REGISTER(xmpu->base_addr, region_offset)), xmpu_start_register);
+  xmpu_write32((void *)(XMPU_END_REGISTER(xmpu->base_addr, region_offset)), xmpu_end_register);
+  xmpu_write32((void *)(XMPU_MASTER_REGISTER(xmpu->base_addr, region_offset)), xmpu_master_register);
+  xmpu_write32((void *)(XMPU_CONFIG_REGISTER(xmpu->base_addr, region_offset)), xmpu_config_register);
 }
 
-// Set the XMPU status registers of the xmpu_base to default values
-static void set_xmpu_status_default(u32 xmpu_base){
+// Set the XMPU status registers to default values
+static void set_xmpu_status_default(xmpu_dev *xmpu){
   u32 xmpu_ctrl_register    = 0;
   u32 xmpu_poison_register  = 0;
   u32 xmpu_lock_register    = 0;
 
-  if (xmpu_base == XMPU_DDR_0_BASE_ADDR || xmpu_base == XMPU_DDR_1_BASE_ADDR || 
-      xmpu_base == XMPU_DDR_2_BASE_ADDR || xmpu_base == XMPU_DDR_3_BASE_ADDR || 
-      xmpu_base == XMPU_DDR_4_BASE_ADDR || xmpu_base == XMPU_DDR_5_BASE_ADDR)
+  if (xmpu->base_addr == XMPU_DDR_0_BASE_ADDR || xmpu->base_addr == XMPU_DDR_1_BASE_ADDR || 
+      xmpu->base_addr == XMPU_DDR_2_BASE_ADDR || xmpu->base_addr == XMPU_DDR_3_BASE_ADDR || 
+      xmpu->base_addr == XMPU_DDR_4_BASE_ADDR || xmpu->base_addr == XMPU_DDR_5_BASE_ADDR)
   {
     xmpu_ctrl_register    = XMPU_DDR_DEFAULT_CTRL;
     xmpu_poison_register  = XMPU_DDR_DEFAULT_POISON;  
   }
-  else if(xmpu_base == XMPU_FPD_BASE_ADDR){
+  else if(xmpu->base_addr == XMPU_FPD_BASE_ADDR){
     xmpu_ctrl_register    = XMPU_FPD_DEFAULT_CTRL;
     xmpu_poison_register  = XMPU_FPD_DEFAULT_POISON;
   }
-  else if(xmpu_base == XMPU_OCM_BASE_ADDR){
+  else if(xmpu->base_addr == XMPU_OCM_BASE_ADDR){
     xmpu_ctrl_register    = XMPU_OCM_DEFAULT_CTRL;
     xmpu_poison_register  = XMPU_OCM_DEFAULT_POISON;
   }
@@ -265,33 +222,31 @@ static void set_xmpu_status_default(u32 xmpu_base){
     xmpu_print("ERROR: XMPU base address not valid\n\r");
   }
   
-  xmpu_write32((void *)(XMPU_CTRL_REGISTER(xmpu_base)), xmpu_ctrl_register);
-  xmpu_write32((void *)(XMPU_POISON_REGISTER(xmpu_base)), xmpu_poison_register);
-  xmpu_write32((void *)(XMPU_LOCK_REGISTER(xmpu_base)), xmpu_lock_register); 
+  xmpu_write32((void *)(XMPU_CTRL_REGISTER(xmpu->base_addr)), xmpu_ctrl_register);
+  xmpu_write32((void *)(XMPU_POISON_REGISTER(xmpu->base_addr)), xmpu_poison_register);
+  xmpu_write32((void *)(XMPU_LOCK_REGISTER(xmpu->base_addr)), xmpu_lock_register); 
 }
 
-// Set all the XMPU registers of the xmpu_base to default values
-static void set_xmpu_default(u32 xmpu_base){
+// Set all the XMPU registers of the xmpu to default values
+static void set_xmpu_default(xmpu_dev * xmpu){
   u8 i = 0;
-  u32 region_offset;
 
-  set_xmpu_status_default(xmpu_base);
+  set_xmpu_status_default(xmpu);
 
   for(i=0 ; i<NR_XMPU_REGIONS; i++){
-    region_offset = i * XMPU_REGION_OFFSET;
-    set_xmpu_region_default(xmpu_base, region_offset);
+    set_xmpu_region_default(xmpu, i);
   }
 
 }
 
 // Setup status to poison (align 1->1Mb, 0->4Kb alignment)
-static void setup_xmpu_status_to_poison(u32 xmpu_base, xmpu_channel *xmpu_chnl, bool align){
-  xmpu_chnl->status.poison =        1;
-  xmpu_chnl->status.align =         align;
-  xmpu_chnl->status.def_wr_allowed =0;
-  xmpu_chnl->status.def_rd_allowed =0;
-  xmpu_chnl->status.lock =          0;
-  set_xmpu_status(xmpu_base, &xmpu_chnl->status);
+static void setup_xmpu_status_to_poison(xmpu_dev *xmpu, bool align){
+  xmpu->status.poison =        1;
+  xmpu->status.align =         align;
+  xmpu->status.def_wr_allowed =0;
+  xmpu->status.def_rd_allowed =0;
+  xmpu->status.lock =          0;
+  set_xmpu_status(xmpu);
 }
 
 // Setup region configuration
@@ -329,40 +284,34 @@ static void setup_region_configuration_rootcell(xmpu_region_config * config,
 
 // Helper function to clean xmpu permissions of a specific device for all the regions used by a cell
 static void clean_cell_permissions(struct master_device *dev, u8 cell_id) { 
-  u8 i = 0;
+  u8 xmpu_dev_n = 0;
   u8 valid_reg_n = 0; 
-  u8 xmpu_channel_n = 0;
-  u32 region_base = 0;
-  u32 xmpu_base; 
-  xmpu_channel *xmpu_chnl = NULL;
-  u8 mask = dev->ddr_xmpu_channel_mask;
+  u8 i = 0;
+  xmpu_dev *xmpu;
+  u8 mask = dev->xmpu_dev_mask;
 
-  for (xmpu_channel_n = 0; mask; xmpu_channel_n++, mask >>= 1) {
-    xmpu_print("mask = 0x%05x, xmpu_channel_n = %d\n\r", mask, xmpu_channel_n);
+  for (xmpu_dev_n = 0; mask; xmpu_dev_n++, mask >>= 1) {
     if (!(mask & 0x1))
       continue;
-    xmpu_base = XMPU_DDR_0_BASE_ADDR + (xmpu_channel_n * XMPU_DDR_OFFSET);
-    xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
+    xmpu = &xmpu_device[xmpu_dev_n];
 
     for(i = 0; i < NR_XMPU_REGIONS; i++) {
-      if(xmpu_chnl->region[i].id == cell_id && xmpu_chnl->region[i].used == 1 && xmpu_chnl->region[i].master_id == dev->id && xmpu_chnl->region[i].master_mask == dev->mask) {
-        
+      if(xmpu->region[i].id == cell_id && xmpu->region[i].used == 1 && xmpu->region[i].master_id == dev->id && xmpu->region[i].master_mask == dev->mask) {
         valid_reg_n = i;
-        region_base = valid_reg_n * XMPU_REGION_OFFSET;
 
 #if defined(CONFIG_XMPU_DEBUG)
         xmpu_print("Cleaning XMPU region %d for cell %d on dev %llu\n\r", valid_reg_n, cell_id, dev->id);
-        xmpu_print("Memory region: 0x%08llx - 0x%08llx\n\r", xmpu_chnl->region[valid_reg_n].addr_start, xmpu_chnl->region[valid_reg_n].addr_end);
-        xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu_base + region_base));
-        xmpu_print("XMPU channel %d (offset: 0x%08x)\n\r", xmpu_channel_n, (xmpu_channel_n * XMPU_DDR_OFFSET));
-        xmpu_print("XMPU region  %d (offset: 0x%08x)\n\r", valid_reg_n, region_base);
+        xmpu_print("Memory region: 0x%08llx - 0x%08llx\n\r", xmpu->region[valid_reg_n].addr_start, xmpu->region[valid_reg_n].addr_end);
+        xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu->base_addr + (valid_reg_n * XMPU_REGION_OFFSET)));
+        xmpu_print("XMPU channel %d (offset: 0x%08x)\n\r", xmpu_dev_n, (xmpu_dev_n * XMPU_DDR_OFFSET));
+        xmpu_print("XMPU region  %d (offset: 0x%08x)\n\r", valid_reg_n, (valid_reg_n * XMPU_REGION_OFFSET));
         xmpu_print("Master ID:    0x%04llx\n\r", dev->id);
         xmpu_print("Master Mask:  0x%04llx\n\r", dev->mask);
 #endif // CONFIG_XMPU_DEBUG
 
-        set_xmpu_region_default(xmpu_base, region_base);
-        xmpu_chnl->region[valid_reg_n].id = 0;
-        xmpu_chnl->region[valid_reg_n].used = 0;
+        set_xmpu_region_default(xmpu, valid_reg_n);
+        xmpu->region[valid_reg_n].id = 0;
+        xmpu->region[valid_reg_n].used = 0;
       }
     }
   }
@@ -370,36 +319,38 @@ static void clean_cell_permissions(struct master_device *dev, u8 cell_id) {
 
 // Helper function to set xmpu permissions to cell
 static int set_cell_permissions(struct master_device *dev, struct cell *cell) {
-  u8 i = 0;
+  u8 xmpu_dev_n = 0;
   u8 valid_reg_n = 0;
-  u32 region_offset = 0;
-  u32 xmpu_base;
-  u8 xmpu_channel_n = 0;
-  u8 mask = dev->ddr_xmpu_channel_mask;
+  u8 i = 0;
   u32 addr_start, addr_end;
-  xmpu_channel *xmpu_chnl = NULL;
+  xmpu_dev * xmpu;
+  u8 mask = dev->xmpu_dev_mask;
   const struct jailhouse_memory *mem;
-  unsigned int n;
-  
-  for (xmpu_channel_n = 0; mask; xmpu_channel_n++, mask >>= 1) {
+  u32 n;
+
+  /* For each XMPU used by the master device 
+   * check if the memory regions assigned to the cells are in the right address space 
+   * and program the first XMPU register accordingly 
+   */
+  for (xmpu_dev_n = 0; mask; xmpu_dev_n++, mask >>= 1) {
     if (!(mask & 0x1))
       continue;
-    xmpu_base = XMPU_DDR_0_BASE_ADDR + (xmpu_channel_n * XMPU_DDR_OFFSET);
-    xmpu_chnl = &ddr_xmpu_device[xmpu_channel_n];
+    xmpu = &xmpu_device[xmpu_dev_n];
 
     for_each_mem_region(mem, cell->config, n){
-      // If not in DDR memory exit
+      // TODO: Daniele Ottaviano
+      // Check the assigned memory regions for different XMPU address space (DDR/FPD/OCM)
       if (!((mem->virt_start <= DDR_LOW_END - mem->size) || 
-        ((mem->virt_start >= DDR_HIGH_START) && (mem->virt_start <= DDR_HIGH_END - mem->size )))) {
+        ((mem->virt_start >= DDR_HIGH_START) && (mem->virt_start <= DDR_HIGH_END - mem->size ))))
         continue;
-      }
+
       addr_start = mem->phys_start;
       addr_end =  mem->phys_start + mem->size - 1;
         
       // Check for free region in the channel
       for(i = 0; i < NR_XMPU_REGIONS; i++){
-        if(xmpu_chnl->region[i].used == 0){
-          valid_reg_n = i; 
+        if(xmpu->region[i].used == 0){
+          valid_reg_n = i;
           break;
         }
       }
@@ -407,26 +358,25 @@ static int set_cell_permissions(struct master_device *dev, struct cell *cell) {
         xmpu_print("ERROR: No XMPU free region, impossible to create the VM\n\r");
         return -1;
       }
-      region_offset = valid_reg_n * XMPU_REGION_OFFSET;
 
 #if defined(CONFIG_XMPU_DEBUG)
       xmpu_print("Setting XMPU region %d for cell %d\n\r", valid_reg_n, cell->config->id);
       xmpu_print("Memory region: %d  (0x%08x - 0x%08x)\n\r", n, addr_start, addr_end);
-      xmpu_print("XMPU base address: 0x%08x\n\r", xmpu_base);
-      xmpu_print("XMPU channel %d (offset: 0x%08x)\n\r", xmpu_channel_n, (xmpu_channel_n * XMPU_DDR_OFFSET));
-      xmpu_print("XMPU region  %d (offset: 0x%08x)\n\r", valid_reg_n, region_offset);
+      xmpu_print("XMPU base address: 0x%08x\n\r", xmpu->base_addr);
+      xmpu_print("XMPU channel %d (offset: 0x%08x)\n\r", xmpu_dev_n, (xmpu_dev_n * XMPU_DDR_OFFSET));
+      xmpu_print("XMPU region  %d (offset: 0x%08x)\n\r", valid_reg_n, (valid_reg_n * XMPU_REGION_OFFSET));
       xmpu_print("Master ID:    0x%04llx\n\r", dev->id);
       xmpu_print("Master Mask:  0x%04llx\n\r", dev->mask);
 #endif // CONFIG_XMPU_DEBUG
 
       // the root cell has dedicated configuration (full access) and need only the first free region per channel
       if(cell->config->id == root_cell.config->id){
-        setup_region_configuration_rootcell(&xmpu_chnl->region[valid_reg_n], dev);
-        set_xmpu_region(xmpu_base, region_offset, &xmpu_chnl->region[valid_reg_n]);
+        setup_region_configuration_rootcell(&xmpu->region[valid_reg_n], dev);
+        set_xmpu_region(xmpu, valid_reg_n);
         break;
       }
 
-      setup_region_configuration(&xmpu_chnl->region[valid_reg_n], 
+      setup_region_configuration(&xmpu->region[valid_reg_n], 
                         addr_start, addr_end, 
                         dev->id, dev->mask, 
                         0, 0, // ns_checktype and region_ns
@@ -435,7 +385,7 @@ static int set_cell_permissions(struct master_device *dev, struct cell *cell) {
                         1,  //enable 
                         cell->config->id, 
                         1); //used
-      set_xmpu_region(xmpu_base, region_offset, &xmpu_chnl->region[valid_reg_n]);   
+      set_xmpu_region(xmpu, valid_reg_n);   
     }
   }
 
@@ -444,7 +394,7 @@ static int set_cell_permissions(struct master_device *dev, struct cell *cell) {
 
 static void arm_xmpu_cell_exit(struct cell *cell){
   struct master_device *dev = NULL; 
-  unsigned int cpu, fpga_region;
+  unsigned int rcpu, fpga_region;
 
   xmpu_print("Removing XMPU permissions for cell %d\n\r", cell->config->id);
 
@@ -473,8 +423,8 @@ static void arm_xmpu_cell_exit(struct cell *cell){
 
   if(cell->config->rcpu_set_size != 0){
 
-    for_each_cpu(cpu, cell->rcpu_set) {
-      switch (cpu)
+    for_each_cpu(rcpu, cell->rcpu_set) {
+      switch (rcpu)
       {
         case 0:
           dev = &master_device_list[RPU0];
@@ -494,7 +444,7 @@ static void arm_xmpu_cell_exit(struct cell *cell){
 
 static int arm_xmpu_cell_init(struct cell *cell){
   struct master_device *dev;
-	unsigned int cpu, fpga_region;
+	unsigned int rcpu, fpga_region;
   xmpu_print("Setting XMPU permissions for cell %d\n\r", cell->config->id);
   
   if(cell->config->fpga_regions_size > 0){
@@ -521,8 +471,8 @@ static int arm_xmpu_cell_init(struct cell *cell){
   }
 
   if(cell->config->rcpu_set_size != 0){
-    for_each_cpu(cpu, cell->rcpu_set) {
-      switch (cpu)
+    for_each_cpu(rcpu, cell->rcpu_set) {
+      switch (rcpu)
       {
         case 0:
           dev = &master_device_list[RPU0];
@@ -546,117 +496,46 @@ static int arm_xmpu_cell_init(struct cell *cell){
 // Config the XMPU to its default values
 static void arm_xmpu_shutdown(void){
   u8 i = 0;
-  u32 xmpu_base = 0;
   xmpu_print("Resetting XMPU to default values\n\r");
 
   // Set to default values
-  for(i=0 ; i<NR_XMPU_DDR; i++){
-    xmpu_base=XMPU_DDR_BASE_ADDR;
-    set_xmpu_default(xmpu_base + (i*XMPU_DDR_OFFSET));
+  for(i=0 ; i<NR_XMPU; i++){
+    set_xmpu_default(&xmpu_device[i]);
   }
-  xmpu_base=XMPU_FPD_BASE_ADDR;
-  set_xmpu_default(xmpu_base);
-  xmpu_base=XMPU_OCM_BASE_ADDR;
-  set_xmpu_default(xmpu_base);
 
 #if defined(CONFIG_XMPU_DEBUG)
-  for(i=0 ; i<NR_XMPU_DDR; i++){
-    xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET); 
-    //xmpu_print("DDR channel %d\n\r", i);
-    print_xmpu_status_regs(xmpu_base);
+  for(i=0 ; i<NR_XMPU; i++){
+    print_xmpu_status_regs(xmpu_device[i].base_addr);
   }
-  //xmpu_print("FPD channel 0\n\r");
-  print_xmpu_status_regs(XMPU_FPD_BASE_ADDR);
-  //xmpu_print("OCM channel 0\n\r");
-  print_xmpu_status_regs(XMPU_OCM_BASE_ADDR); 
 #endif // CONFIG_XMPU_DEBUG
 }
 
-// DDR XMPU init
-static void xmpu_ddr_init(void){
+// Initialize the XMPU
+static int arm_xmpu_init(void){
   u8 i = 0;
-  u32 xmpu_base = XMPU_DDR_BASE_ADDR;
 
-  // Configure all XMPU DDR registers to default values
-  for(i=0 ; i<NR_XMPU_DDR; i++){
-    xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET);
-    set_xmpu_default(xmpu_base);
+  // Configure all XMPU registers to default values
+  for(i=0 ; i<NR_XMPU; i++){
+    set_xmpu_default(&xmpu_device[i]);
   } 
 
-  // Configure XMPU DDR region registers for each device
+  // Configure XMPU region registers for each device
   for(i=0; i < NR_MASTER_DEVICES; i++){
-    xmpu_print("Setting XMPU permissions for master device %d (ID: 0x%04llx, Mask: 0x%04llx)\n\r", i, master_device_list[i].id, master_device_list[i].mask);
     set_cell_permissions(&master_device_list[i], &root_cell);
   }
 
   // Configure XMPU status registers for all DDR the channels to remove default read/write permissions
   for(i=0 ; i<NR_XMPU_DDR; i++){
-    xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET);  
-    setup_xmpu_status_to_poison(xmpu_base, &ddr_xmpu_device[i], 1);
+    setup_xmpu_status_to_poison(&xmpu_device[i], 1);
   }
-}
-
-// FPD XMPU init
-static void xmpu_fpd_init(void){
-  u32 xmpu_base = XMPU_FPD_BASE_ADDR;
-
-  // Configure all XMPU FPD registers to default values
-  set_xmpu_default(xmpu_base);
-
-  // Configure XMPU FPD region registers
-  setup_region_configuration_rootcell(&fpd_xmpu_device.region[0], &master_device_list[APU]);
-  set_xmpu_region(xmpu_base, R00_OFFSET, &fpd_xmpu_device.region[0]);  
-  
-  // Configure XMPU FPD status registers to remove default read/write permissions
-  setup_xmpu_status_to_poison(xmpu_base, &fpd_xmpu_device, 0);
-}
-
-// OCM XMPU init
-static void xmpu_ocm_init(void){
-  u32 xmpu_base = XMPU_OCM_BASE_ADDR;
-
-  // Configure all XMPU OCM registers to default values
-  set_xmpu_default(xmpu_base);
-  
-  // Configure XMPU OCM region registers
-  setup_region_configuration_rootcell(&ocm_xmpu_device.region[0], &master_device_list[APU]);
-  set_xmpu_region(xmpu_base, R00_OFFSET, &ocm_xmpu_device.region[0]);
-  setup_region_configuration_rootcell(&ocm_xmpu_device.region[1], &master_device_list[RPU0]);
-  set_xmpu_region(xmpu_base, R01_OFFSET, &ocm_xmpu_device.region[1]);
-  setup_region_configuration_rootcell(&ocm_xmpu_device.region[2], &master_device_list[RPU1]);
-  set_xmpu_region(xmpu_base, R02_OFFSET, &ocm_xmpu_device.region[2]);
-
-  // Configure XMPU OCM status registers to remove default read/write permissions
-  setup_xmpu_status_to_poison(xmpu_base, &ocm_xmpu_device, 0);
-}
-
-// Initialize the XMPU
-static int arm_xmpu_init(void){
+  for(i=NR_XMPU_DDR ; i<NR_XMPU; i++){
+    setup_xmpu_status_to_poison(&xmpu_device[i], 0);
+  }
 
 #if defined(CONFIG_XMPU_DEBUG)
-  u8 i = 0;
-  u32 xmpu_base = 0;
-#endif /* CONFIG_XMPU_DEBUG */
-
-  /* DDR */
-  xmpu_ddr_init();
-  
-  /* FPD */
-  xmpu_fpd_init();
-  
-  /* OCM */
-  xmpu_ocm_init();
-
-#if defined(CONFIG_XMPU_DEBUG)
-  for(i=0 ; i<NR_XMPU_DDR; i++){
-    xmpu_base = XMPU_DDR_BASE_ADDR + (i*XMPU_DDR_OFFSET); 
-    xmpu_print("DDR channel %d\n\r", i);
-    print_xmpu(xmpu_base);
+  for(i=0 ; i<NR_XMPU; i++){
+    print_xmpu(xmpu_device[i].base_addr);
   }
-  xmpu_print("FPD channel 0\n\r");
-  print_xmpu(XMPU_FPD_BASE_ADDR);
-  xmpu_print("OCM channel 0\n\r");
-  print_xmpu(XMPU_OCM_BASE_ADDR);
 #endif /* CONFIG_XMPU_DEBUG */
 
   return 0;
