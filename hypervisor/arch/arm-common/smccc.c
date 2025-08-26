@@ -144,17 +144,14 @@ enum trap_return handle_smc(struct trap_context *ctx)
 #if defined(__aarch64__) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 		switch (omnv_intercept_smc(ctx)) {
 		case 0:
-			printk("Passthrough SMC\n");
 			regs[0] = smc_arg4(regs[0], regs[1], regs[2], regs[3], regs[4]);
 			break;
 
 		case 1:
-			printk("Intercepted SMC\n");
 			regs[0] = ARM_SMCCC_SUCCESS;
 			break;
 
 		default:
-			printk("ERROR SMCCC STOPPED\n");
 			regs[0] = ARM_SMCCC_NOT_SUPPORTED; 
 		}
 #else
