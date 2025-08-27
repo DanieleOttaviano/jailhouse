@@ -158,10 +158,19 @@ typedef struct xmpu_region_config{
   bool used;
 }xmpu_region_config;
 
+/* XMPU device type enum for clarity */
+typedef enum {
+    XMPU_DDR,
+    XMPU_FPD,
+    XMPU_OCM,
+    XMPU_UNKNOWN
+}xmpu_dev_type;
+
 typedef struct xmpu_dev{
   u32 base_addr; 
   xmpu_status_config status;
   xmpu_region_config region[NR_XMPU_REGIONS];
+  xmpu_dev_type type;
 }xmpu_dev;
 
 typedef struct master_device{
@@ -169,7 +178,6 @@ typedef struct master_device{
   u64 mask;
   u8  xmpu_dev_mask;
 }master_device;
-
 
 //Debug Print
 void print_xmpu_status_regs(u32 xmpu_base);

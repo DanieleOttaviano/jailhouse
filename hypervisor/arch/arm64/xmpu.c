@@ -35,9 +35,21 @@
 #define DDR_HIGH_START  0x800000000U
 #define DDR_HIGH_END    0x87FFFFFFFU
 
-/* FPD regions (to do ...) */
+/* FPD regions */
+#define FPD_START_ADDR      0xF9000000 
+#define FPD_END_ADDR        0xFFFFFFFF 
+#define FPD_PCIE_LOW_START  0xE0000000
+#define FPD_PCIE_LOW_END    0xEFFFFFFF
+#define FPD_PCIE_HIGH_START 0x60000000
+#define FPD_PCIE_HIGH_END   0x9FFFFFFF
 
-/* OCM regions (to do ...) */
+/* OCM regions */
+#define OCM_START_ADDR  0xFFFC0000
+#define OCM_END_ADDR    0xFFFFFFFF
+
+/* XMPU Alignment */
+#define XMPU_ALIGN_1MB  1
+#define XMPU_ALIGN_4KB  0
 
 /*
 Function like macro that sums up the base address and register offset
@@ -63,14 +75,14 @@ Function like macro that sums up the base address and register offset
 
 /* XMPU board specific devices */
 static xmpu_dev xmpu_device[] = {
-    { XMPU_DDR_0_BASE_ADDR, {0}, {{0}} },
-    { XMPU_DDR_1_BASE_ADDR, {0}, {{0}} },
-    { XMPU_DDR_2_BASE_ADDR, {0}, {{0}} },
-    { XMPU_DDR_3_BASE_ADDR, {0}, {{0}} },
-    { XMPU_DDR_4_BASE_ADDR, {0}, {{0}} },
-    { XMPU_DDR_5_BASE_ADDR, {0}, {{0}} },
-    { XMPU_FPD_BASE_ADDR,   {0}, {{0}} },
-    { XMPU_OCM_BASE_ADDR,   {0}, {{0}} }
+    { XMPU_DDR_0_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
+    { XMPU_DDR_1_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
+    { XMPU_DDR_2_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
+    { XMPU_DDR_3_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
+    { XMPU_DDR_4_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
+    { XMPU_DDR_5_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
+    { XMPU_FPD_BASE_ADDR,   {0}, {{0}}, XMPU_FPD },
+    { XMPU_OCM_BASE_ADDR,   {0}, {{0}}, XMPU_OCM }
 };
 #define NR_XMPU (sizeof(xmpu_device)/sizeof(xmpu_device[0]))
 
@@ -132,9 +144,10 @@ static void set_xmpu_status(xmpu_dev * xmpu){
   u32 xmpu_lock_register;
   bool poison;
 
-  poison = (xmpu->base_addr == XMPU_FPD_BASE_ADDR) ? !(xmpu->status.poison) : xmpu->status.poison; // The FPD XMPU uses negative logic on the poison bit
+  // The FPD XMPU uses negative logic on the poison bit
+  poison = (xmpu->type == XMPU_FPD) ? !(xmpu->status.poison) : xmpu->status.poison;
 
-  if(xmpu->base_addr == XMPU_FPD_BASE_ADDR){
+  if(xmpu->type == XMPU_FPD){
     xmpu_ctrl_register	  = (0x00000000 | (xmpu->status.align << 3) | (1<<2) | (xmpu->status.def_wr_allowed << 1) | (xmpu->status.def_rd_allowed));
   }
   else{ // DDR and OCM
@@ -158,21 +171,32 @@ static void set_xmpu_region(xmpu_dev *xmpu, u32 reg_num){
   u32 xmpu_config_register;
   u32 region_offset = reg_num * XMPU_REGION_OFFSET;
 
-  if(xmpu->base_addr == XMPU_FPD_BASE_ADDR){
-    tmp_addr = xmpu->region[reg_num].addr_start >> 12;
-    xmpu_start_register = tmp_addr; 
-    tmp_addr = xmpu->region[reg_num].addr_end >> 12;
-    xmpu_end_register = tmp_addr;	
-  } else if(xmpu->base_addr == XMPU_OCM_BASE_ADDR){
-    tmp_addr = xmpu->region[reg_num].addr_start;
-    xmpu_start_register = tmp_addr; 
-    tmp_addr = xmpu->region[reg_num].addr_end;
-    xmpu_end_register = tmp_addr;	 
-  } else {
-    tmp_addr = xmpu->region[reg_num].addr_start >> 20;
-    xmpu_start_register = tmp_addr << 8;
-    tmp_addr = xmpu->region[reg_num].addr_end >> 20;
-    xmpu_end_register = tmp_addr << 8;
+#if defined(CONFIG_XMPU_DEBUG)
+  xmpu_print("Setting access to memory region: (0x%08llx - 0x%08llx)\n\r", xmpu->region[reg_num].addr_start, xmpu->region[reg_num].addr_end);
+#endif // CONFIG_XMPU_DEBUG
+
+  switch (xmpu->type)
+  {
+    case XMPU_DDR:
+      tmp_addr = xmpu->region[reg_num].addr_start >> 20;
+      xmpu_start_register = tmp_addr << 8;
+      tmp_addr = xmpu->region[reg_num].addr_end >> 20;
+      xmpu_end_register = tmp_addr << 8;
+      break;
+    case XMPU_FPD:
+      tmp_addr = xmpu->region[reg_num].addr_start >> 12;
+      xmpu_start_register = tmp_addr; 
+      tmp_addr = xmpu->region[reg_num].addr_end >> 12;
+      xmpu_end_register = tmp_addr;	
+      break;
+    case XMPU_OCM:
+      tmp_addr = xmpu->region[reg_num].addr_start;
+      xmpu_start_register = tmp_addr; 
+      tmp_addr = xmpu->region[reg_num].addr_end;
+      xmpu_end_register = tmp_addr;	
+      break;
+    default:
+      return; // Invalid XMPU type
   }
   xmpu_master_register = (0x00000000 | (xmpu->region[reg_num].master_mask << 16) | (xmpu->region[reg_num].master_id));
   xmpu_config_register = (0x00000000 | (xmpu->region[reg_num].ns_checktype << 4) | (xmpu->region[reg_num].region_ns << 3) | (xmpu->region[reg_num].wrallowed << 2) | (xmpu->region[reg_num].rdallowed << 1) | (xmpu->region[reg_num].enable));
@@ -203,23 +227,22 @@ static void set_xmpu_status_default(xmpu_dev *xmpu){
   u32 xmpu_poison_register  = 0;
   u32 xmpu_lock_register    = 0;
 
-  if (xmpu->base_addr == XMPU_DDR_0_BASE_ADDR || xmpu->base_addr == XMPU_DDR_1_BASE_ADDR || 
-      xmpu->base_addr == XMPU_DDR_2_BASE_ADDR || xmpu->base_addr == XMPU_DDR_3_BASE_ADDR || 
-      xmpu->base_addr == XMPU_DDR_4_BASE_ADDR || xmpu->base_addr == XMPU_DDR_5_BASE_ADDR)
-  {
-    xmpu_ctrl_register    = XMPU_DDR_DEFAULT_CTRL;
-    xmpu_poison_register  = XMPU_DDR_DEFAULT_POISON;  
-  }
-  else if(xmpu->base_addr == XMPU_FPD_BASE_ADDR){
-    xmpu_ctrl_register    = XMPU_FPD_DEFAULT_CTRL;
-    xmpu_poison_register  = XMPU_FPD_DEFAULT_POISON;
-  }
-  else if(xmpu->base_addr == XMPU_OCM_BASE_ADDR){
-    xmpu_ctrl_register    = XMPU_OCM_DEFAULT_CTRL;
-    xmpu_poison_register  = XMPU_OCM_DEFAULT_POISON;
-  }
-  else{
-    xmpu_print("ERROR: XMPU base address not valid\n\r");
+  switch (xmpu->type) {
+    case XMPU_DDR:
+      xmpu_ctrl_register    = XMPU_DDR_DEFAULT_CTRL;
+      xmpu_poison_register  = XMPU_DDR_DEFAULT_POISON;
+      break;
+    case XMPU_FPD:
+      xmpu_ctrl_register    = XMPU_FPD_DEFAULT_CTRL;
+      xmpu_poison_register  = XMPU_FPD_DEFAULT_POISON;
+      break;
+    case XMPU_OCM:
+      xmpu_ctrl_register    = XMPU_OCM_DEFAULT_CTRL;
+      xmpu_poison_register  = XMPU_OCM_DEFAULT_POISON;
+      break;
+    default:
+      xmpu_print("ERROR: XMPU base address not valid\n\r");
+      break;
   }
   
   xmpu_write32((void *)(XMPU_CTRL_REGISTER(xmpu->base_addr)), xmpu_ctrl_register);
@@ -239,10 +262,10 @@ static void set_xmpu_default(xmpu_dev * xmpu){
 
 }
 
-// Setup status to poison (align 1->1Mb, 0->4Kb alignment)
-static void setup_xmpu_status_to_poison(xmpu_dev *xmpu, bool align){
+// Setup status to poison (DDR->1Mb alignment, Others->4Kb alignment)
+static void poison_xmpu_status(xmpu_dev *xmpu){
   xmpu->status.poison =        1;
-  xmpu->status.align =         align;
+  xmpu->status.align = (xmpu->type == XMPU_DDR) ? XMPU_ALIGN_1MB : XMPU_ALIGN_4KB;
   xmpu->status.def_wr_allowed =0;
   xmpu->status.def_rd_allowed =0;
   xmpu->status.lock =          0;
@@ -250,36 +273,32 @@ static void setup_xmpu_status_to_poison(xmpu_dev *xmpu, bool align){
 }
 
 // Setup region configuration
-static void setup_region_configuration(xmpu_region_config *config, 
+static void enable_region_configuration(xmpu_region_config *config, 
                               u64 addr_start, u64 addr_end, 
                               u64 master_id, u64 master_mask,
-                              bool ns_checktype, bool region_ns,
                               bool wrallowed, bool rdallowed,
-                              bool enable, u16 id, bool used){
+                              u16 id){
+  bool region_ns = false;
+
+  // the root cell has dedicated configuration (full access)
+  if(id == root_cell.config->id){
+    addr_start = 0x0000000000;
+    addr_end   = 0xFFFFFFFFFF;
+    region_ns = true;
+    wrallowed = true;
+    rdallowed = true;
+  }
   config->addr_start =   addr_start;
   config->addr_end =     addr_end;
   config->master_id =    master_id;
   config->master_mask =  master_mask;
-  config->ns_checktype = ns_checktype;
+  config->ns_checktype = false;
   config->region_ns =    region_ns;
-  config->rdallowed =    rdallowed;
   config->wrallowed =    wrallowed;
-  config->enable =       enable;
+  config->rdallowed =    rdallowed;
+  config->enable =       true;
   config->id =           id;
-  config->used =         used;
-}
-
-// Setup region configuration for the root cell (full access)
-static void setup_region_configuration_rootcell(xmpu_region_config * config, 
-                                      struct master_device *dev) {
-  setup_region_configuration(config, 
-                    0x0000000000, // start address
-                    0xFFFFFFFFFF, // end address
-                    dev->id, dev->mask, 
-                    0, 1,     // ns_checktype, region_ns
-                    1, 1,     // wrallowed, rdallowed
-                    1,        // enable
-                    root_cell.config->id, 1); // id, used
+  config->used =         true;
 }
 
 // Helper function to clean xmpu permissions of a specific device for all the regions used by a cell
@@ -290,23 +309,26 @@ static void clean_cell_permissions(struct master_device *dev, u8 cell_id) {
   xmpu_dev *xmpu;
   u8 mask = dev->xmpu_dev_mask;
 
+#if defined(CONFIG_XMPU_DEBUG)
+  xmpu_print("\n\rCleaning protection for cell %d\n\r", cell_id);
+  xmpu_print("Master ID: 0x%04llx, Mask: 0x%04llx\n\r", dev->id, dev->mask);
+#endif // CONFIG_XMPU_DEBUG
+
   for (xmpu_dev_n = 0; mask; xmpu_dev_n++, mask >>= 1) {
     if (!(mask & 0x1))
       continue;
     xmpu = &xmpu_device[xmpu_dev_n];
+
+#if defined(CONFIG_XMPU_DEBUG)
+    xmpu_print("XMPU device channel %d (addr: 0x%08x)\n\r", xmpu_dev_n, xmpu->base_addr);
+#endif // CONFIG_XMPU_DEBUG
 
     for(i = 0; i < NR_XMPU_REGIONS; i++) {
       if(xmpu->region[i].id == cell_id && xmpu->region[i].used == 1 && xmpu->region[i].master_id == dev->id && xmpu->region[i].master_mask == dev->mask) {
         valid_reg_n = i;
 
 #if defined(CONFIG_XMPU_DEBUG)
-        xmpu_print("Cleaning XMPU region %d for cell %d on dev %llu\n\r", valid_reg_n, cell_id, dev->id);
-        xmpu_print("Memory region: 0x%08llx - 0x%08llx\n\r", xmpu->region[valid_reg_n].addr_start, xmpu->region[valid_reg_n].addr_end);
-        xmpu_print("XMPU base address: 0x%08x\n\r", (xmpu->base_addr + (valid_reg_n * XMPU_REGION_OFFSET)));
-        xmpu_print("XMPU channel %d (offset: 0x%08x)\n\r", xmpu_dev_n, (xmpu_dev_n * XMPU_DDR_OFFSET));
-        xmpu_print("XMPU region  %d (offset: 0x%08x)\n\r", valid_reg_n, (valid_reg_n * XMPU_REGION_OFFSET));
-        xmpu_print("Master ID:    0x%04llx\n\r", dev->id);
-        xmpu_print("Master Mask:  0x%04llx\n\r", dev->mask);
+        xmpu_print("Cleaning XMPU region %d\n\r", valid_reg_n);
 #endif // CONFIG_XMPU_DEBUG
 
         set_xmpu_region_default(xmpu, valid_reg_n);
@@ -317,75 +339,89 @@ static void clean_cell_permissions(struct master_device *dev, u8 cell_id) {
   }
 }
 
+static bool mem_in_xmpu_addr_range(xmpu_dev *xmpu, const struct jailhouse_memory *mem) {
+  bool in_ddr_low_range = mem->virt_start <= DDR_LOW_END - mem->size;
+  bool in_ddr_high_range = (mem->virt_start >= DDR_HIGH_START) && (mem->virt_start + mem->size - 1 <= DDR_HIGH_END);
+  bool in_fpd_range = (mem->virt_start >= FPD_START_ADDR) && (mem->virt_start + mem->size - 1 <= FPD_END_ADDR);
+  bool in_fpd_pcie_low = (mem->virt_start >= FPD_PCIE_LOW_START) && (mem->virt_start + mem->size - 1 <= FPD_PCIE_LOW_END);
+  bool in_fpd_pcie_high = (mem->virt_start >= FPD_PCIE_HIGH_START) && (mem->virt_start + mem->size - 1 <= FPD_PCIE_HIGH_END);
+  bool in_ocm_range = (mem->virt_start >= OCM_START_ADDR) && (mem->virt_start + mem->size - 1 <= OCM_END_ADDR);
+
+  if ((xmpu->type == XMPU_DDR && (in_ddr_low_range || in_ddr_high_range)) ||
+      (xmpu->type == XMPU_FPD && (in_fpd_range || in_fpd_pcie_low || in_fpd_pcie_high)) ||
+      (xmpu->type == XMPU_OCM && in_ocm_range))
+    return true;
+
+  return false;
+}
+
 // Helper function to set xmpu permissions to cell
 static int set_cell_permissions(struct master_device *dev, struct cell *cell) {
   u8 xmpu_dev_n = 0;
   u8 valid_reg_n = 0;
   u8 i = 0;
-  u32 addr_start, addr_end;
+  u64 addr_start, addr_end;
+  bool wrallowed = false;
+  bool rdallowed = false;
   xmpu_dev * xmpu;
   u8 mask = dev->xmpu_dev_mask;
   const struct jailhouse_memory *mem;
   u32 n;
+
+#if defined(CONFIG_XMPU_DEBUG)
+  xmpu_print("Setting protection for cell %d\n\r", cell->config->id);
+  xmpu_print("Master ID: 0x%04llx, Mask: 0x%04llx\n\r", dev->id, dev->mask);
+#endif // CONFIG_XMPU_DEBUG
 
   /* For each XMPU used by the master device 
    * check if the memory regions assigned to the cells are in the right address space 
    * and program the first XMPU register accordingly 
    */
   for (xmpu_dev_n = 0; mask; xmpu_dev_n++, mask >>= 1) {
-    if (!(mask & 0x1))
-      continue;
+    if (!(mask & 0x1)) continue;
     xmpu = &xmpu_device[xmpu_dev_n];
 
-    for_each_mem_region(mem, cell->config, n){
-      // TODO: Daniele Ottaviano
-      // Check the assigned memory regions for different XMPU address space (DDR/FPD/OCM)
-      if (!((mem->virt_start <= DDR_LOW_END - mem->size) || 
-        ((mem->virt_start >= DDR_HIGH_START) && (mem->virt_start <= DDR_HIGH_END - mem->size ))))
-        continue;
-
-      addr_start = mem->phys_start;
-      addr_end =  mem->phys_start + mem->size - 1;
-        
-      // Check for free region in the channel
-      for(i = 0; i < NR_XMPU_REGIONS; i++){
-        if(xmpu->region[i].used == 0){
-          valid_reg_n = i;
-          break;
-        }
-      }
-      if (i == NR_XMPU_REGIONS){
-        xmpu_print("ERROR: No XMPU free region, impossible to create the VM\n\r");
-        return -1;
-      }
-
 #if defined(CONFIG_XMPU_DEBUG)
-      xmpu_print("Setting XMPU region %d for cell %d\n\r", valid_reg_n, cell->config->id);
-      xmpu_print("Memory region: %d  (0x%08x - 0x%08x)\n\r", n, addr_start, addr_end);
-      xmpu_print("XMPU base address: 0x%08x\n\r", xmpu->base_addr);
-      xmpu_print("XMPU channel %d (offset: 0x%08x)\n\r", xmpu_dev_n, (xmpu_dev_n * XMPU_DDR_OFFSET));
-      xmpu_print("XMPU region  %d (offset: 0x%08x)\n\r", valid_reg_n, (valid_reg_n * XMPU_REGION_OFFSET));
-      xmpu_print("Master ID:    0x%04llx\n\r", dev->id);
-      xmpu_print("Master Mask:  0x%04llx\n\r", dev->mask);
+    xmpu_print("XMPU device channel %d (addr: 0x%08x)\n\r", xmpu_dev_n, xmpu->base_addr);
 #endif // CONFIG_XMPU_DEBUG
 
-      // the root cell has dedicated configuration (full access) and need only the first free region per channel
-      if(cell->config->id == root_cell.config->id){
-        setup_region_configuration_rootcell(&xmpu->region[valid_reg_n], dev);
-        set_xmpu_region(xmpu, valid_reg_n);
-        break;
-      }
+    for_each_mem_region(mem, cell->config, n){
+      // root_cell ignore the addr_space (full access)
+      if(mem_in_xmpu_addr_range(xmpu, mem) || cell->config->id == root_cell.config->id) {
+        addr_start = mem->phys_start;
+        addr_end =  mem->phys_start + mem->size - 1;
+        wrallowed = (mem->flags & JAILHOUSE_MEM_WRITE) ? 1 : 0;
+        rdallowed = (mem->flags & JAILHOUSE_MEM_READ) ? 1 : 0;
 
-      setup_region_configuration(&xmpu->region[valid_reg_n], 
-                        addr_start, addr_end, 
-                        dev->id, dev->mask, 
-                        0, 0, // ns_checktype and region_ns
-                        (mem->flags & JAILHOUSE_MEM_WRITE) ? 1 : 0, // wrallowed
-                        (mem->flags & JAILHOUSE_MEM_READ) ? 1 : 0,  // rdallowed
-                        1,  //enable 
-                        cell->config->id, 
-                        1); //used
-      set_xmpu_region(xmpu, valid_reg_n);   
+        // Check for free region in the channel
+        for(i = 0; i < NR_XMPU_REGIONS; i++){
+          if(xmpu->region[i].used == 0){
+            valid_reg_n = i;
+            break;
+          }
+        }
+        if (i == NR_XMPU_REGIONS){
+          xmpu_print("ERROR: No XMPU free region, impossible to create the VM\n\r");
+          return -1;
+        }
+
+#if defined(CONFIG_XMPU_DEBUG)
+        xmpu_print("Setting XMPU region %d\n\r", valid_reg_n);
+#endif // CONFIG_XMPU_DEBUG
+
+        enable_region_configuration(&xmpu->region[valid_reg_n], 
+                          addr_start, 
+                          addr_end, 
+                          dev->id, 
+                          dev->mask, 
+                          wrallowed,
+                          rdallowed,
+                          cell->config->id);
+        set_xmpu_region(xmpu, valid_reg_n);
+
+        // rootcell needs only one region per channel
+        if(cell->config->id == root_cell.config->id) break; 
+      }
     }
   }
 
@@ -451,18 +487,18 @@ static int arm_xmpu_cell_init(struct cell *cell){
     for_each_region(fpga_region, cell->fpga_region_set){
       switch (fpga_region)
       {
-      case 0:
-        dev = &master_device_list[TBU3];
-        break;
-      case 1:
-        dev = &master_device_list[TBU4];
-        break;
-      case 2:
-        dev = &master_device_list[TBU5];
-        break;
-      default:
-        xmpu_print("Error: FPGA region not valid\n\r");
-        return -1;
+        case 0:
+          dev = &master_device_list[TBU3];
+          break;
+        case 1:
+          dev = &master_device_list[TBU4];
+          break;
+        case 2:
+          dev = &master_device_list[TBU5];
+          break;
+        default:
+          xmpu_print("Error: FPGA region not valid\n\r");
+          return -1;
       }
       // Clean region used by root-cell and set the permissions for the cell
       clean_cell_permissions(dev, root_cell.config->id);
@@ -502,12 +538,6 @@ static void arm_xmpu_shutdown(void){
   for(i=0 ; i<NR_XMPU; i++){
     set_xmpu_default(&xmpu_device[i]);
   }
-
-#if defined(CONFIG_XMPU_DEBUG)
-  for(i=0 ; i<NR_XMPU; i++){
-    print_xmpu_status_regs(xmpu_device[i].base_addr);
-  }
-#endif // CONFIG_XMPU_DEBUG
 }
 
 // Initialize the XMPU
@@ -524,19 +554,10 @@ static int arm_xmpu_init(void){
     set_cell_permissions(&master_device_list[i], &root_cell);
   }
 
-  // Configure XMPU status registers for all DDR the channels to remove default read/write permissions
-  for(i=0 ; i<NR_XMPU_DDR; i++){
-    setup_xmpu_status_to_poison(&xmpu_device[i], 1);
+  // Configure XMPU status registers for all the channels to remove default read/write permissions
+  for(i=0 ;  i<NR_XMPU; i++){
+    poison_xmpu_status(&xmpu_device[i]);
   }
-  for(i=NR_XMPU_DDR ; i<NR_XMPU; i++){
-    setup_xmpu_status_to_poison(&xmpu_device[i], 0);
-  }
-
-#if defined(CONFIG_XMPU_DEBUG)
-  for(i=0 ; i<NR_XMPU; i++){
-    print_xmpu(xmpu_device[i].base_addr);
-  }
-#endif /* CONFIG_XMPU_DEBUG */
 
   return 0;
 }

@@ -19,7 +19,7 @@ struct {
 	struct jailhouse_cell_desc cell;
 	__u64 cpus[1];
 	__u64 rcpus[1];
-	struct jailhouse_memory mem_regions[6];
+	struct jailhouse_memory mem_regions[7];
 	union jailhouse_stream_id stream_ids[2];
 } __attribute__((packed)) config = {
 	.cell = {
@@ -78,6 +78,13 @@ struct {
 			.phys_start = 0x3ad00000,
 			.virt_start = 0,
 			.size = 0x4000000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE,
+		},
+		/* OCM */ {
+			.phys_start = 0xfffc0000,
+			.virt_start = 0xfffc0000,
+			.size = 0x00040000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_EXECUTE | JAILHOUSE_MEM_LOADABLE,
 		},
