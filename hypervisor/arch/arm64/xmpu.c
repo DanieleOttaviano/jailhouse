@@ -16,6 +16,7 @@
 #include <jailhouse/assert.h>
 #include <jailhouse/unit.h>
 #include <jailhouse/control.h>
+#include <jailhouse/string.h>
 #include <asm/sysregs.h>
 #include <asm/xmpu-board.h>
 #include <asm/xmpu.h>
@@ -30,11 +31,10 @@
 #endif
 
 /* DDR regions */
-#define DDR_LOW_START   0x00000000U
-#define DDR_LOW_END     0x7FFFFFFFU
-#define DDR_HIGH_START  0x800000000U
-#define DDR_HIGH_END    0x87FFFFFFFU
-
+#define DDR_LOW_START       0x00000000U
+#define DDR_LOW_END         0x7FFFFFFFU
+#define DDR_HIGH_START      0x800000000U
+#define DDR_HIGH_END        0x87FFFFFFFU
 /* FPD regions */
 #define FPD_START_ADDR      0xF9000000 
 #define FPD_END_ADDR        0xFFFFFFFF 
@@ -42,20 +42,47 @@
 #define FPD_PCIE_LOW_END    0xEFFFFFFF
 #define FPD_PCIE_HIGH_START 0x60000000
 #define FPD_PCIE_HIGH_END   0x9FFFFFFF
-
 /* OCM regions */
-#define OCM_START_ADDR  0xFFFC0000
-#define OCM_END_ADDR    0xFFFFFFFF
+#define OCM_START_ADDR      0xFFFC0000
+#define OCM_END_ADDR        0xFFFFFFFF
 
 /* XMPU Alignment */
 #define XMPU_ALIGN_1MB  1
 #define XMPU_ALIGN_4KB  0
 
-/*
-Function like macro that sums up the base address and register offset
-*/
-#define XMPU_STATUS_REGISTER(base, offset)          ((volatile u32 *)((u64)(base) + (offset)))
+/* XPPU configuration register addresses */
+#define XPPU_BASE_ADDR            0xFF980000U
+#define XPPU_POISON_OFFSET_ADDR   0xFF9CFF00U
 
+/* XMPU configuration register addresses */
+#define XMPU_DDR_OFFSET           0x00010000U
+#define XMPU_DDR_BASE_ADDR        0xFD000000U
+#define XMPU_FPD_BASE_ADDR        0xFD5D0000U
+#define XMPU_OCM_BASE_ADDR        0xFFA70000U
+#define NR_XMPU_DDR     6
+
+/* XMPU status register offsets */
+#define XMPU_CTRL_OFFSET          0x00U
+#define XMPU_ERR_STATUS1_OFFSET   0x04U
+#define XMPU_ERR_STATUS2_OFFSET   0x08U
+#define XMPU_POISON_OFFSET        0x0CU
+#define XMPU_ISR_OFFSET           0x10U
+#define XMPU_IMR_OFFSET           0x14U
+#define XMPU_IEN_OFFSET           0x18U
+#define XMPU_IDS_OFFSET           0x1CU
+#define XMPU_LOCK_OFFSET          0x20U
+
+/* XMPU Region offset */
+#define XMPU_REGION_OFFSET        0x10U
+#define NR_XMPU_REGIONS 16
+/* XMPU region field offset */
+#define RX_START_OFFSET    0x100U
+#define RX_END_OFFSET      0x104U
+#define RX_MASTER_OFFSET   0x108U
+#define RX_CONFIG_OFFSET   0x10CU
+
+/* Function like macro that sums up the base address and register offset */
+#define XMPU_STATUS_REGISTER(base, offset)          ((volatile u32 *)((u64)(base) + (offset)))
 #define XMPU_CTRL_REGISTER(xmpu_base)               XMPU_STATUS_REGISTER(xmpu_base, XMPU_CTRL_OFFSET)
 #define XMPU_ERR_STATUS1_REGISTER(xmpu_base)        XMPU_STATUS_REGISTER(xmpu_base, XMPU_ERR_STATUS1_OFFSET)
 #define XMPU_ERR_STATUS2_REGISTER(xmpu_base)        XMPU_STATUS_REGISTER(xmpu_base, XMPU_ERR_STATUS2_OFFSET)
@@ -73,14 +100,117 @@ Function like macro that sums up the base address and register offset
 #define XMPU_MASTER_REGISTER(xmpu_base, region)     XMPU_REGION_REGISTER(xmpu_base, region, RX_MASTER_OFFSET)
 #define XMPU_CONFIG_REGISTER(xmpu_base, region)     XMPU_REGION_REGISTER(xmpu_base, region, RX_CONFIG_OFFSET)
 
+/* XMPU Default status register values*/
+#define XMPU_DDR_DEFAULT_CTRL     0x0000000bU
+#define XMPU_DDR_DEFAULT_POISON   0x00000000U
+#define XMPU_FPD_DEFAULT_CTRL     0x00000007U
+#define XMPU_FPD_DEFAULT_POISON   0x000fd4f0U
+#define XMPU_OCM_DEFAULT_CTRL     0x00000003U
+#define XMPU_OCM_DEFAULT_POISON   0x00000000U
+/* XMPU Default region field values*/
+#define XMPU_DEFAULT_START        0x00000000U
+#define XMPU_DEFAULT_END          0x00000000U
+#define XMPU_DEFAULT_MASTER       0x00000000U
+#define XMPU_DEFAULT_CONFIG       0x00000008U
+
+/* Master Devices */
+/* RPU0 ( 0000, 00, AXI ID[3:0] ) */
+#define RPU0            0
+#define RPU0_ID         0x0000
+#define RPU0_MASK       0x03F0
+/* RPU1 ( 0000, 01, AXI ID[3:0] ) */
+#define RPU1            1
+#define RPU1_ID         0x0010
+#define RPU1_MASK       0x03F0
+/* SATA, GPU, DAP AXI CoreSight, PCIe ( 0011, 0x, xxxx ) */
+#define GROUP0          2
+#define GROUP0_ID       0x00C0 
+#define GROUP0_MASK     0x03E0
+/* PMU processor, CSU processor, CSU-DMA, USB0, USB1, DAP APB control,
+ * LPD DMA, SD0, SD1, NAND, QSPI, GEM0, GEM1, GEM2, GEM3 ( 0001, xx, xxxx ) */
+#define GROUP1          3
+#define GROUP1_ID       0x0040
+#define GROUP1_MASK     0x03C0
+/* CCI-400, SMMU TCU ( 0000, 00, 0000 ) */
+#define GROUP2          4
+#define GROUP2_ID       0x0000
+#define GROUP2_MASK     0x03FF
+/* APU ( 0010, AXI ID [5:0] ) */
+#define APU             5
+#define APU_ID          0x0080
+#define APU_MASK        0x03C0
+/* DisplayPort ( 0011, 10, 0xxx DMA{0:5} ) */
+#define DISPLAYPORT      6
+#define DISPLAYPORT_ID   0x00E0
+#define DISPLAYPORT_MASK 0x03F8
+/* FPD DMA ( 0011, 10, 1xxx CH{0:7} ) */
+#define FPD_DMA         7
+#define FPD_DMA_ID      0x00E8
+#define FPD_DMA_MASK    0x03F8
+/* TBU 3 - HP0 ( 0000 1110 10XX XXXX ) */
+#define TBU3            8
+#define TBU3_ID         0xe80  // 0x2000 
+#define TBU3_MASK       0xFFC0 // 0xFC00
+/* TBU 4 - HP1/HP2 ( 0001 001X XXXX XXXX ) */
+#define TBU4            9
+#define TBU4_ID         0x1200   // 0x4000 
+#define TBU4_MASK       0xFE00   // 0xFC00 
+/* TBU 5 - HP3 ( 0001 0111 01XX XXXX ) */
+#define TBU5            10
+#define TBU5_ID         0x1740  // 0x8000
+#define TBU5_MASK       0xFFC0  // 0xFC00
+
+typedef enum {
+    XMPU_DDR,
+    XMPU_FPD,
+    XMPU_OCM,
+    XMPU_UNKNOWN
+}xmpu_dev_type;
+
+typedef struct xmpu_status_config{
+  bool poison;
+  bool align;
+  bool def_wr_allowed;
+  bool def_rd_allowed;
+  bool lock;
+}xmpu_status_config;
+
+typedef struct xmpu_region_config{
+  u64 addr_start;
+  u64 addr_end;
+  u64 master_id;
+  u64 master_mask;
+  bool ns_checktype;
+  bool region_ns;
+  bool wrallowed;
+  bool rdallowed;
+  bool enable;
+  // Jailhouse-Omnivisor specific configurations
+  u16 id;
+  bool used;
+}xmpu_region_config;
+
+typedef struct xmpu_dev{
+  u32 base_addr; 
+  xmpu_status_config status;
+  xmpu_region_config region[NR_XMPU_REGIONS];
+  xmpu_dev_type type;
+}xmpu_dev;
+
+typedef struct master_device{
+  u64 id;
+  u64 mask;
+  u8  xmpu_dev_mask;
+}master_device;
+
 /* XMPU board specific devices */
 static xmpu_dev xmpu_device[] = {
-    { XMPU_DDR_0_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
-    { XMPU_DDR_1_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
-    { XMPU_DDR_2_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
-    { XMPU_DDR_3_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
-    { XMPU_DDR_4_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
-    { XMPU_DDR_5_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
+    { XMPU_DDR_BASE_ADDR, {0}, {{0}}, XMPU_DDR },
+    { (XMPU_DDR_BASE_ADDR + XMPU_DDR_OFFSET), {0}, {{0}}, XMPU_DDR },
+    { (XMPU_DDR_BASE_ADDR + (2 * XMPU_DDR_OFFSET)), {0}, {{0}}, XMPU_DDR },
+    { (XMPU_DDR_BASE_ADDR + (3 * XMPU_DDR_OFFSET)), {0}, {{0}}, XMPU_DDR },
+    { (XMPU_DDR_BASE_ADDR + (4 * XMPU_DDR_OFFSET)), {0}, {{0}}, XMPU_DDR },
+    { (XMPU_DDR_BASE_ADDR + (5 * XMPU_DDR_OFFSET)), {0}, {{0}}, XMPU_DDR },
     { XMPU_FPD_BASE_ADDR,   {0}, {{0}}, XMPU_FPD },
     { XMPU_OCM_BASE_ADDR,   {0}, {{0}}, XMPU_OCM }
 };
@@ -132,7 +262,7 @@ void print_xmpu(u32 xmpu_base){
   print_xmpu_status_regs(xmpu_base);
   for (i = 0; i < NR_XMPU_REGIONS; i++) {
     xmpu_print("Region %d:\n\r", i);
-    print_xmpu_region_regs(xmpu_base, R00_OFFSET + (i * XMPU_REGION_OFFSET));
+    print_xmpu_region_regs(xmpu_base, (i * XMPU_REGION_OFFSET));
   }
 }
 #endif // CONFIG_XMPU_DEBUG
@@ -435,6 +565,10 @@ static void arm_xmpu_cell_exit(struct cell *cell){
   xmpu_print("Removing XMPU permissions for cell %d\n\r", cell->config->id);
 
   if(cell->config->fpga_regions_size != 0){ 
+    /* 
+    * Non-Secure transactions coming from the FPGA are protected by the SMMU
+    * Secure transactions are protected only by the XMPU
+    */
     for_each_region(fpga_region, cell->fpga_region_set){
       switch (fpga_region)
       {
@@ -484,6 +618,10 @@ static int arm_xmpu_cell_init(struct cell *cell){
   xmpu_print("Setting XMPU permissions for cell %d\n\r", cell->config->id);
   
   if(cell->config->fpga_regions_size > 0){
+    /* 
+    * Non-Secure transactions coming from the FPGA are protected by the SMMU
+    * Secure transactions are protected only by the XMPU
+    */
     for_each_region(fpga_region, cell->fpga_region_set){
       switch (fpga_region)
       {
@@ -544,12 +682,12 @@ static void arm_xmpu_shutdown(void){
 static int arm_xmpu_init(void){
   u8 i = 0;
 
-  // Configure all XMPU registers to default values
+  // Configure all XMPU devices to default values
   for(i=0 ; i<NR_XMPU; i++){
     set_xmpu_default(&xmpu_device[i]);
   } 
 
-  // Configure XMPU region registers for each device
+  // Configure XMPU devices for each master device controlled by the root_cell 
   for(i=0; i < NR_MASTER_DEVICES; i++){
     set_cell_permissions(&master_device_list[i], &root_cell);
   }
