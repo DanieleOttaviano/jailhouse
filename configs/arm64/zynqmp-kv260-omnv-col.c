@@ -34,10 +34,10 @@ struct {
 	__u64 cpus[1];
 	__u64 rcpus[1];
 	__u64 fpga_regions[1];
-	struct jailhouse_memory mem_regions[14];
+	struct jailhouse_memory mem_regions[15];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
-	union jailhouse_stream_id stream_ids[3];
+	union jailhouse_stream_id stream_ids[7];
 	struct jailhouse_qos_device qos_devices[35];
 	struct jailhouse_rcpu_device rcpu_devices[2];
 } __attribute__((packed)) config = {
@@ -161,6 +161,13 @@ struct {
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
 		},
+		/* MMIO high (permissive) */ {
+			.phys_start = 0xfd820000,
+			.virt_start = 0xfd820000,
+			.size =	      0x027e0000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_IO,
+		},
 		/* RAM */ {
 			.phys_start = 0x0,
 			.virt_start = 0x0,
@@ -237,6 +244,23 @@ struct {
 		{
 			.mmu500.id = 0x870,
 			.mmu500.mask_out = 0xf,
+		},
+		/* FPGA */
+		{
+			.mmu500.id = 0xe80, 	 // [14:10] TBU3 ID , [9:0] FPGA Master Stream-ID HP0: 0000 1110 10xx xxxx 
+			.mmu500.mask_out = 0x3f, // Mask out bits 0..5
+		},
+		{
+			.mmu500.id = 0x12c0, 	 // [14:10] TBU4 ID , [9:0] FPGA Master Stream-ID HP1: 0001 0010 11xx xxxx 
+			.mmu500.mask_out = 0x3f, // Mask out bits 0..5
+		},
+		{
+			.mmu500.id = 0x1300, 	 // [14:10] TBU4 ID , [9:0] FPGA Master Stream-ID HP2: 0001 0011 00xx xxxx 
+			.mmu500.mask_out = 0x3f, // Mask out bits 0..5
+		},
+		{
+			.mmu500.id = 0x1740, 	 // [14:10] TBU5 ID , [9:0] FPGA Master Stream-ID HP3: 0001 0111 01xx xxxx 
+			.mmu500.mask_out = 0x3f, // Mask out bits 0..5
 		},
 	},
 

@@ -94,7 +94,7 @@ struct {
 
 	.stream_ids = {
 		{
-			.mmu500.id = 0x1280,	 // [14:10] TBU3 ID 00100 , [9:0] FPGA Master Stream-ID 1010xxxxx 
+			.mmu500.id = 0xe80, 	 // [14:10] TBU3 ID , [9:0] FPGA Master Stream-ID HP0: 0000 1110 10xx xxxx 
 			.mmu500.mask_out = 0x3f, // Mask out bits 0..5
 		},	
 	},
