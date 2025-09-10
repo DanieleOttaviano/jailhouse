@@ -20,7 +20,6 @@ struct {
 	__u64 cpus[1];
 	__u64 rcpus[1];
 	struct jailhouse_memory mem_regions[7];
-	union jailhouse_stream_id stream_ids[2];
 } __attribute__((packed)) config = {
 	.cell = {
 		.signature = JAILHOUSE_CELL_DESC_SIGNATURE,
@@ -34,7 +33,7 @@ struct {
 		.num_memory_regions = ARRAY_SIZE(config.mem_regions),
 		.num_irqchips = 0,
 		.num_pci_devices = 0,
-		.num_stream_ids = ARRAY_SIZE(config.stream_ids),
+		.num_stream_ids = 0,
 
 		.console = {
 			.address = 0xff010000,

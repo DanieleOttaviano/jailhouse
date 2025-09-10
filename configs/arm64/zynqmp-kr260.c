@@ -26,7 +26,7 @@
 struct {
 	struct jailhouse_system header;
 	__u64 cpus[1];
-	struct jailhouse_memory mem_regions[17];
+	struct jailhouse_memory mem_regions[18];
 	struct jailhouse_irqchip irqchips[1];
 	struct jailhouse_pci_device pci_devices[2];
 	union jailhouse_stream_id stream_ids[3];
@@ -126,6 +126,13 @@ struct {
 			.phys_start = 0xfd000000,
 			.virt_start = 0xfd000000,
 			.size =	      0x03000000,
+			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
+				JAILHOUSE_MEM_IO,
+		},
+		/* MMIO high (permissive) */ {
+			.phys_start = 0xfd820000,
+			.virt_start = 0xfd820000,
+			.size =	      0x027e0000,
 			.flags = JAILHOUSE_MEM_READ | JAILHOUSE_MEM_WRITE |
 				JAILHOUSE_MEM_IO,
 		},
