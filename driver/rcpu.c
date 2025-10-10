@@ -499,34 +499,61 @@ out:
 }
 
 /**
- * jailhouse_rcpus_setup - Set up the rCPUs of a cell based on the configuration.
+ * asic_rcpu_setup - Setup an ASIC rCPU for a new cell
  * 
- * @cell: Pointer to the cell structure representing the new cell (not the root cell).
- * @config: Pointer to the jailhouse_cell_desc structure containing the cell's configuration.
- * 
- * This function configures the rCPUs (remote CPUs) assigned to a cell by processing the
- * configuration provided. It distinguishes between ASIC rCPUs (hardware-based) and 
- * soft-core rCPUs (software-based) and performs the following steps:
- * 
- * 1. For ASIC rCPUs:
- *    - Checks if the rCPU is already assigned to a different cell. If so, it logs an error
- *      and returns an error code.
- *    - If the rCPU is part of the root cell, it removes the rCPU from the root cell's 
- *      assigned rCPUs and assigns it to the new cell.
- * 
- * 2. For soft-core rCPUs:
- *    - Verifies if the rCPU is listed as a device in the configuration. 
- *    - Calculates the soft-core rCPU ID starting from 0 (the soft-core IDs are per-cell).
- *    - Sets up the soft-core rCPU using the cell's device description, including its ID,
- *      name, and compatible driver. 
+ * @rcpu_id: ID of the rCPU to setup
+ *
+ * - If the rCPU is already assigned to a different cell it logs an error
+ *   and returns an error code.
+ * - If the rCPU is part of the root cell, it removes the rCPU from the root cell's 
+ *   assigned rCPUs and assigns it to the new cell.
  * 
  * Return:
  * 0 on success, or a negative error code on failure.
+*/
+static int asic_rcpu_setup(unsigned int rcpu_id)
+{
+	int err = 0;
+
+	/* Check if the region is already assigned to a different cell */
+	if (!cpumask_test_cpu(rcpu_id, &root_cell->rcpus_assigned)) {
+		pr_err("ERROR: rCPU %d is already assigned to a different cell\n", rcpu_id);
+		return -EINVAL;
+	}
+
+	/* Shutdown the rCPU if it is running */
+	err = stop_rcpu_state(root_rcpus_info[rcpu_id]);
+	if (err < 0) {
+		pr_err("Failed to stop rCPU %d\n", rcpu_id);
+		return err;
+	}
+
+	/* Remove the rcpu from the root cell (they are already initialized by the rootcell) */
+	pr_info("Removing rCPU %d from rootcell.\n", rcpu_id);
+	cpumask_clear_cpu(rcpu_id, &root_cell->rcpus_assigned);
+
+	return 0;
+}
+
+/**
+ * soft_rcpu_setup - Setup a soft-core rCPU for a new cell
+ * 
+ * @cell: Pointer to the cell structure representing the new cell (not the root cell).
+ * @config: Pointer to the jailhouse_cell_desc structure containing the cell's configuration.
+ * @rcpu_id: ID of the rCPU to setup
+ *
+ * - Verifies if the rCPU is listed as a device in the configuration.
+ * - Calculates the soft-core rCPU ID starting from 0 (the soft-core IDs are per-cell).
+ * - Sets up the soft-core rCPU using the cell's device description, including its ID,
+ *   name, and compatible driver. 
+ *
+ * Return:
+ * 0 on success, or a negative error code on failure.
  */
-int jailhouse_rcpus_setup(struct cell *cell, const struct jailhouse_cell_desc *config)
+static int soft_rcpu_setup(struct cell *cell, const struct jailhouse_cell_desc *config,
+						   unsigned int rcpu_id)
 {
 	const struct jailhouse_rcpu_device *rcpu_devices;
-	unsigned int rcpu_id;
 	unsigned int soft_rcpu_id;
 	unsigned int soft_rcpu_device_id;
 	int device_found = 0;
@@ -534,53 +561,61 @@ int jailhouse_rcpus_setup(struct cell *cell, const struct jailhouse_cell_desc *c
 
 	/* Get the rcpus devices info from the configuration */
 	rcpu_devices = jailhouse_cell_rcpu_devices(config);
+
+	for (soft_rcpu_device_id = 0; soft_rcpu_device_id < config->num_rcpu_devices; soft_rcpu_device_id++) {
+		if (rcpu_id == rcpu_devices[soft_rcpu_device_id].rcpu_id) {
+			pr_info("soft-rCPU %d found as a device in the configuration\n", rcpu_id);
+			device_found = 1;
+			break;
+		}
+	}
+	if (!device_found) {
+		pr_err("ERROR: soft-rCPU %d not found in the configuration\n", rcpu_id);
+		return -EINVAL;
+	}
+
+	/* Calculate the id of the soft-core rcpu starting from 0 */
+	soft_rcpu_id = rcpu_id - num_root_rcpus;
+
+	/* Setup the rCPU from the cell device description */
+	err = setup_rcpu(cell->soft_rcpus_info, soft_rcpu_id, rcpu_devices, soft_rcpu_device_id);
+	if (err < 0) {
+		pr_err("Failed to setup soft-rCPU %d\n", soft_rcpu_id);
+		return err;
+	}
+
+	return 0;
+}
+
+/**
+ * jailhouse_rcpus_setup - Setup the rCPUs of a cell based on the configuration.
+ * 
+ * @cell: Pointer to the cell structure representing the new cell (not the root cell).
+ * @config: Pointer to the jailhouse_cell_desc structure containing the cell's configuration.
+ * 
+ * This function configures the rCPUs (remote CPUs) assigned to a cell by processing the
+ * configuration provided. It distinguishes between ASIC rCPUs (hardware-based) and 
+ * soft-core rCPUs (software-based).
+ *  
+ * Return:
+ * 0 on success, or a negative error code on failure.
+ */
+int jailhouse_rcpus_setup(struct cell *cell, const struct jailhouse_cell_desc *config)
+{
+	unsigned int rcpu_id;
+	int err = 0;
 	
 	for_each_rcpu(rcpu_id, &cell->rcpus_assigned) {
 
 		/* Distinguish between asic rcpus and soft-core rcpus */
 		if (rcpu_id < num_root_rcpus) {
-
-			/* Check if the region is already assigned to a different cell */
-			if (!cpumask_test_cpu(rcpu_id, &root_cell->rcpus_assigned)) {
-				pr_err("ERROR: rCPU %d is already assigned to a different cell\n", rcpu_id);
-				err = -EINVAL;
+			err = asic_rcpu_setup(rcpu_id);
+			if (err < 0)
 				goto out;
-			}
-
-			/* Shutdown the rCPU if it is running */
-			err = stop_rcpu_state(root_rcpus_info[rcpu_id]);
-			if (err < 0) {
-				pr_err("Failed to stop rCPU %d\n", rcpu_id);
-				goto out;
-			}
-
-			/* Remove the rcpu from the root cell (they are already initialized by the rootcell) */
-			pr_info("Removing rCPU %d from rootcell.\n", rcpu_id);
-			cpumask_clear_cpu(rcpu_id, &root_cell->rcpus_assigned);
 		} else {
-			device_found = 0;
-			for (soft_rcpu_device_id = 0; soft_rcpu_device_id < config->num_rcpu_devices; soft_rcpu_device_id++) {
-				if (rcpu_id == rcpu_devices[soft_rcpu_device_id].rcpu_id) {
-					pr_info("soft-rCPU %d found as a device in the configuration\n", rcpu_id);
-					device_found = 1;
-					break;
-				}
-			}
-			if (!device_found) {
-				pr_err("ERROR: soft-rCPU %d not found in the configuration\n", rcpu_id);
-				err = -EINVAL;
-				goto out;
-			}
-
-			/* Calculate the id of the soft-core rcpu starting from 0 */
-			soft_rcpu_id = rcpu_id - num_root_rcpus;
-
-			/* Setup the rCPU from the cell device description */
-			err = setup_rcpu(cell->soft_rcpus_info, soft_rcpu_id, rcpu_devices, soft_rcpu_device_id);
-			if (err < 0) {
-				pr_err("Failed to setup soft-rCPU %d\n", soft_rcpu_id);
-				goto out;
-			}	
+			err = soft_rcpu_setup(cell, config, rcpu_id);
+			if (err < 0)
+				goto out;	
 		}
 	}
 
@@ -682,15 +717,13 @@ int jailhouse_start_rcpu(struct cell *cell) {
 		/* distinguish between asic rcpus and soft-core rcpus */
 		if (rcpu_id < num_root_rcpus) {
 			err = start_rcpu_state(root_rcpus_info[rcpu_id]);
-			if (err < 0) {
+			if (err < 0)
 				pr_err("Failed to start rCPU %d\n", rcpu_id);
-			}
 		} else {
 			soft_rcpu_id = rcpu_id - num_root_rcpus;
 			err = start_rcpu_state(cell->soft_rcpus_info[soft_rcpu_id]);
-			if (err < 0) {
+			if (err < 0)
 				pr_err("Failed to start soft-rCPU %d\n", rcpu_id);
-			}
 		}
 	}
 
@@ -746,6 +779,90 @@ out:
 }
 
 /**
+ * asic_rcpu_remove - Remove an ASIC rCPU from a cell and return it to the root cell.
+ * @rcpu_id: ID of the rCPU to be removed.
+ *
+ * - Check if the rproc instance is NULL.
+ * - Detach and stop the rCPU state.
+ * - Reassign the rCPU to the root cell.
+ *
+ * Return: 0 on success, or a negative error code on failure.
+ */
+static int asic_rcpu_remove(unsigned int rcpu_id){
+	int err = 0;
+
+	/* Check if the rproc is NULL */
+	if (root_rcpus_info[rcpu_id]->rproc == NULL) {
+		pr_err("rCPU %d has a NULL rproc instance\n", rcpu_id);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* Check if the rcpu is already offline */
+	err = detach_rcpu_state(root_rcpus_info[rcpu_id]);
+	if (err < 0) {
+		pr_err("Failed to detach rCPU %d\n", rcpu_id);
+		goto out;
+	}
+
+	err = stop_rcpu_state(root_rcpus_info[rcpu_id]);
+	if (err < 0) {
+		pr_err("Failed to stop rCPU %d\n", rcpu_id);
+		goto out;
+	}
+
+	/* Reassign the rcpu to the root cell */
+	cpumask_set_cpu(rcpu_id, &root_cell->rcpus_assigned);
+
+out:
+	return err;
+}
+
+/**
+ * soft_rcpu_remove - Remove a soft-core rCPU from a cell and deallocate its resources.
+ * @rcpu_id: ID of the soft-rCPU to be removed.
+ * 
+ * - Calculate the soft-core rCPU ID based on the total number of root rCPUs.
+ * - Check if the rproc instance is NULL.
+ * - Detach and stop the rCPU state.
+ * - Deallocate the rproc instance and free the memory allocated for the rCPU info.
+ *
+ * Return: 0 on success, or a negative error code on failure.
+ */
+static int soft_rcpu_remove(struct cell *cell, unsigned int rcpu_id){
+	int err = 0;
+	unsigned int soft_rcpu_id = rcpu_id - num_root_rcpus;
+
+	/* Check if the rproc is NULL */
+	if (cell->soft_rcpus_info[soft_rcpu_id]->rproc == NULL) {
+		pr_err("Soft-rCPU %d has a NULL rproc instance\n", soft_rcpu_id);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* Check if the rcpu is already offline */
+	err = detach_rcpu_state(cell->soft_rcpus_info[soft_rcpu_id]);
+	if (err < 0) {
+		pr_err("Failed to detach soft-rCPU %d\n", soft_rcpu_id);
+		goto out;
+	}
+
+	err = stop_rcpu_state(cell->soft_rcpus_info[soft_rcpu_id]);
+	if (err < 0) {
+		pr_err("Failed to stop soft-rCPU %d\n", soft_rcpu_id);
+		goto out;
+	}
+
+	/* Deallocate the rproc instance */
+	pr_info("Releasing soft-rCPU %s\n", cell->soft_rcpus_info[soft_rcpu_id]->name);
+	rproc_put(cell->soft_rcpus_info[soft_rcpu_id]->rproc);
+	vfree(cell->soft_rcpus_info[soft_rcpu_id]);
+
+out:
+	return err;
+}
+
+/**
  * jailhouse_rcpus_remove - Release and deallocate rproc instances for soft rCPUs
  *                          and return ASIC rCPUs to the root cell.
  * @cell: Pointer to the cell structure from which rCPUs are to be removed.
@@ -753,18 +870,7 @@ out:
  * This function handles the removal of rCPUs assigned to a given cell. It
  * distinguishes between ASIC rCPUs and soft-core rCPUs and performs the
  * necessary operations to either return ASIC rCPUs to the root cell or
- * deallocate soft-core rCPUs. The steps include:
- * 
- * - For ASIC rCPUs:
- *   - Check if the rproc instance is NULL.
- *   - Detach and stop the rCPU state.
- *   - Reassign the rCPU to the root cell.
- * 
- * - For soft-core rCPUs:
- *   - Check if the rproc instance is NULL.
- *   - Detach and stop the rCPU state.
- *   - Deallocate the rproc instance and free the associated memory.
- * 
+ * deallocate soft-core rCPUs.
  * Additionally, the function frees the array of soft rCPU information if it
  * exists.
  * 
@@ -774,63 +880,19 @@ out:
 int jailhouse_rcpus_remove(struct cell *cell) {
 	int err = 0;
 	unsigned int rcpu_id;
-	unsigned int soft_rcpu_id;
 
 	for_each_rcpu(rcpu_id, &cell->rcpus_assigned) {
 		pr_info("Removing rcpus %d from cell %d\n", rcpu_id, cell->id);
 
 		/* Distinguish between ASIC rcpus and soft-core rcpus */
 		if (rcpu_id < num_root_rcpus) {
-
-			/* Check if the rproc is NULL */
-			if (root_rcpus_info[rcpu_id]->rproc == NULL) {
-				pr_err("rCPU %d has a NULL rproc instance\n", rcpu_id);
-				err = -EINVAL;
+			err = asic_rcpu_remove(rcpu_id);
+			if (err < 0)
 				goto out;
-			}
-
-			/* Check if the rcpu is already offline */
-			err = detach_rcpu_state(root_rcpus_info[rcpu_id]);
-			if (err < 0) {
-				pr_err("Failed to detach rCPU %d\n", rcpu_id);
-				goto out;
-			}
-
-			err = stop_rcpu_state(root_rcpus_info[rcpu_id]);
-			if (err < 0) {
-				pr_err("Failed to stop rCPU %d\n", rcpu_id);
-				goto out;
-			}
-
-			/* Reassign the rcpu to the root cell */
-			cpumask_set_cpu(rcpu_id, &root_cell->rcpus_assigned);
 		} else {
-			soft_rcpu_id = rcpu_id - num_root_rcpus;
-
-			/* Check if the rproc is NULL */
-			if (cell->soft_rcpus_info[soft_rcpu_id]->rproc == NULL) {
-				pr_err("Soft-rCPU %d has a NULL rproc instance\n", soft_rcpu_id);
-				err = -EINVAL;
+			err = soft_rcpu_remove(cell, rcpu_id);
+			if (err < 0)
 				goto out;
-			}
-
-			/* Check if the rcpu is already offline */
-			err = detach_rcpu_state(cell->soft_rcpus_info[soft_rcpu_id]);
-			if (err < 0) {
-				pr_err("Failed to detach soft-rCPU %d\n", soft_rcpu_id);
-				goto out;
-			}
-
-			err = stop_rcpu_state(cell->soft_rcpus_info[soft_rcpu_id]);
-			if (err < 0) {
-				pr_err("Failed to stop soft-rCPU %d\n", soft_rcpu_id);
-				goto out;
-			}
-
-			/* Deallocate the rproc instance */
-			pr_info("Releasing soft-rCPU %s\n", cell->soft_rcpus_info[soft_rcpu_id]->name);
-			rproc_put(cell->soft_rcpus_info[soft_rcpu_id]->rproc);
-			vfree(cell->soft_rcpus_info[soft_rcpu_id]);
 		}
 	}
 
