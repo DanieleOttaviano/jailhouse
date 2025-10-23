@@ -619,12 +619,14 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 	}
 
 	if (cell->config->fpga_regions_size > 0){
-	/*the root cell's fpga region set must be super-set of new cell's set*/
-	for_each_region(cpu, cell->fpga_region_set)
-		if(!cell_owns_fpga_region(&root_cell,cpu)) {
-			err = trace_error(-EBUSY);
-			goto err_cell_exit;
+		/*the root cell's fpga region set must be super-set of new cell's set*/
+		for_each_region(cpu, cell->fpga_region_set) {
+			if(!cell_owns_fpga_region(&root_cell,cpu)) {
+				err = trace_error(-EBUSY);
+				goto err_cell_exit;
+			}
 		}
+		enable_fpga_load(cell->config->id); 
 	}
 
 	err = arch_cell_create(cell);
@@ -665,9 +667,10 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 	}
 
 	//publicly accessible data structure for regions?
-	if(cell->config->fpga_regions_size > 0)
-	for_each_region(cpu, cell->fpga_region_set) {
-		clear_bit(cpu, root_cell.fpga_region_set->bitmap);
+	if(cell->config->fpga_regions_size > 0){
+		for_each_region(cpu, cell->fpga_region_set) {
+			clear_bit(cpu, root_cell.fpga_region_set->bitmap);
+		}
 	}
 
 	/*
@@ -871,7 +874,9 @@ static int cell_set_loadable(struct per_cpu *cpu_data, unsigned long id)
 	}
 
 	if (cell->config->rcpu_set_size > 0) {
-		enable_rcpu_load();
+		for_each_cpu(cpu, cell->rcpu_set) {
+			enable_rcpu_load(cpu);
+		}
 	}
 
 	if (cell->loadable)

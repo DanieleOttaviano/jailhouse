@@ -17,25 +17,38 @@
 #include <asm/bitops.h>
 
 static unsigned long rcpu_start_bitmap = 0;
-static unsigned long load_phase = 0;
+static unsigned long load_phase_bitmap = 0;
+static int fpga_load_cell_id = -1;
 
 void enable_rcpu_start(unsigned int rcpu)
 {
 	set_bit(rcpu, &rcpu_start_bitmap);
 }
 
-void disable_rcpu_start(unsigned int rcpu)
+static void disable_rcpu_start(unsigned int rcpu)
 {
 	clear_bit(rcpu, &rcpu_start_bitmap);
 }
 
-void enable_rcpu_load(){
-	load_phase = 1;
+void enable_rcpu_load(unsigned int rcpu)
+{
+	set_bit(rcpu, &load_phase_bitmap);
 }
 
-static inline void disable_rcpu_load(void)
+static inline void disable_rcpu_load(unsigned int rcpu)
 {
-	load_phase = 0;
+	clear_bit(rcpu, &load_phase_bitmap);
+}
+
+void enable_fpga_load(unsigned int cell_id)
+{
+	fpga_load_cell_id = (int)cell_id;
+}
+
+
+static void disable_fpga_load(void)
+{
+	fpga_load_cell_id = -1;
 }
 
 static int get_rcpu_from_smc_arg(unsigned long val)
@@ -48,32 +61,22 @@ static int get_rcpu_from_smc_arg(unsigned long val)
 }
 
 /**
- * omnv_intercept_smc - Intercepts SMC (Secure Monitor Call) requests targeting rCPUs.
+ * omnv_intercept_smc_rcpus - Intercepts SMC (Secure Monitor Call) requests targeting rCPUs.
+ *
+ * @cell: Pointer to the cell structure representing the current cell.
+ * @fid: SMC function identifier.
+ * @rcpu: Target rCPU identifier.
+ *
+ * This function verifies the ownership of the rCPU and the validity of the SMC request.
  * 
- * @ctx: Pointer to the trap_context structure containing CPU register state.
- *  - regs[0]: SMC function identifier (fid).
- *  - regs[1]: Argument used to determine the target rCPU.
- *
- * This function handles SMC calls related to remote CPUs (rCPUs) in the Jailhouse hypervisor.
- * It determines whether the SMC should be passed through, intercepted, or rejected based on
- * the ownership of the rCPU and the type of SMC function identifier (fid).
- *
  * Return: 
  *   -  0: Passthrough. The SMC is allowed to proceed normally.
  *   -  1: Intercept. The SMC return successfully to the OS without being propagated.
  *   - -1: Error. The SMC is invalid or not permitted. 
  */
-int omnv_intercept_smc(struct trap_context *ctx)
+static int omnv_intercept_smc_rcpus(struct cell *cell, unsigned long fid, int rcpu)
 {
-	struct cell *cell = this_cell();
-	unsigned long *regs = ctx->regs;
-	unsigned long fid = regs[0] & SMC_FID_MASK;
-	int rcpu = get_rcpu_from_smc_arg(regs[1] & SMC_FID_MASK);
 	int err = 0;
-
-	/* The SMC fid is not targeting an rCPU */
-	if (rcpu == -1)
-		goto out;
 
 	/*
 	 * If the cell owns the rCPU, passthrough
@@ -92,19 +95,21 @@ int omnv_intercept_smc(struct trap_context *ctx)
 
 	/* If the rootcell does not own the rCPU, handle the PM_WAKEUP_RCPU and PM_POWERDOWN_RCPU */
 	if (fid == PM_WAKEUP_RCPU) {
+		/* In the load phase we need to fake the start of the rCPU
+		* so that rproc_boot() can be called but the rCPU is not actually started.
+		*/
+		if (test_bit(rcpu, &load_phase_bitmap)) {
+			disable_rcpu_load(rcpu);
+			err = 1; // Intercept
+			goto out;
+		}
+
 		if (test_bit(rcpu, &rcpu_start_bitmap)) {
 			disable_rcpu_start(rcpu);
 			goto out;
 		}
-		/* In the load phase we need to fake the start of the rCPU
-		 * so that rproc_boot() can be called but the rCPU is not actually started.
-		 */
-		if (load_phase) {
-			disable_rcpu_load();
-			err = 1; // Intercept
-			goto out;
-		}
-		panic_printk("[ERROR] OMNV: PM_WAKEUP_RCPU invalid on rCPU %d\n", rcpu);
+		
+		panic_printk("[ERROR] OMNV: invalid PM_WAKEUP_RCPU on rCPU %d\n", rcpu);
 		err = -1;
 		goto out;
 	}
@@ -114,7 +119,7 @@ int omnv_intercept_smc(struct trap_context *ctx)
 		if (test_bit(rcpu, &rcpu_start_bitmap)) {
 			goto out;
 		}
-		panic_printk("[ERROR] OMNV: PM_POWERDOWN_RCPU invalid on rCPU %d\n", rcpu);
+		panic_printk("[ERROR] OMNV: invalid PM_POWERDOWN_RCPU on rCPU %d\n", rcpu);
 		err = -1;
 		goto out;
 	}
@@ -123,3 +128,109 @@ out:
 	return err;
 }
 
+/**
+ * omnv_intercept_smc_fpga - Intercepts SMC (Secure Monitor Call) requests targeting FPGA regions.
+ * 
+ * @cell: Pointer to the cell structure representing the current cell.
+ * @fid: SMC function identifier.
+ * 
+ * This function verifies the ownership of the FPGA and the validity of the SMC request.
+ * 
+ * Return:
+ * -  0: Passthrough. The SMC is allowed to proceed normally.
+ * - -1: Error. The SMC is invalid or not permitted. 
+ */
+static int omnv_intercept_smc_fpga(struct cell *cell, unsigned long fid, int region_id)
+{
+	int err = 0;
+	struct cell *cell_owner;
+	
+	
+	/*
+	 * If the cell owns the FPGA region, passthrough (NOT YET IMPLEMENTED: how to check the regionID from the SMC?)
+	 */
+	// THE SMC does not contain info on the FPGA region selected
+	// if (test_bit(region_id, cell->fpga_region_set->bitmap))
+	// 	goto out;
+	
+	/*
+	 * Only the root cell can handle FPGA SMCs
+	 */
+	if (cell != &root_cell) {
+		panic_printk("[ERROR] OMNV: Non-root_cell tried to load FPGA bitstream in non-owned region\n");
+		err = -1;
+		goto out;
+	}
+
+	/* Find the cell that owns the FPGA region */
+	for_each_cell(cell_owner){
+		if(cell_owner->config->id == (unsigned int)fpga_load_cell_id) break;
+	}
+	printk("[INFO] OMNV: cell_owner fpga region bitmap: 0x%lx\n", cell_owner->fpga_region_set->bitmap[0]);
+	
+	//TODO: Daniele Ottaviano, implement a more fine grained control of the FPGA status access
+	if (fid == PM_FPGA_GET_STATUS) {
+		err = 0; // Passthrough (NOT YET IMPLEMENTED)
+		goto out;
+	}
+
+	/* Check if the driver enabled FPGA loading of the region otherwise deny */
+	if (fid == PM_FPGA_LOAD) {
+		/* Check if an FPGA load is enabled by the hypervisor during the create*/
+		if(fpga_load_cell_id != -1){
+			disable_fpga_load();
+			err = 0; // Passthrough
+			goto out;
+		}
+		printk("[ERROR] OMNV: invalid FPGA Load SMC request\n");
+		err = -1; // ERROR: No FPGA load enabled
+		goto out;
+	}
+
+out:
+	return err;
+}
+
+/**
+ * omnv_intercept_smc - Intercepts SMC (Secure Monitor Call) requests targeting rCPUs or FPGA regions.
+ * 
+ * @ctx: Pointer to the trap_context structure containing CPU register state.
+ *  - regs[0]: SMC function identifier (fid).
+ *  - regs[1]: Argument used to determine the target rCPU.
+ *
+ * This function handles SMC calls related to remote CPUs (rCPUs) or FPGA regions in the Jailhouse hypervisor.
+ * It determines whether the SMC should be passed through, intercepted, or rejected based on
+ * the ownership of the resources and the type of SMC function identifier (fid).
+ *
+ * Return: 
+ *   -  0: Passthrough. The SMC is allowed to proceed normally.
+ *   -  1: Intercept. The SMC return successfully to the OS without being propagated.
+ *   - -1: Error. The SMC is invalid or not permitted. 
+ */
+int omnv_intercept_smc(struct trap_context *ctx){
+	int err = 0;
+	struct cell *cell = this_cell();
+	int rcpu = -1;
+	int region_id = -2;
+	unsigned long *regs = ctx->regs;
+	unsigned long fid = regs[0] & SMC_FID_MASK;
+	
+	printk("OMNV: Intercepted SMC fid: 0x%lx from cell %s\n", fid, cell->config->name);
+	if (fid == PM_FPGA_LOAD || fid == PM_FPGA_GET_STATUS) {
+		// TODO: Daniele Ottaviano, extract the region ID from the SMC args
+		region_id = 0; 
+		err = omnv_intercept_smc_fpga(cell, fid, region_id);
+	} else if (fid == PM_WAKEUP_RCPU || fid == PM_POWERDOWN_RCPU) {
+		rcpu = get_rcpu_from_smc_arg(regs[1] & SMC_RCPU_MASK);		
+		/* The SMC fid is not targeting an rCPU */
+		if (rcpu == -1)
+			goto out;
+		err = omnv_intercept_smc_rcpus(cell, fid, rcpu);
+	} else {
+		/* Not an OMNV related SMC */
+		goto out;	
+	}
+
+out:
+	return err;
+}

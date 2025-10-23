@@ -13,11 +13,14 @@
 #include <jailhouse/config.h>
 #include <asm/traps.h>
 
-
+/* Platform specific ID mapping for SMC calls */
 #if defined(__aarch64__) && defined(CONFIG_MACH_ZYNQMP_ZCU102)
 #define SMC_FID_MASK        	0xff
+#define SMC_RCPU_MASK		  	0xff
 #define PM_POWERDOWN_RCPU   	0x08
 #define PM_WAKEUP_RCPU      	0x0a
+#define PM_FPGA_LOAD       		0x16
+#define PM_FPGA_GET_STATUS		0x17
 
 struct rcpu_map {
 	unsigned int smc_val;
@@ -32,8 +35,11 @@ static const struct rcpu_map rcpu_table[] = {
 
 #else
 #define SMC_FID_MASK        	0x00
-#define PM_WAKEUP_RCPU      	0xff
+#define SMC_RCPU_MASK		  	0x00
 #define PM_POWERDOWN_RCPU   	0xff
+#define PM_WAKEUP_RCPU      	0xff
+#define PM_FPGA_LOAD       		0xff
+#define PM_FPGA_GET_STATUS		0xff
 
 struct rcpu_map {
 	unsigned int smc_val;
@@ -48,6 +54,6 @@ static const struct rcpu_map rcpu_table[] = {
 
 
 void enable_rcpu_start(unsigned int rcpu);
-void disable_rcpu_start(unsigned int rcpu);
-void enable_rcpu_load(void);
+void enable_rcpu_load(unsigned int rcpu);
+void enable_fpga_load(unsigned int cell_id);
 int omnv_intercept_smc(struct trap_context *ctx);

@@ -307,17 +307,6 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 		cpumask_clear_cpu(cpu, &root_cell->cpus_assigned);
 	}
 
-	//to do ... error management
-	err = jailhouse_fpga_regions_setup(cell, config);
-	if(err < 0)
-		goto unlock_out;
-	
-	//to do ... error management
-	err = jailhouse_rcpus_setup(cell, config);
-	if(err < 0)
-		goto unlock_out;
-	
-
 	jailhouse_pci_do_all_devices(cell, JAILHOUSE_PCI_TYPE_DEVICE,
 	                             JAILHOUSE_PCI_ACTION_CLAIM);
 
@@ -325,6 +314,16 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 	if (err < 0)
 		goto error_cpu_online;
 
+	//to do ... error management
+	err = jailhouse_fpga_regions_setup(cell, config);
+	if(err < 0)
+		goto error_cpu_online;
+	
+	//to do ... error management
+	err = jailhouse_rcpus_setup(cell, config);
+	if(err < 0)
+		goto error_cpu_online;
+	
 	cell_register(cell);
 
 	pr_info("Created Jailhouse cell \"%s\"\n", config->name);
