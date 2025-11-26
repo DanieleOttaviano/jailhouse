@@ -396,6 +396,9 @@ int jailhouse_fpga_regions_remove(struct cell *cell)
 	unsigned int region_id;
 	int err = 0;
 
+	if(cell->fpga_overlay_ids == NULL)
+		goto out;
+
 	for_each_region(region_id, &cell->fpga_regions_assigned) {
 		/* TODO: Daniele Ottaviano
 		 * remove the kernel module (not possible for security reason)
@@ -424,6 +427,7 @@ int jailhouse_fpga_regions_remove(struct cell *cell)
 
 	kfree(cell->fpga_overlay_ids);
 
+out:
 	return err;
 }
 

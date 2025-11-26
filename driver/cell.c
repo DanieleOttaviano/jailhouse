@@ -196,6 +196,43 @@ void jailhouse_cell_delete_root(void)
 	root_cell = NULL;
 }
 
+static int cell_destroy(struct cell *cell)
+{
+	unsigned int cpu;
+	int err;
+
+	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_DESTROY, cell->id);
+	if (err)
+		return err;
+
+	err = jailhouse_rcpus_remove(cell);
+	if (err)
+		pr_err("Jailhouse: failed to remove rcpus\n");
+
+	err = jailhouse_fpga_regions_remove(cell);
+	if (err)
+		pr_err("Jailhouse: failed to remove fpga regions\n");
+		
+	for_each_cpu(cpu, &cell->cpus_assigned) {
+		if (cpumask_test_cpu(cpu, &offlined_cpus)) {
+			if (add_cpu(cpu) != 0)
+				pr_err("Jailhouse: failed to bring CPU %d "
+					   "back online\n", cpu);
+			cpumask_clear_cpu(cpu, &offlined_cpus);
+		}
+		cpumask_set_cpu(cpu, &root_cell->cpus_assigned);
+	}
+
+	jailhouse_pci_do_all_devices(cell, JAILHOUSE_PCI_TYPE_DEVICE,
+								 JAILHOUSE_PCI_ACTION_RELEASE);
+
+	pr_info("Destroyed Jailhouse cell \"%s\"\n", cell->name);
+
+	cell_delete(cell);
+
+	return 0;
+}
+
 int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 {
 	struct jailhouse_cell_create cell_params;
@@ -314,15 +351,13 @@ int jailhouse_cmd_cell_create(struct jailhouse_cell_create __user *arg)
 	if (err < 0)
 		goto error_cpu_online;
 
-	//to do ... error management
 	err = jailhouse_fpga_regions_setup(cell, config);
 	if(err < 0)
-		goto error_cpu_online;
-	
-	//to do ... error management
+		goto destroy_cell;
+
 	err = jailhouse_rcpus_setup(cell, config);
 	if(err < 0)
-		goto error_cpu_online;
+		goto destroy_cell;
 	
 	cell_register(cell);
 
@@ -345,6 +380,10 @@ error_cpu_online:
 
 error_cell_delete:
 	cell_delete(cell);
+	goto unlock_out;
+
+destroy_cell:
+	cell_destroy(cell);
 	goto unlock_out;
 }
 
@@ -525,43 +564,6 @@ int jailhouse_cmd_cell_start(const char __user *arg)
 	mutex_unlock(&jailhouse_lock);
 
 	return err;
-}
-
-static int cell_destroy(struct cell *cell)
-{
-	unsigned int cpu;
-	int err;
-
-	err = jailhouse_call_arg1(JAILHOUSE_HC_CELL_DESTROY, cell->id);
-	if (err)
-		return err;
-
-	err = jailhouse_rcpus_remove(cell);
-	if (err)
-		pr_err("Jailhouse: failed to remove rcpus\n");
-
-	err = jailhouse_fpga_regions_remove(cell);
-	if (err)
-		pr_err("Jailhouse: failed to remove fpga regions\n");
-		
-	for_each_cpu(cpu, &cell->cpus_assigned) {
-		if (cpumask_test_cpu(cpu, &offlined_cpus)) {
-			if (add_cpu(cpu) != 0)
-				pr_err("Jailhouse: failed to bring CPU %d "
-				       "back online\n", cpu);
-			cpumask_clear_cpu(cpu, &offlined_cpus);
-		}
-		cpumask_set_cpu(cpu, &root_cell->cpus_assigned);
-	}
-
-	jailhouse_pci_do_all_devices(cell, JAILHOUSE_PCI_TYPE_DEVICE,
-	                             JAILHOUSE_PCI_ACTION_RELEASE);
-
-	pr_info("Destroyed Jailhouse cell \"%s\"\n", cell->name);
-
-	cell_delete(cell);
-
-	return 0;
 }
 
 int jailhouse_cmd_cell_destroy(const char __user *arg)

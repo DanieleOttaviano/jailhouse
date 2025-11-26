@@ -791,6 +791,12 @@ out:
 static int asic_rcpu_remove(unsigned int rcpu_id){
 	int err = 0;
 
+	if(root_rcpus_info[rcpu_id] == NULL){
+		pr_err("rCPU %d info is NULL\n", rcpu_id);
+		err = -EINVAL;
+		goto out;
+	}
+
 	/* Check if the rproc is NULL */
 	if (root_rcpus_info[rcpu_id]->rproc == NULL) {
 		pr_err("rCPU %d has a NULL rproc instance\n", rcpu_id);
@@ -832,6 +838,11 @@ out:
 static int soft_rcpu_remove(struct cell *cell, unsigned int rcpu_id){
 	int err = 0;
 	unsigned int soft_rcpu_id = rcpu_id - num_root_rcpus;
+
+	if(cell->soft_rcpus_info[soft_rcpu_id] == NULL){
+		pr_err("Soft-rCPU %d info is NULL\n", soft_rcpu_id);
+		goto out;
+	}
 
 	/* Check if the rproc is NULL */
 	if (cell->soft_rcpus_info[soft_rcpu_id]->rproc == NULL) {
