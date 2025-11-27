@@ -625,8 +625,9 @@ static int cell_create(struct per_cpu *cpu_data, unsigned long config_address)
 				err = trace_error(-EBUSY);
 				goto err_cell_exit;
 			}
+			if(cell->config->id  != 0)	
+				enable_fpga_load(cell->config->id, cpu);
 		}
-		enable_fpga_load(cell->config->id); 
 	}
 
 	err = arch_cell_create(cell);

@@ -55,5 +55,5 @@ static const struct rcpu_map rcpu_table[] = {
 
 void enable_rcpu_start(unsigned int rcpu);
 void enable_rcpu_load(unsigned int rcpu);
-void enable_fpga_load(unsigned int cell_id);
+void enable_fpga_load(unsigned int cell_id, unsigned int region_id);
 int omnv_intercept_smc(struct trap_context *ctx);

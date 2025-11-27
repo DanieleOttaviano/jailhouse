@@ -18,6 +18,7 @@
 
 static unsigned long rcpu_start_bitmap = 0;
 static unsigned long load_phase_bitmap = 0;
+static unsigned long fpga_load_bitmap = 0;
 static int fpga_load_cell_id = -1;
 
 void enable_rcpu_start(unsigned int rcpu)
@@ -40,14 +41,15 @@ static inline void disable_rcpu_load(unsigned int rcpu)
 	clear_bit(rcpu, &load_phase_bitmap);
 }
 
-void enable_fpga_load(unsigned int cell_id)
+void enable_fpga_load(unsigned int cell_id, unsigned int region_id)
 {
 	fpga_load_cell_id = (int)cell_id;
+	set_bit(region_id, &fpga_load_bitmap);
 }
 
-
-static void disable_fpga_load(void)
+static void disable_fpga_load(unsigned int region_id)
 {
+	clear_bit(region_id, &fpga_load_bitmap);
 	fpga_load_cell_id = -1;
 }
 
@@ -140,24 +142,27 @@ out:
  * -  0: Passthrough. The SMC is allowed to proceed normally.
  * - -1: Error. The SMC is invalid or not permitted. 
  */
-static int omnv_intercept_smc_fpga(struct cell *cell, unsigned long fid, int region_id)
+static int omnv_intercept_smc_fpga(struct cell *cell, unsigned long fid, __u32 region_size_id)
 {
 	int err = 0;
 	struct cell *cell_owner;
-	
-	
+	const struct jailhouse_fpga_device *cell_owner_fpga_devices;	
+	const struct jailhouse_fpga_device *cell_fpga_devices = jailhouse_cell_fpga_devices(cell->config);	
+
 	/*
-	 * If the cell owns the FPGA region, passthrough (NOT YET IMPLEMENTED: how to check the regionID from the SMC?)
+	 * If the cell owns the FPGA region, passthrough
 	 */
-	// THE SMC does not contain info on the FPGA region selected
-	// if (test_bit(region_id, cell->fpga_region_set->bitmap))
-	// 	goto out;
+	for(unsigned int i = 0; i < cell->config->num_fpga_devices; i++){
+		if(region_size_id == cell_fpga_devices[i].fpga_bitstream_size){
+			goto out;
+		}
+	}
 	
 	/*
 	 * Only the root cell can handle FPGA SMCs
 	 */
 	if (cell != &root_cell) {
-		panic_printk("[ERROR] OMNV: Non-root_cell tried to load FPGA bitstream in non-owned region\n");
+		panic_printk("[ERROR] OMNV: Non-root_cell tried to load FPGA bitstream\n");
 		err = -1;
 		goto out;
 	}
@@ -165,22 +170,27 @@ static int omnv_intercept_smc_fpga(struct cell *cell, unsigned long fid, int reg
 	/* Find the cell that owns the FPGA region */
 	for_each_cell(cell_owner){
 		if(cell_owner->config->id == (unsigned int)fpga_load_cell_id) break;
-	}
+	} 
+	cell_owner_fpga_devices = jailhouse_cell_fpga_devices(cell_owner->config);
 	printk("[INFO] OMNV: cell_owner fpga region bitmap: 0x%lx\n", cell_owner->fpga_region_set->bitmap[0]);
 	
 	//TODO: Daniele Ottaviano, implement a more fine grained control of the FPGA status access
 	if (fid == PM_FPGA_GET_STATUS) {
-		err = 0; // Passthrough (NOT YET IMPLEMENTED)
+		err = 0; // Passthrough
 		goto out;
 	}
 
 	/* Check if the driver enabled FPGA loading of the region otherwise deny */
 	if (fid == PM_FPGA_LOAD) {
 		/* Check if an FPGA load is enabled by the hypervisor during the create*/
-		if(fpga_load_cell_id != -1){
-			disable_fpga_load();
-			err = 0; // Passthrough
-			goto out;
+		for(__u32 i = 0; i < cell_owner->config->num_fpga_devices; i++){
+			printk("[INFO] OMNV: checking fpga device with region id %d and size 0x%08x [region_size_id: 0x%08x]\n", 
+				cell_owner_fpga_devices[i].fpga_region_id, cell_owner_fpga_devices[i].fpga_bitstream_size, region_size_id);
+			if(test_bit(cell_owner_fpga_devices[i].fpga_region_id, &fpga_load_bitmap) &&
+				region_size_id == cell_owner_fpga_devices[i].fpga_bitstream_size) {
+				disable_fpga_load(cell_owner_fpga_devices[i].fpga_region_id);
+				goto out;
+			}
 		}
 		printk("[ERROR] OMNV: invalid FPGA Load SMC request\n");
 		err = -1; // ERROR: No FPGA load enabled
@@ -211,15 +221,15 @@ int omnv_intercept_smc(struct trap_context *ctx){
 	int err = 0;
 	struct cell *cell = this_cell();
 	int rcpu = -1;
-	int region_id = -2;
+	unsigned int region_size_id;
 	unsigned long *regs = ctx->regs;
 	unsigned long fid = regs[0] & SMC_FID_MASK;
 	
 	printk("OMNV: Intercepted SMC fid: 0x%lx from cell %s\n", fid, cell->config->name);
 	if (fid == PM_FPGA_LOAD || fid == PM_FPGA_GET_STATUS) {
-		// TODO: Daniele Ottaviano, extract the region ID from the SMC args
-		region_id = 0; 
-		err = omnv_intercept_smc_fpga(cell, fid, region_id);
+		// the region_size is used as an ID for the FPGA region
+		region_size_id = (unsigned int)(regs[2] & 0xFFFFFFFF);
+		err = omnv_intercept_smc_fpga(cell, fid, region_size_id);
 	} else if (fid == PM_WAKEUP_RCPU || fid == PM_POWERDOWN_RCPU) {
 		rcpu = get_rcpu_from_smc_arg(regs[1] & SMC_RCPU_MASK);		
 		/* The SMC fid is not targeting an rCPU */

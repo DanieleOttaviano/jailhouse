@@ -321,10 +321,10 @@ struct{
 }
 ```
 
-For each FPGA region we need to descrive the FPGA_device struct that indicate the
-bitstream name, the kernel module to use, the devicetree overlay, the id of the
-device (from 0 to N-1), the number of soft-core in the region, the conf. addr, and
-the fpga flags
+For each FPGA region we need to descrive the FPGA_device struct that indicate the 
+bitstream name, the kernel module to use, the devicetree overlay, the bitstream 
+size in bytes, the id of the device (from 0 to N-1), the number of soft-core in 
+the region, the conf. addr, and the fpga flags
 
 ```c
 struct{
@@ -338,6 +338,7 @@ struct{
 			.fpga_dto = "softcore.dtbo",
 			.fpga_module = "softcore_remoteproc",
 			.fpga_bitstream = "partial.bit",
+            .fpga_bitstream_size = 0x127b8c,
 			.fpga_region_id = 0,
 			.fpga_conf_addr = 0x80000000,
 			.fpga_flags = JAILHOUSE_FPGA_PARTIAL,	

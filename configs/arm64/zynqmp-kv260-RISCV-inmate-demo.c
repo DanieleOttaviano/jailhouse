@@ -112,6 +112,7 @@ struct {
 			.fpga_dto = "pico32.dtbo",						// load device tree overlay pico32_overlay
 			.fpga_module = "pico32_remoteproc",				// load module pico32_remoteproc
 			.fpga_bitstream = "dfx_picorv.bit", 			//"pico32_partial.bit",	 		// load bitstream pico32
+			.fpga_bitstream_size = 0x127b8c,				// size of the bitstream file in bytes
 			.fpga_region_id = 0,							// load bitstream in region with id x
 			.fpga_conf_addr = 0x80000000,					// configuration address for region
 			.fpga_flags = JAILHOUSE_FPGA_PARTIAL,			// load partial bitstream
