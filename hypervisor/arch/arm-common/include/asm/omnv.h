@@ -19,6 +19,8 @@
 #define SMC_RCPU_MASK		  	0xff
 #define PM_POWERDOWN_RCPU   	0x08
 #define PM_WAKEUP_RCPU      	0x0a
+#define PM_WAKEUP_SOFT_RCPU     0xfa
+#define PM_POWERDOWN_SOFT_RCPU  0xfb
 #define PM_FPGA_LOAD       		0x16
 #define PM_FPGA_GET_STATUS		0x17
 
@@ -38,6 +40,8 @@ static const struct rcpu_map rcpu_table[] = {
 #define SMC_RCPU_MASK		  	0x00
 #define PM_POWERDOWN_RCPU   	0xff
 #define PM_WAKEUP_RCPU      	0xff
+#define PM_WAKEUP_SOFT_RCPU     0xff
+#define PM_POWERDOWN_SOFT_RCPU  0xff
 #define PM_FPGA_LOAD       		0xff
 #define PM_FPGA_GET_STATUS		0xff
 

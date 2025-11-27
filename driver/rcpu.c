@@ -236,6 +236,10 @@ static int load_rcpu_firmware(struct rcpu_info *rcpu)
 {
 	int err = 0;
 
+	/* if soft-rcpu write the rcpu_id into the rproc driver*/
+	if(rcpu->id >= num_root_rcpus)
+		rcpu->rproc->ops->kick(rcpu->rproc, rcpu->id);
+
 	err = rproc_boot(rcpu->rproc);
 	if (err < 0) {
 		pr_err("Failed to load rCPU %s\n", rcpu->name);

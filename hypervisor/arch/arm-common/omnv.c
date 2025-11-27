@@ -13,8 +13,16 @@
 #include <jailhouse/control.h>
 #include <jailhouse/printk.h>
 #include <jailhouse/bitops.h>
+#include <jailhouse/paging.h>
 #include <asm/omnv.h>
 #include <asm/bitops.h>
+
+#ifdef CONFIG_DEBUG
+#define omnv_print(fmt, ...)			\
+	printk("[OMNV] " fmt, ##__VA_ARGS__)
+#else
+#define omnv_print(fmt, ...) do { } while (0)
+#endif
 
 static unsigned long rcpu_start_bitmap = 0;
 static unsigned long load_phase_bitmap = 0;
@@ -62,6 +70,44 @@ static int get_rcpu_from_smc_arg(unsigned long val)
 	return -1; // Not found
 }
 
+static void start_soft_rcpu(unsigned long addr)
+{
+    unsigned long page = addr & PAGE_MASK;
+    unsigned long off  = addr & PAGE_OFFS_MASK;
+    void *v;
+
+    omnv_print("Starting soft-rCPU 0x%08lx\n", addr);
+
+    v = paging_map_device(page, PAGE_SIZE);
+    if (!v) {
+        omnv_print("ERROR: failed to map device at phys 0x%lx\n", page);
+        return;
+    }
+
+    mmio_write8((char *)v + off, 1);
+
+    paging_unmap_device(page, v, PAGE_SIZE);
+}
+
+static void stop_soft_rcpu(unsigned long addr)
+{
+	unsigned long page = addr & PAGE_MASK;
+	unsigned long off  = addr & PAGE_OFFS_MASK;
+	void *v;
+
+	omnv_print("Stopping soft-rCPU 0x%08lx\n", addr);
+
+	v = paging_map_device(page, PAGE_SIZE);
+	if (!v) {
+		omnv_print("ERROR: failed to map device at phys 0x%lx\n", page);
+		return;
+	}
+
+	mmio_write8((char *)v + off, 0);
+
+	paging_unmap_device(page, v, PAGE_SIZE);
+}
+
 /**
  * omnv_intercept_smc_rcpus - Intercepts SMC (Secure Monitor Call) requests targeting rCPUs.
  *
@@ -76,7 +122,7 @@ static int get_rcpu_from_smc_arg(unsigned long val)
  *   -  1: Intercept. The SMC return successfully to the OS without being propagated.
  *   - -1: Error. The SMC is invalid or not permitted. 
  */
-static int omnv_intercept_smc_rcpus(struct cell *cell, unsigned long fid, int rcpu)
+static int omnv_intercept_smc_rcpus(struct cell *cell, unsigned long fid, int rcpu, unsigned long addr)
 {
 	int err = 0;
 
@@ -90,13 +136,13 @@ static int omnv_intercept_smc_rcpus(struct cell *cell, unsigned long fid, int rc
 	
 	/* Only the root cell can handle rCPU SMCs */
 	if (this_cell() != &root_cell) {
-		panic_printk("[ERROR] OMNV: Non-root_cell tried to access not owned rCPU\n");
+		omnv_print("ERROR: Non-root_cell tried to access not owned rCPU\n");
 		err = -1;
 		goto out;
 	}
 
 	/* If the rootcell does not own the rCPU, handle the PM_WAKEUP_RCPU and PM_POWERDOWN_RCPU */
-	if (fid == PM_WAKEUP_RCPU) {
+	if (fid == PM_WAKEUP_RCPU || fid == PM_WAKEUP_SOFT_RCPU) {
 		/* In the load phase we need to fake the start of the rCPU
 		* so that rproc_boot() can be called but the rCPU is not actually started.
 		*/
@@ -108,20 +154,29 @@ static int omnv_intercept_smc_rcpus(struct cell *cell, unsigned long fid, int rc
 
 		if (test_bit(rcpu, &rcpu_start_bitmap)) {
 			disable_rcpu_start(rcpu);
+			if(fid == PM_WAKEUP_SOFT_RCPU){
+				start_soft_rcpu(addr);
+				err = 1; // Intercept
+			}
+
 			goto out;
 		}
 		
-		panic_printk("[ERROR] OMNV: invalid PM_WAKEUP_RCPU on rCPU %d\n", rcpu);
+		omnv_print("ERROR: invalid PM_WAKEUP_RCPU on rCPU %d\n", rcpu);
 		err = -1;
 		goto out;
 	}
 
-	if (fid == PM_POWERDOWN_RCPU) {
+	if (fid == PM_POWERDOWN_RCPU || fid == PM_POWERDOWN_SOFT_RCPU) {
 		/* If the Powerdown is requested before the startup (the start_bitmap is up) it is valid */
 		if (test_bit(rcpu, &rcpu_start_bitmap)) {
+			if(fid == PM_POWERDOWN_SOFT_RCPU){
+				stop_soft_rcpu(addr);
+				err = 1; // Intercept
+			}
 			goto out;
 		}
-		panic_printk("[ERROR] OMNV: invalid PM_POWERDOWN_RCPU on rCPU %d\n", rcpu);
+		omnv_print("ERROR: invalid PM_POWERDOWN_RCPU on rCPU %d\n", rcpu);
 		err = -1;
 		goto out;
 	}
@@ -162,7 +217,7 @@ static int omnv_intercept_smc_fpga(struct cell *cell, unsigned long fid, __u32 r
 	 * Only the root cell can handle FPGA SMCs
 	 */
 	if (cell != &root_cell) {
-		panic_printk("[ERROR] OMNV: Non-root_cell tried to load FPGA bitstream\n");
+		omnv_print("ERROR: Non-root_cell tried to load FPGA bitstream\n");
 		err = -1;
 		goto out;
 	}
@@ -172,7 +227,6 @@ static int omnv_intercept_smc_fpga(struct cell *cell, unsigned long fid, __u32 r
 		if(cell_owner->config->id == (unsigned int)fpga_load_cell_id) break;
 	} 
 	cell_owner_fpga_devices = jailhouse_cell_fpga_devices(cell_owner->config);
-	printk("[INFO] OMNV: cell_owner fpga region bitmap: 0x%lx\n", cell_owner->fpga_region_set->bitmap[0]);
 	
 	//TODO: Daniele Ottaviano, implement a more fine grained control of the FPGA status access
 	if (fid == PM_FPGA_GET_STATUS) {
@@ -184,15 +238,12 @@ static int omnv_intercept_smc_fpga(struct cell *cell, unsigned long fid, __u32 r
 	if (fid == PM_FPGA_LOAD) {
 		/* Check if an FPGA load is enabled by the hypervisor during the create*/
 		for(__u32 i = 0; i < cell_owner->config->num_fpga_devices; i++){
-			printk("[INFO] OMNV: checking fpga device with region id %d and size 0x%08x [region_size_id: 0x%08x]\n", 
-				cell_owner_fpga_devices[i].fpga_region_id, cell_owner_fpga_devices[i].fpga_bitstream_size, region_size_id);
 			if(test_bit(cell_owner_fpga_devices[i].fpga_region_id, &fpga_load_bitmap) &&
 				region_size_id == cell_owner_fpga_devices[i].fpga_bitstream_size) {
 				disable_fpga_load(cell_owner_fpga_devices[i].fpga_region_id);
 				goto out;
 			}
 		}
-		printk("[ERROR] OMNV: invalid FPGA Load SMC request\n");
 		err = -1; // ERROR: No FPGA load enabled
 		goto out;
 	}
@@ -225,18 +276,27 @@ int omnv_intercept_smc(struct trap_context *ctx){
 	unsigned long *regs = ctx->regs;
 	unsigned long fid = regs[0] & SMC_FID_MASK;
 	
-	printk("OMNV: Intercepted SMC fid: 0x%lx from cell %s\n", fid, cell->config->name);
+	omnv_print("Intercepted SMC fid: 0x%lx from cell %s\n", fid, cell->config->name);
 	if (fid == PM_FPGA_LOAD || fid == PM_FPGA_GET_STATUS) {
 		// the region_size is used as an ID for the FPGA region
 		region_size_id = (unsigned int)(regs[2] & 0xFFFFFFFF);
 		err = omnv_intercept_smc_fpga(cell, fid, region_size_id);
-	} else if (fid == PM_WAKEUP_RCPU || fid == PM_POWERDOWN_RCPU) {
+	} 
+	else if (fid == PM_WAKEUP_RCPU || fid == PM_POWERDOWN_RCPU) {
 		rcpu = get_rcpu_from_smc_arg(regs[1] & SMC_RCPU_MASK);		
 		/* The SMC fid is not targeting an rCPU */
 		if (rcpu == -1)
 			goto out;
-		err = omnv_intercept_smc_rcpus(cell, fid, rcpu);
-	} else {
+		err = omnv_intercept_smc_rcpus(cell, fid, rcpu, regs[2]);
+	} 
+	else if (fid == PM_WAKEUP_SOFT_RCPU || fid == PM_POWERDOWN_SOFT_RCPU) {
+		rcpu = regs[1] & SMC_RCPU_MASK;
+		/* The SMC fid is not targeting an rCPU */
+		if (rcpu == -1)
+			goto out;
+		err = omnv_intercept_smc_rcpus(cell, fid, rcpu, regs[2]);
+	} 
+	else {
 		/* Not an OMNV related SMC */
 		goto out;	
 	}
